@@ -786,61 +786,66 @@ function extractValueByPath(object, path) {
     return current;
 }
 
-// Generate the table header from YAML structure
+// Function to generate table header based on YAML structure
 function generateTableHeader(tableStructure) {
     const thead = document.createElement('thead');
 
-    // Create the section headers row
-    const sectionRow = document.createElement('tr');
+    // First row - section headers
+    const headerRow = document.createElement('tr');
 
-    // Add section headers
     tableStructure.sections.forEach(section => {
-        const th = document.createElement('th');
-        th.className = `${section.id}-group`;
-        th.colSpan = section.colspan;
+        const sectionHeader = document.createElement('th');
+        sectionHeader.className = `${section.id}-group`;
 
+        // Automatically calculate colspan based on number of columns in this section
+        const colspan = section.columns.length;
+        sectionHeader.colSpan = colspan;
+
+        // Add icon if specified
         if (section.icon) {
-            const icon = document.createElement('i');
-            icon.className = `fas fa-${section.icon}`;
-            th.appendChild(icon);
-            th.appendChild(document.createTextNode(` ${section.title}`));
+            sectionHeader.innerHTML = `<i class="fas fa-${section.icon}"></i> ${section.title}`;
         } else {
-            th.textContent = section.title;
+            sectionHeader.textContent = section.title;
         }
 
-        sectionRow.appendChild(th);
+        headerRow.appendChild(sectionHeader);
     });
 
-    // Create the column headers row
+    thead.appendChild(headerRow);
+
+    // Second row - column headers
     const columnRow = document.createElement('tr');
 
-    // Add column headers for each section
     tableStructure.sections.forEach(section => {
         section.columns.forEach(column => {
-            const th = document.createElement('th');
-            th.className = `${section.id}-group`;
+            const columnHeader = document.createElement('th');
+            columnHeader.className = `${section.id}-group`;
 
-            if (column.fullTitle) {
-                th.title = column.fullTitle;
-            }
-
+            // Add icon if specified
             if (column.icon) {
-                const icon = document.createElement('i');
-                icon.className = `fas fa-${column.icon}`;
-                th.appendChild(icon);
-                th.appendChild(document.createTextNode(` ${column.title}`));
+                columnHeader.innerHTML = `<i class="fas fa-${column.icon}"></i> ${column.title}`;
             } else {
-                th.textContent = column.title;
+                columnHeader.textContent = column.title;
             }
 
-            columnRow.appendChild(th);
+            columnRow.appendChild(columnHeader);
         });
     });
 
-    thead.appendChild(sectionRow);
     thead.appendChild(columnRow);
 
     return thead;
+}
+
+// Helper function to calculate total columns in the table
+function calculateTotalColumns(tableStructure) {
+    let totalColumns = 0;
+
+    tableStructure.sections.forEach(section => {
+        totalColumns += section.columns.length;
+    });
+
+    return totalColumns;
 }
 
 // Initialize the table structure from YAML
@@ -877,13 +882,6 @@ function initializeTableStructure(tableStructure) {
     table.appendChild(tfoot);
 }
 
-// Calculate total columns from YAML structure
-function calculateTotalColumns(tableStructure) {
-    return tableStructure.sections.reduce((total, section) => {
-        return total + section.columns.length;
-    }, 0);
-}
-
 // Generate the highest values row based on YAML structure
 function generateHighestValuesRow(tableStructure) {
     const row = document.createElement('tr');
@@ -895,7 +893,10 @@ function generateHighestValuesRow(tableStructure) {
             // First section is usually a header like "Highest Values"
             const cell = document.createElement('td');
             cell.className = `${section.id}-group`;
-            cell.colSpan = section.colspan;
+
+            // Calculate the colspan based on number of columns in this section
+            cell.colSpan = section.columns.length;
+
             cell.textContent = 'Highest Values';
             row.appendChild(cell);
         } else {

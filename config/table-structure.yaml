@@ -3,7 +3,6 @@ sections:
   - id: info
     title: Character Info
     icon: id-card
-    colspan: 5
     columns:
       - id: name
         title: Name
@@ -37,7 +36,6 @@ sections:
   - id: healing
     title: Healing & Sustain
     icon: heart-pulse
-    colspan: 1
     columns:
       - id: healingAbilities
         title: Abilities
@@ -49,7 +47,6 @@ sections:
   - id: ability
     title: Ability Scores
     icon: dumbbell
-    colspan: 6
     columns:
       - id: str
         title: STR
@@ -79,7 +76,6 @@ sections:
   - id: perception
     title: Perception
     icon: eye
-    colspan: 1
     columns:
       - id: perception
         title: Perc
@@ -91,7 +87,6 @@ sections:
   - id: defense
     title: Defenses
     icon: shield-halved
-    colspan: 4
     columns:
       - id: ac
         title: AC
@@ -113,7 +108,6 @@ sections:
   - id: skill
     title: Skills
     icon: book-open-reader
-    colspan: 16
     columns:
       - id: acrobatics
         title: Acro
