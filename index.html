@@ -1,4 +1,84 @@
-<!DOCTYPE html>
+        // Function to check if at least one character has Battle Medicine
+        function hasBattleMedicine() {
+            return characters.some(character => character.hasBattleMedicine);
+        }
+        
+        // Function to update party composition warnings
+        function updatePartyWarnings() {
+            // Create warnings container if it doesn't exist
+            let warningsContainer = document.getElementById('warningsContainer');
+            if (!warningsContainer) {
+                warningsContainer = document.createElement('div');
+                warningsContainer.id = 'warningsContainer';
+                warningsContainer.className = 'warnings-container';
+                
+                const title = document.createElement('h2');
+                title.className = 'warnings-title';
+                title.textContent = 'Party Composition Warnings';
+                warningsContainer.appendChild(title);
+                
+                const warningsGrid = document.createElement('div');
+                warningsGrid.id = 'warningsGrid';
+                warningsGrid.className = 'warnings-grid';
+                warningsContainer.appendChild(warningsGrid);
+                
+                document.querySelector('.container').appendChild(warningsContainer);
+            }
+            
+            const warningsGrid = document.getElementById('warningsGrid');
+            warningsGrid.innerHTML = ''; // Clear existing warnings
+            
+            // Don't show warnings if no characters
+            if (characters.length === 0) {
+                warningsGrid.innerHTML = '<div class="warning-card">No characters imported yet</div>';
+                return;
+            }
+            
+            // Battle Medicine warning
+            addWarning(
+                warningsGrid,
+                'Battle Medicine',
+                'At least one character should have Battle Medicine for emergency healing',
+                hasBattleMedicine()
+            );
+            
+            // Additional warnings can be added here
+        }
+        
+        // Helper function to add a warning card
+        function addWarning(container, title, description, isSuccess) {
+            const card = document.createElement('div');
+            card.className = `warning-card ${isSuccess ? 'success' : 'error'}`;
+            
+            const icon = document.createElement('div');
+            icon.className = 'warning-icon';
+            icon.innerHTML = isSuccess ? '✅' : '⚠️';
+            
+            const content = document.createElement('div');
+            content.className = 'warning-content';
+            
+            const titleElem = document.createElement('div');
+            titleElem.className = 'warning-title';
+            titleElem.textContent = title;
+            
+            const descElem = document.createElement('div');
+            descElem.className = 'warning-description';
+            descElem.textContent = description;
+            
+            content.appendChild(titleElem);
+            content.appendChild(descElem);
+            
+            card.appendChild(icon);
+            card.appendChild(content);
+            
+            container.appendChild(card);
+        }        tfoot tr {
+            background-color: #3a3a3a;
+            font-weight: bold;
+            position: sticky;
+            bottom: 0;
+            box-shadow: 0 -2px 3px rgba(0,0,0,0.3);
+        }<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -87,14 +167,9 @@
             font-weight: bold;
         }
         .highest {
-            background-color: #3a5a40;
-            color: #e0e0e0;
+            color: #ffd700;
             font-weight: bold;
-        }
-        .matches-highest {
-            background-color: #2d4a33;
-            color: #e0e0e0;
-            font-weight: bold;
+            text-shadow: 0 0 1px #000;
         }
         .character-name {
             font-weight: bold;
@@ -156,6 +231,7 @@
                 <thead>
                     <tr>
                         <th class="info-group" colspan="4">Character Info</th>
+                        <th class="healing-group" colspan="1">Healing</th>
                         <th class="ability-group" colspan="6">Ability Scores</th>
                         <th class="defense-group" colspan="4">Defenses</th>
                         <th class="skill-group" colspan="16">Skills</th>
@@ -165,6 +241,8 @@
                         <th class="info-group">Class</th>
                         <th class="info-group">Archetypes</th>
                         <th class="info-group">Level</th>
+                        
+                        <th class="healing-group">Abilities</th>
                         
                         <th class="ability-group">STR</th>
                         <th class="ability-group">DEX</th>
@@ -198,12 +276,13 @@
                 </thead>
                 <tbody id="characterRows">
                     <tr>
-                        <td colspan="30" class="no-characters">No characters imported yet</td>
+                        <td colspan="31" class="no-characters">No characters imported yet</td>
                     </tr>
                 </tbody>
                 <tfoot>
                     <tr id="highestValues">
                         <td colspan="4" class="info-group">Highest Values</td>
+                        <td class="healing-group">-</td>
                         <td class="ability-group">-</td>
                         <td class="ability-group">-</td>
                         <td class="ability-group">-</td>
@@ -330,12 +409,29 @@
                 });
             }
 
+            // Extract healing feats and abilities
+            const healingAbilities = [];
+            
+            // Check for Battle Medicine feat
+            let hasBattleMedicine = false;
+            if (data.build?.feats) {
+                data.build.feats.forEach(feat => {
+                    if (feat && feat[0] === "Battle Medicine") {
+                        hasBattleMedicine = true;
+                        healingAbilities.push("Battle Medicine");
+                    }
+                    // Can add more healing feat checks here in the future
+                });
+            }
+
             // Create the character data object
             const characterData = {
                 name: data.build?.name || 'Unknown',
                 class: data.build?.class || 'Unknown',
                 archetypes: archetypes,
                 level: getNumeric(data.build?.level, 1),
+                healingAbilities: healingAbilities,
+                hasBattleMedicine: hasBattleMedicine,
                 
                 // Ability scores
                 abilities: {
@@ -426,11 +522,17 @@
                 ? character.archetypes.join(', ') 
                 : '-';
                 
+            // Format healing abilities as pills
+            const healingDisplay = character.healingAbilities.length > 0
+                ? character.healingAbilities.map(ability => `<span class="pill">${ability}</span>`).join(' ')
+                : '-';
+                
             row.innerHTML = `
                 <td class="character-name info-group">${character.name}</td>
                 <td class="info-group">${character.class}</td>
                 <td class="info-group">${archetypesDisplay}</td>
                 <td class="info-group">${character.level}</td>
+                <td class="healing-group">${healingDisplay}</td>
                 
                 <td class="ability-group">${character.abilities.str}</td>
                 <td class="ability-group">${character.abilities.dex}</td>
@@ -494,55 +596,33 @@
         function highlightHighestValues() {
             const table = document.getElementById('characterTable');
             const tbody = document.getElementById('characterRows');
-            const highestRow = document.getElementById('highestValues');
+            const tfoot = document.querySelector('tfoot');
             const rows = tbody.rows;
             
             if (rows.length === 0) return;
             
-            // Get the highest values from the summary row
+            // Get the highest values from the footer row
+            const highestRow = tfoot.rows[0];
             const highestValues = [];
-            for (let i = 1; i < highestRow.cells.length; i++) {
-                const value = highestRow.cells[i].textContent;
-                highestValues.push(value === '-' ? -Infinity : parseInt(value));
+            
+            // Skip healing column which doesn't have highest values
+            // Collect highest values starting from abilities
+            for (let i = 2; i < highestRow.cells.length; i++) {
+                highestValues.push(parseInt(highestRow.cells[i].textContent));
             }
             
-            // Start from column 4 (STR, index 3 in tbody rows) to the end
-            for (let col = 4; col < table.rows[1].cells.length; col++) {
-                let maxValue = -Infinity;
-                let maxRows = [];
-                
-                // Find the maximum value in this column
-                for (let row = 0; row < rows.length; row++) {
+            // For each value cell in the character rows
+            for (let row = 0; row < rows.length; row++) {
+                // Start at column 5 (STR) - skip name, class, archetypes, level, healing
+                for (let col = 5; col < rows[row].cells.length; col++) {
                     const cellValue = parseInt(rows[row].cells[col].textContent);
+                    // Compare with corresponding value in highestValues (accounting for the offset)
+                    const highestValue = highestValues[col - 5];
                     
-                    if (cellValue > maxValue) {
-                        maxValue = cellValue;
-                        maxRows = [row];
-                    } else if (cellValue === maxValue) {
-                        maxRows.push(row);
-                    }
-                }
-                
-                // The highest value in the summary row is at the appropriate index
-                // Col 4 (STR) in body corresponds to index 1 in the summary row (since it has a colspan)
-                const summaryIndex = col - 3;
-                const highestValueForCol = highestValues[summaryIndex];
-                
-                // Highlight the cells with the maximum value
-                for (let row = 0; row < rows.length; row++) {
-                    const cellValue = parseInt(rows[row].cells[col].textContent);
-                    
-                    // Clear previous highlighting
-                    rows[row].cells[col].classList.remove('highest');
-                    rows[row].cells[col].classList.remove('matches-highest');
-                    
-                    // Add appropriate highlighting
-                    if (maxRows.includes(row)) {
-                        // This is the highest value in the column
+                    if (!isNaN(cellValue) && !isNaN(highestValue) && cellValue === highestValue) {
                         rows[row].cells[col].classList.add('highest');
-                    } else if (cellValue === highestValueForCol) {
-                        // This matches the highest value overall
-                        rows[row].cells[col].classList.add('matches-highest');
+                    } else {
+                        rows[row].cells[col].classList.remove('highest');
                     }
                 }
             }
@@ -595,7 +675,10 @@
             
             // Clear the table body
             const tbody = document.getElementById('characterRows');
-            tbody.innerHTML = '<tr><td colspan="30" class="no-characters">No characters imported yet</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="31" class="no-characters">No characters imported yet</td></tr>';
+            
+            // Update warnings
+            updatePartyWarnings();
             
             // Reset highest values row
             const highestRow = document.getElementById('highestValues');
