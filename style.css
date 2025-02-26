@@ -236,12 +236,31 @@ input[type="file"] {
 
 /* Table Styling */
 .scroll-frame {
-    border: 8px solid transparent;
-    border-image: url('https://i.imgur.com/W8qsCZr.png') 20 round;
+    position: relative;
+    border: 8px solid var(--border-color);
     border-radius: 5px;
     margin-bottom: 30px;
     position: relative;
     overflow: hidden;
+}
+
+/* Add decorative pattern to frame border */
+.scroll-frame::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    pointer-events: none;
+    border: 4px solid rgba(255, 255, 255, 0.1);
+    background-image:
+        linear-gradient(45deg, transparent 65%, var(--accent-secondary) 65%, var(--accent-secondary) 70%, transparent 70%),
+        linear-gradient(-45deg, transparent 65%, var(--accent-secondary) 65%, var(--accent-secondary) 70%, transparent 70%);
+    background-size: 20px 20px;
+    background-position: 0 0, 10px 10px;
+    opacity: 0.3;
+    z-index: 10;
 }
 
 .table-container {
@@ -399,17 +418,45 @@ td .highest {
     color: white;
 }
 
+/* Replace background image in "no characters" message with CSS decoration */
 .no-characters {
     text-align: center;
     padding: 30px;
     font-style: italic;
     color: var(--accent-secondary);
     font-size: 1.2rem;
-    background-image: url('https://i.imgur.com/uE3qtDC.png');
-    background-size: 150px;
-    background-position: center top;
-    background-repeat: no-repeat;
     padding-top: 150px;
+    position: relative;
+}
+
+/* Create decorative scroll icon with CSS */
+.no-characters::before {
+    content: '';
+    position: absolute;
+    top: 20px;
+    left: 50%;
+    width: 100px;
+    height: 120px;
+    transform: translateX(-50%);
+    background-color: var(--parchment-dark);
+    border-radius: 10px;
+    box-shadow:
+        0 0 0 4px var(--border-color),
+        inset 0 0 20px rgba(0, 0, 0, 0.2);
+}
+
+/* Create scroll details with CSS */
+.no-characters::after {
+    content: '?';
+    position: absolute;
+    top: 70px;
+    left: 50%;
+    transform: translateX(-50%);
+    font-family: 'Cinzel', serif;
+    font-size: 50px;
+    color: var(--border-color);
+    opacity: 0.6;
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
 }
 
 /* Status Message Styling */
