@@ -86,6 +86,9 @@ function processJsonData(jsonText) {
         // Update highest values
         updateHighestValues();
 
+        // Save to cache
+        saveCharactersToCache();
+
         showStatusMessage(`Character "${characterData.name}" imported successfully!`);
         return true;
     } catch (error) {
@@ -555,23 +558,73 @@ document.getElementById('clearButton').addEventListener('click', function () {
     // Update warnings
     updatePartyWarnings();
 
+    // Clear character cache
+    clearCharacterCache();
+
     showStatusMessage('All characters cleared');
 });
 
-// Initialize the application
-async function init() {
-    // Load warnings
-    await loadWarnings();
+// Add these functions to handle character caching
+function saveCharactersToCache() {
+    localStorage.setItem('pf2eCharacters', JSON.stringify(characters));
+}
 
-    // Check if we have any character data in the paste.txt
-    try {
-        const jsonString = document.querySelector('.document_content')?.textContent;
-        if (jsonString) {
-            processJsonData(jsonString);
-        }
-    } catch (e) {
-        console.log('No initial data to load:', e);
+function loadCharactersFromCache() {
+    const cachedCharacters = localStorage.getItem('pf2eCharacters');
+    if (cachedCharacters) {
+        return JSON.parse(cachedCharacters);
     }
+    return [];
+}
+
+function clearCharacterCache() {
+    localStorage.removeItem('pf2eCharacters');
+}
+
+// New function to render all characters from the characters array
+function renderCharacters() {
+    // Clear the table first
+    const tbody = document.getElementById('characterRows');
+    tbody.innerHTML = '';
+
+    // If there are no characters, show the "No characters" message
+    if (characters.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="31" class="no-characters">No characters imported yet</td></tr>';
+        return;
+    }
+
+    // Add each character to the table
+    for (const character of characters) {
+        addCharacterRow(character);
+    }
+
+    // Update the highest values and highlighting
+    updateHighestValues();
+}
+
+// Fix initialization to load from cache and render properly
+function init() {
+    // Load warnings first
+    loadWarnings().then(() => {
+        // Load characters from cache
+        characters = loadCharactersFromCache();
+
+        // Render the characters
+        renderCharacters();
+
+        // Update party warnings
+        updatePartyWarnings();
+
+        // Check for data in paste.txt (as in your original init function)
+        try {
+            const jsonString = document.querySelector('.document_content')?.textContent;
+            if (jsonString) {
+                processJsonData(jsonString);
+            }
+        } catch (e) {
+            console.log('No initial data to load:', e);
+        }
+    });
 }
 
 // When DOM is ready, initialize the app

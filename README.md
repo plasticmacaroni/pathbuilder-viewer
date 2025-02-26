@@ -16,8 +16,6 @@ A browser-based tool for comparing Pathfinder 2e character statistics, highlight
    └── warnings/         # Warning YAML files
        ├── battle-medicine.yaml
        ├── skill-coverage.yaml
-       ├── frontline.yaml
-       └── magic-user.yaml
    ```
 
 2. Open `index.html` in a modern web browser
@@ -38,7 +36,7 @@ A browser-based tool for comparing Pathfinder 2e character statistics, highlight
 ### Importing Characters
 
 1. **From File**: Click "Import from File" and select a PF2e character JSON file
-2. **From Clipboard**: Copy JSON data to clipboard and click "Import from Clipboard"
+2. **From Clipboard**: Copy JSON data from the options hamburger menu on Pathbuilder to clipboard and click "Import from Clipboard"
 3. **Clear All**: Remove all characters with the "Clear All" button
 
 ### Reading the Table
