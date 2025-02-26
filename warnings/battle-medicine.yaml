@@ -1,0 +1,19 @@
+title: Battle Medicine
+description: Emergency healing option
+checkFunction: |
+  function() {
+    // Check if any character has Battle Medicine
+    for (const character of characters) {
+      // Look through the character's feats for Battle Medicine
+      if (character.healingAbilities) {
+        for (const ability of character.healingAbilities) {
+          if (ability === "Battle Medicine") {
+            return true;
+          }
+        }
+      }
+    }
+    return false;
+  }
+successMessage: At least one character has Battle Medicine for emergency healing
+failureMessage: No character has Battle Medicine for emergency healing

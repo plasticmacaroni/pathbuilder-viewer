@@ -1,0 +1,54 @@
+title: Skill Coverage
+description: Party skill proficiency distribution
+checkFunction: |
+  function() {
+    // If there are no characters, don't show a warning
+    if (characters.length === 0) return true;
+    
+    // Define all skills to check
+    const allSkills = {
+      'acrobatics': 'Acrobatics',
+      'arcana': 'Arcana',
+      'athletics': 'Athletics',
+      'crafting': 'Crafting',
+      'deception': 'Deception',
+      'diplomacy': 'Diplomacy',
+      'intimidation': 'Intimidation',
+      'medicine': 'Medicine',
+      'nature': 'Nature',
+      'occultism': 'Occultism',
+      'performance': 'Performance',
+      'religion': 'Religion',
+      'society': 'Society',
+      'stealth': 'Stealth',
+      'survival': 'Survival',
+      'thievery': 'Thievery'
+    };
+    
+    // Find skills with no training
+    const zeroSkills = [];
+    
+    for (const [skillKey, skillName] of Object.entries(allSkills)) {
+      // Check if any character has a non-zero value for this skill
+      let hasTraining = false;
+      
+      for (const character of characters) {
+        if (character.skills && character.skills[skillKey] > 0) {
+          hasTraining = true;
+          break;
+        }
+      }
+      
+      if (!hasTraining) {
+        zeroSkills.push(skillName);
+      }
+    }
+    
+    // Store the zero skills list for use in the message
+    window.zeroSkillsList = zeroSkills;
+    
+    // Return true if there are no zero skills
+    return zeroSkills.length === 0;
+  }
+successMessage: Full skill coverage achieved. At least one character has training in every skill.
+failureMessage: "No character has training in: {{zeroSkillsList.join(', ')}}"
