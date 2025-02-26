@@ -25,30 +25,39 @@ checkFunction: |
       'thievery': 'Thievery'
     };
     
-    // Find skills with no training
-    const zeroSkills = [];
+    // Find skills with insufficient training (less than +2)
+    const insufficientSkills = [];
     
     for (const [skillKey, skillName] of Object.entries(allSkills)) {
-      // Check if any character has a non-zero value for this skill
-      let hasTraining = false;
+      // Check if any character has at least a +2 value for this skill
+      let hasAdequateTraining = false;
       
       for (const character of characters) {
-        if (character.extracted && character.extracted.skills && character.extracted.skills[skillKey] > 0) {
-          hasTraining = true;
+        if (character.extracted && character.extracted.skills && character.extracted.skills[skillKey] >= 2) {
+          hasAdequateTraining = true;
+          break;
+        }
+        
+        // Also check skill proficiencies if available
+        if (character.extracted && 
+            character.extracted.skillProficiencies && 
+            character.extracted.skillProficiencies[skillKey] && 
+            character.extracted.skillProficiencies[skillKey] !== 'U') {
+          hasAdequateTraining = true;
           break;
         }
       }
       
-      if (!hasTraining) {
-        zeroSkills.push(skillName);
+      if (!hasAdequateTraining) {
+        insufficientSkills.push(skillName);
       }
     }
     
-    // Store the zero skills list for use in the message
-    window.zeroSkillsList = zeroSkills;
+    // Store the insufficient skills list for use in the message
+    window.insufficientSkillsList = insufficientSkills;
     
-    // Return true if there are no zero skills
-    return zeroSkills.length === 0;
+    // Return true if there are no insufficient skills
+    return insufficientSkills.length === 0;
   }
-successMessage: Full skill coverage achieved. At least one character has training in every skill.
-failureMessage: "No character has training in: {{zeroSkillsList.join(', ')}}"
+successMessage: Full skill coverage achieved! At least one character has trained proficiency or better (+2 or higher) in every skill.
+failureMessage: "No character has adequate training (at least +2) in: {{insufficientSkillsList.join(', ')}}"
