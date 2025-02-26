@@ -103,6 +103,10 @@ function processJsonData(jsonString) {
         saveCharactersToCache(characters);
 
         showStatusMessage('Character imported successfully!');
+
+        // Add this to your processJsonData function
+        console.log("Processed character data:", characters[characters.length - 1]);
+        console.log("Skills:", characters[characters.length - 1].extracted.skills);
     } catch (error) {
         console.error('Error processing JSON data:', error);
         showStatusMessage('Error processing character data: ' + error.message, true);
@@ -164,8 +168,10 @@ function extractSkills(data) {
         // Store proficiency letter
         skillProficiencies[skill] = getProficiencyLevel(profBonus);
 
-        // Add level to the calculation
+        // Add level to the calculation for all skills - in PF2e, you add level even if untrained
         const itemBonus = data.build?.mods?.[capitalizeFirstLetter(skill)]?.["Item Bonus"] || 0;
+
+        // This is where the fix is: Always add level for all skills
         skills[skill] = level + profBonus + abilityMod + itemBonus;
     }
 
@@ -214,40 +220,110 @@ function extractArchetypes(data) {
 
 // Extract healing abilities
 function extractHealingAbilities(data) {
-    const healingAbilities = [];
-    // Example healing abilities to look for
-    const healingFeats = [
-        'Battle Medicine',
-        'Treat Wounds',
-        'Healing Hands',
-        'Lay on Hands',
-        'Wholeness of Body'
-    ];
+    const characterHealingAbilities = [];
+
+    // Use the globally loaded healingAbilities from the YAML file
+    // instead of the limited hard-coded list
 
     // Check for healing class features and feats
     if (data.build?.feats) {
         data.build.feats.forEach(feat => {
-            if (feat && feat[0] && healingFeats.includes(feat[0])) {
-                healingAbilities.push(feat[0]);
+            if (feat && feat[0]) {
+                // Check against the full list of healing abilities
+                if (healingAbilities.includes(feat[0])) {
+                    characterHealingAbilities.push(feat[0]);
+                }
             }
         });
     }
 
     // Check for healing spells
     if (data.build?.spellsKnown) {
-        for (const level in data.build.spellsKnown) {
-            const spells = data.build.spellsKnown[level];
-            spells.forEach(spell => {
-                if (spell && spell.includes('Heal')) {
-                    if (!healingAbilities.includes('Healing Spells')) {
-                        healingAbilities.push('Healing Spells');
+        let hasHealingSpells = false;
+
+        // Check prepared spells
+        if (data.build.spellCasters) {
+            for (const caster of data.build.spellCasters) {
+                if (caster.prepared) {
+                    for (const levelData of caster.prepared) {
+                        for (const spell of levelData.list) {
+                            if (spell.includes('Heal') ||
+                                spell === 'Soothe' ||
+                                healingAbilities.includes(spell)) {
+                                hasHealingSpells = true;
+                                break;
+                            }
+                        }
+                        if (hasHealingSpells) break;
                     }
                 }
-            });
+                if (caster.spells) {
+                    for (const levelData of caster.spells) {
+                        for (const spell of levelData.list) {
+                            if (spell.includes('Heal') ||
+                                spell === 'Soothe' ||
+                                healingAbilities.includes(spell)) {
+                                hasHealingSpells = true;
+                                break;
+                            }
+                        }
+                        if (hasHealingSpells) break;
+                    }
+                }
+            }
+        }
+
+        // Also check spellsKnown
+        for (const level in data.build.spellsKnown) {
+            const spells = data.build.spellsKnown[level];
+            for (const spell of spells) {
+                if (spell && (
+                    spell.includes('Heal') ||
+                    spell === 'Soothe' ||
+                    healingAbilities.includes(spell))) {
+                    hasHealingSpells = true;
+                    break;
+                }
+            }
+            if (hasHealingSpells) break;
+        }
+
+        if (hasHealingSpells) {
+            characterHealingAbilities.push('Healing Spells');
         }
     }
 
-    return healingAbilities;
+    // Check focus spells
+    if (data.build?.focus) {
+        let hasFocusHealing = false;
+
+        // Loop through traditions
+        for (const tradition in data.build.focus) {
+            // Loop through abilities
+            for (const ability in data.build.focus[tradition]) {
+                // Check focus spells
+                const focusSpells = data.build.focus[tradition][ability].focusSpells || [];
+
+                for (const spell of focusSpells) {
+                    if (spell.includes('Heal') ||
+                        spell === 'Lay on Hands' ||
+                        spell === 'Life Boost' ||
+                        healingAbilities.includes(spell)) {
+                        hasFocusHealing = true;
+                        break;
+                    }
+                }
+                if (hasFocusHealing) break;
+            }
+            if (hasFocusHealing) break;
+        }
+
+        if (hasFocusHealing) {
+            characterHealingAbilities.push('Focus Healing');
+        }
+    }
+
+    return characterHealingAbilities;
 }
 
 // Extract defense values
@@ -265,9 +341,9 @@ function getNumeric(value, defaultValue = 0) {
     return (value !== undefined && value !== null) ? Number(value) : defaultValue;
 }
 
-// Extract a value from an object using a dot-notation path
+// Helper function to get a value from a nested object using a dot-notation path
 function getValueByPath(obj, path) {
-    if (!path) return undefined;
+    if (!path || !obj) return undefined;
 
     const parts = path.split('.');
     let current = obj;
@@ -323,6 +399,23 @@ function addCharacterRow(character) {
                         cell.innerHTML = `<span class="value">${skillValue !== undefined ? skillValue : '-'}</span>
                                         <span class="prof-badge prof-${proficiency.toLowerCase()}" 
                                         title="${profLabel}">${proficiency}</span>`;
+                    } else if (column.displayType === 'proficiency-pill-list' && Array.isArray(skillValue)) {
+                        // For traditions, display pills with proficiency badges
+                        if (skillValue.length > 0) {
+                            const items = skillValue.map(item => {
+                                const itemKey = item.toLowerCase();
+                                const itemProf = proficiency[itemKey] || 'U';
+                                const profLabel = getProficiencyLabel(itemProf);
+
+                                return `<span class="pill pill-${section.id}">
+                                    ${item} <span class="prof-badge prof-${itemProf.toLowerCase()}" 
+                                    title="${profLabel}">${itemProf}</span>
+                                </span>`;
+                            });
+                            cell.innerHTML = items.join(' ');
+                        } else {
+                            cell.textContent = '-';
+                        }
                     } else {
                         // Default to just showing the value
                         cell.textContent = skillValue !== undefined ? skillValue : '-';
@@ -467,12 +560,31 @@ function updatePartyWarnings() {
             // Process message templates
             let message = isSuccess ? warning.successMessage : warning.failureMessage;
 
-            // Handle template variables in the message - replace {{variable}} with its value
+            // Replace the unsafe eval in message template processing
             message = message.replace(/{{(.*?)}}/g, (match, expr) => {
                 try {
-                    return eval(expr) || '';
+                    // Handle common window variables
+                    if (expr.startsWith('window.')) {
+                        const windowVarPath = expr.replace('window.', '');
+                        return window[windowVarPath] || '';
+                    }
+
+                    // Handle direct variable references
+                    if (window[expr] !== undefined) {
+                        return window[expr];
+                    }
+
+                    // Handle method calls safely (like .join)
+                    if (expr.includes('.join')) {
+                        const varName = expr.split('.')[0];
+                        if (window[varName] && Array.isArray(window[varName])) {
+                            return window[varName].join(', ');
+                        }
+                    }
+
+                    return '';
                 } catch (e) {
-                    console.error(`Error evaluating template expression ${expr}:`, e);
+                    console.error(`Error processing template expression ${expr}:`, e);
                     return '';
                 }
             });
@@ -1006,23 +1118,58 @@ function extractSkillProficiencies(data) {
     return proficiencies;
 }
 
+// Extract spell tradition proficiencies
+function extractSpellTraditions(data) {
+    const traditions = [];
+    const proficiencies = {};
+
+    // Check each tradition
+    const traditionMap = {
+        'arcane': 'Arcane',
+        'divine': 'Divine',
+        'occult': 'Occult',
+        'primal': 'Primal'
+    };
+
+    // For each tradition, check if character has proficiency
+    for (const [key, name] of Object.entries(traditionMap)) {
+        const profKey = 'casting' + name;
+        const profValue = getNumeric(data.build?.proficiencies?.[profKey]);
+
+        // Only include traditions where proficiency > 0
+        if (profValue > 0) {
+            traditions.push(name);
+            proficiencies[key.toLowerCase()] = getProficiencyLevel(profValue);
+        }
+    }
+
+    return { traditions, proficiencies };
+}
+
 // Preprocess character data to extract all needed values
 function preprocessCharacterData(data) {
-    // Extract skills and proficiencies 
+    // Get success flag from the data
+    const success = data.success === true;
+
+    // If not successful, return the data as is
+    if (!success) return data;
+
+    // Extract skills and proficiencies
     const { skills, skillProficiencies } = extractSkills(data);
+
+    // Extract spell traditions
+    const { traditions, proficiencies: traditionProficiencies } = extractSpellTraditions(data);
 
     // Create the extracted data object
     const extracted = {
         archetypes: extractArchetypes(data),
         healingAbilities: extractHealingAbilities(data),
-        skills: skills,  // Now this is the actual skills object
+        skills: skills,
         skillProficiencies: skillProficiencies,
-        defenses: extractDefenseValues(data)
+        defenses: extractDefenseValues(data),
+        magicTraditions: traditions,
+        traditionProficiencies: traditionProficiencies
     };
-
-    // Debug: Log the extracted skills to verify calculation
-    console.log("Extracted Skills:", extracted.skills);
-    console.log("Extracted Proficiencies:", extracted.skillProficiencies);
 
     // Return the processed data
     return {

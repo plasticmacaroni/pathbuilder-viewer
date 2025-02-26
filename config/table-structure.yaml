@@ -32,17 +32,15 @@ sections:
         jsonPath: build.keyability
         highestValue: false
         displayType: pill
-
-  - id: healing
-    title: Healing & Sustain
-    icon: heart-pulse
-    columns:
-      - id: healingAbilities
-        title: Abilities
-        icon: kit-medical
-        jsonPath: extracted.healingAbilities
+      - id: spellTraditions
+        title: Magic
+        icon: book-sparkles
+        fullTitle: Spell Traditions
+        jsonPath: extracted.magicTraditions
+        proficiencyPath: extracted.traditionProficiencies
+        showProficiency: true
+        displayType: proficiency-pill-list
         highestValue: false
-        displayType: pill-list
 
   - id: ability
     title: Ability Scores
@@ -256,3 +254,14 @@ sections:
         showProficiency: true
         displayType: proficiency-badge
         highestValue: true
+
+  - id: healing
+    title: Healing & Sustain
+    icon: heart-pulse
+    columns:
+      - id: healingAbilities
+        title: Abilities
+        icon: kit-medical
+        jsonPath: extracted.healingAbilities
+        highestValue: false
+        displayType: pill-list
