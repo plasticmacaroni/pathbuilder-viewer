@@ -1,0 +1,80 @@
+title: Not All Magic Shows Up On Your Radar
+description: Checks if at least one character has the Detect Magic cantrip
+checkFunction: |
+  function() {
+    // If there are no characters, don't show a warning
+    if (characters.length === 0) return true;
+    
+    // Check if any character has the Detect Magic cantrip
+    for (const character of characters) {
+      // Skip if missing required data
+      if (!character.build) continue;
+      
+      // Check in build.spells if it exists
+      if (character.build.spells) {
+        // Check cantrips array specifically
+        if (character.build.spells.cantrips && Array.isArray(character.build.spells.cantrips)) {
+          for (const spell of character.build.spells.cantrips) {
+            // Handle different possible formats
+            const spellName = typeof spell === 'string' ? spell : (spell.name || spell[0] || '');
+            if (spellName.toLowerCase().includes('detect magic')) {
+              return true;
+            }
+          }
+        }
+        
+        // Also check all other spell levels in case it's not stored as a cantrip
+        for (const level in character.build.spells) {
+          if (level === 'cantrips') continue; // Already checked above
+          
+          const spells = character.build.spells[level];
+          if (Array.isArray(spells)) {
+            for (const spell of spells) {
+              const spellName = typeof spell === 'string' ? spell : (spell.name || spell[0] || '');
+              if (spellName.toLowerCase().includes('detect magic')) {
+                return true;
+              }
+            }
+          }
+        }
+      }
+      
+      // Check class features specifically for "Arcane Sense" or similar abilities
+      if (character.build.classFeats) {
+        for (const feat of character.build.classFeats) {
+          const featName = typeof feat === 'string' ? feat : (feat.name || feat[0] || '');
+          if (featName.toLowerCase().includes('detect magic') || 
+              featName.toLowerCase().includes('arcane sense')) {
+            return true;
+          }
+        }
+      }
+      
+      // Check ancestry feats as well
+      if (character.build.ancestryFeats) {
+        for (const feat of character.build.ancestryFeats) {
+          const featName = typeof feat === 'string' ? feat : (feat.name || feat[0] || '');
+          if (featName.toLowerCase().includes('detect magic') || 
+              featName.toLowerCase().includes('arcane sense')) {
+            return true;
+          }
+        }
+      }
+      
+      // Check general feats too
+      if (character.build.generalFeats) {
+        for (const feat of character.build.generalFeats) {
+          const featName = typeof feat === 'string' ? feat : (feat.name || feat[0] || '');
+          if (featName.toLowerCase().includes('detect magic') || 
+              featName.toLowerCase().includes('arcane sense')) {
+            return true;
+          }
+        }
+      }
+    }
+    
+    // No character has Detect Magic
+    return false;
+  }
+successMessage: At least one character can cast Detect Magic to identify magical items and effects!
+failureMessage: No one in your party has Detect Magic! This cantrip is invaluable for identifying magical traps, items, and auras. Consider having a spellcaster learn this common cantrip.

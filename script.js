@@ -90,7 +90,9 @@ async function loadTenuousTips() {
         const tipFiles = [
             'tenuous-tips/bard-performance.yaml',
             'tenuous-tips/charisma-skills.yaml',
-            'tenuous-tips/thievery-tools.yaml'
+            'tenuous-tips/thievery-tools.yaml',
+            'tenuous-tips/detect-magic.yaml',
+            'tenuous-tips/dispel-magic.yaml',
             // Add more tip files here
         ];
 
