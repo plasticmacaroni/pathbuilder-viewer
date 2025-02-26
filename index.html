@@ -1,0 +1,598 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PF2e Character Comparison</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            color: #e0e0e0;
+            margin: 0;
+            padding: 20px;
+            background-color: #121212;
+        }
+        .container {
+            max-width: 100%;
+            margin: 0 auto;
+            background-color: #1e1e1e;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.3);
+        }
+        h1 {
+            text-align: center;
+            color: #ffa270;
+            margin-bottom: 20px;
+        }
+        .import-section {
+            display: flex;
+            justify-content: center;
+            margin-bottom: 20px;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+        button {
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+        #importButton, #clipboardButton {
+            background-color: #b27850;
+            color: white;
+        }
+        #importButton:hover, #clipboardButton:hover {
+            background-color: #8e5c3b;
+        }
+        #clearButton {
+            background-color: #c03f3f;
+            color: white;
+        }
+        #clearButton:hover {
+            background-color: #a22f2f;
+        }
+        input[type="file"] {
+            background-color: #2a2a2a;
+            color: #e0e0e0;
+            padding: 5px;
+            border-radius: 4px;
+        }
+        .table-container {
+            overflow-x: auto;
+        }
+        table {
+            border-collapse: collapse;
+            width: 100%;
+            min-width: 1000px;
+        }
+        th, td {
+            padding: 8px;
+            text-align: center;
+            border: 1px solid #444;
+        }
+        th {
+            background-color: #8e5c3b;
+            color: white;
+            position: sticky;
+            top: 0;
+        }
+        tr:nth-child(even) {
+            background-color: #2a2a2a;
+        }
+        tfoot tr {
+            background-color: #3a3a3a;
+            font-weight: bold;
+        }
+        .highest {
+            background-color: #3a5a40;
+            color: #e0e0e0;
+            font-weight: bold;
+        }
+        .character-name {
+            font-weight: bold;
+            text-align: left;
+        }
+        .info-group {
+            background-color: #2d2d2d;
+            border-right: 2px solid #555;
+        }
+        .ability-group {
+            background-color: #253444;
+            border-right: 2px solid #555;
+        }
+        .defense-group {
+            background-color: #3d2e2a;
+            border-right: 2px solid #555;
+        }
+        .skill-group {
+            background-color: #2e382e;
+        }
+        .group-header {
+            background-color: #444;
+            color: white;
+        }
+        .no-characters {
+            text-align: center;
+            padding: 20px;
+            font-style: italic;
+            color: #888;
+        }
+        #statusMessage {
+            text-align: center;
+            padding: 10px;
+            margin-top: 10px;
+            border-radius: 4px;
+        }
+        .success {
+            background-color: #3a5a40;
+            color: white;
+        }
+        .error {
+            background-color: #c03f3f;
+            color: white;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>PF2e Character Comparison</h1>
+        <div class="import-section">
+            <input type="file" id="jsonFileInput" accept=".json,.txt">
+            <button id="importButton">Import from File</button>
+            <button id="clipboardButton">Import from Clipboard</button>
+            <button id="clearButton">Clear All</button>
+        </div>
+        <div id="statusMessage" style="display: none;"></div>
+        <div class="table-container">
+            <table id="characterTable">
+                <thead>
+                    <tr>
+                        <th class="info-group" colspan="4">Character Info</th>
+                        <th class="ability-group" colspan="6">Ability Scores</th>
+                        <th class="defense-group" colspan="4">Defenses</th>
+                        <th class="skill-group" colspan="16">Skills</th>
+                    </tr>
+                    <tr>
+                        <th class="info-group">Name</th>
+                        <th class="info-group">Class</th>
+                        <th class="info-group">Archetypes</th>
+                        <th class="info-group">Level</th>
+                        
+                        <th class="ability-group">STR</th>
+                        <th class="ability-group">DEX</th>
+                        <th class="ability-group">CON</th>
+                        <th class="ability-group">INT</th>
+                        <th class="ability-group">WIS</th>
+                        <th class="ability-group">CHA</th>
+                        
+                        <th class="defense-group">AC</th>
+                        <th class="defense-group">Fort</th>
+                        <th class="defense-group">Ref</th>
+                        <th class="defense-group">Will</th>
+                        
+                        <th class="skill-group">Acro</th>
+                        <th class="skill-group">Arca</th>
+                        <th class="skill-group">Athl</th>
+                        <th class="skill-group">Craf</th>
+                        <th class="skill-group">Dece</th>
+                        <th class="skill-group">Dipl</th>
+                        <th class="skill-group">Inti</th>
+                        <th class="skill-group">Medi</th>
+                        <th class="skill-group">Natu</th>
+                        <th class="skill-group">Occu</th>
+                        <th class="skill-group">Perf</th>
+                        <th class="skill-group">Reli</th>
+                        <th class="skill-group">Soci</th>
+                        <th class="skill-group">Stea</th>
+                        <th class="skill-group">Surv</th>
+                        <th class="skill-group">Thie</th>
+                    </tr>
+                </thead>
+                <tbody id="characterRows">
+                    <tr>
+                        <td colspan="30" class="no-characters">No characters imported yet</td>
+                    </tr>
+                </tbody>
+                <tfoot>
+                    <tr id="highestValues">
+                        <td colspan="4" class="info-group">Highest Values</td>
+                        <td class="ability-group">-</td>
+                        <td class="ability-group">-</td>
+                        <td class="ability-group">-</td>
+                        <td class="ability-group">-</td>
+                        <td class="ability-group">-</td>
+                        <td class="ability-group">-</td>
+                        <td class="defense-group">-</td>
+                        <td class="defense-group">-</td>
+                        <td class="defense-group">-</td>
+                        <td class="defense-group">-</td>
+                        <td class="skill-group">-</td>
+                        <td class="skill-group">-</td>
+                        <td class="skill-group">-</td>
+                        <td class="skill-group">-</td>
+                        <td class="skill-group">-</td>
+                        <td class="skill-group">-</td>
+                        <td class="skill-group">-</td>
+                        <td class="skill-group">-</td>
+                        <td class="skill-group">-</td>
+                        <td class="skill-group">-</td>
+                        <td class="skill-group">-</td>
+                        <td class="skill-group">-</td>
+                        <td class="skill-group">-</td>
+                        <td class="skill-group">-</td>
+                        <td class="skill-group">-</td>
+                        <td class="skill-group">-</td>
+                    </tr>
+                </tfoot>
+            </table>
+        </div>
+    </div>
+    
+    <script>
+        // Global variables
+        let characters = [];
+        const skillMap = {
+            'acrobatics': 'Acro',
+            'arcana': 'Arca',
+            'athletics': 'Athl',
+            'crafting': 'Craf',
+            'deception': 'Dece',
+            'diplomacy': 'Dipl',
+            'intimidation': 'Inti',
+            'medicine': 'Medi',
+            'nature': 'Natu',
+            'occultism': 'Occu',
+            'performance': 'Perf',
+            'religion': 'Reli',
+            'society': 'Soci',
+            'stealth': 'Stea',
+            'survival': 'Surv',
+            'thievery': 'Thie'
+        };
+
+        // Function to show status message
+        function showStatusMessage(message, isError = false) {
+            const statusDiv = document.getElementById('statusMessage');
+            statusDiv.textContent = message;
+            statusDiv.className = isError ? 'error' : 'success';
+            statusDiv.style.display = 'block';
+            
+            // Hide after 3 seconds
+            setTimeout(() => {
+                statusDiv.style.display = 'none';
+            }, 3000);
+        }
+
+        // Function to process JSON data
+        function processJsonData(jsonText) {
+            try {
+                const jsonData = JSON.parse(jsonText);
+                
+                // Check if this is valid PF2e character data
+                if (!jsonData.build) {
+                    showStatusMessage('Invalid PF2e character data. Make sure your JSON contains character build information.', true);
+                    return false;
+                }
+                
+                // Extract character data
+                const characterData = extractCharacterData(jsonData);
+                
+                // Add character to our list
+                characters.push(characterData);
+                
+                // Add row to the table
+                addCharacterRow(characterData);
+                
+                // Update highest values
+                updateHighestValues();
+                
+                showStatusMessage(`Character "${characterData.name}" imported successfully!`);
+                return true;
+            } catch (error) {
+                showStatusMessage('Error parsing JSON: ' + error.message, true);
+                return false;
+            }
+        }
+
+        // Function to extract character data from JSON
+        function extractCharacterData(data) {
+            // Get numeric values or handle if not present
+            function getNumeric(value, defaultValue = 0) {
+                return (value !== undefined && value !== null) ? Number(value) : defaultValue;
+            }
+
+            // Calculate total skill value by adding proficiency level plus ability modifier
+            function calculateSkillValue(profValue, abilityScore) {
+                const abilityMod = Math.floor((abilityScore - 10) / 2);
+                return getNumeric(profValue) + abilityMod;
+            }
+
+            // Extract archetypes from feats
+            const archetypes = [];
+            if (data.build?.feats) {
+                data.build.feats.forEach(feat => {
+                    // Check for Dedication feats which indicate archetypes
+                    if (feat && feat[0] && feat[0].includes('Dedication')) {
+                        // Extract the archetype name (remove " Dedication" suffix)
+                        const archetypeName = feat[0].replace(' Dedication', '');
+                        if (!archetypes.includes(archetypeName)) {
+                            archetypes.push(archetypeName);
+                        }
+                    }
+                });
+            }
+
+            // Create the character data object
+            const characterData = {
+                name: data.build?.name || 'Unknown',
+                class: data.build?.class || 'Unknown',
+                archetypes: archetypes,
+                level: getNumeric(data.build?.level, 1),
+                
+                // Ability scores
+                abilities: {
+                    str: getNumeric(data.build?.abilities?.str),
+                    dex: getNumeric(data.build?.abilities?.dex),
+                    con: getNumeric(data.build?.abilities?.con),
+                    int: getNumeric(data.build?.abilities?.int),
+                    wis: getNumeric(data.build?.abilities?.wis),
+                    cha: getNumeric(data.build?.abilities?.cha)
+                },
+                
+                // Defenses
+                defenses: {
+                    ac: getNumeric(data.build?.acTotal?.acTotal),
+                    fort: 10 + getNumeric(data.build?.proficiencies?.fortitude),
+                    ref: 10 + getNumeric(data.build?.proficiencies?.reflex),
+                    will: 10 + getNumeric(data.build?.proficiencies?.will)
+                },
+                
+                // Skills
+                skills: {}
+            };
+
+            // Process all skills
+            for (const [skill, abbrev] of Object.entries(skillMap)) {
+                const profValue = getNumeric(data.build?.proficiencies?.[skill]);
+                
+                // Determine which ability score to use for this skill
+                let abilityScore;
+                switch(skill) {
+                    case 'athletics':
+                        abilityScore = characterData.abilities.str;
+                        break;
+                    case 'acrobatics':
+                    case 'stealth':
+                    case 'thievery':
+                        abilityScore = characterData.abilities.dex;
+                        break;
+                    case 'arcana':
+                    case 'crafting':
+                    case 'society':
+                    case 'occultism':
+                        abilityScore = characterData.abilities.int;
+                        break;
+                    case 'medicine':
+                    case 'nature':
+                    case 'religion':
+                    case 'survival':
+                        abilityScore = characterData.abilities.wis;
+                        break;
+                    case 'deception':
+                    case 'diplomacy':
+                    case 'intimidation':
+                    case 'performance':
+                        abilityScore = characterData.abilities.cha;
+                        break;
+                    default:
+                        abilityScore = 10; // Fallback
+                }
+                
+                // Add item bonus if present
+                let itemBonus = 0;
+                if (data.build?.mods && data.build.mods[skill.charAt(0).toUpperCase() + skill.slice(1)]) {
+                    itemBonus = getNumeric(data.build.mods[skill.charAt(0).toUpperCase() + skill.slice(1)]["Item Bonus"]);
+                }
+                
+                // Calculate total skill value
+                characterData.skills[skill] = calculateSkillValue(profValue, abilityScore) + itemBonus;
+            }
+
+            return characterData;
+        }
+
+        // Function to add a character row to the table
+        function addCharacterRow(character) {
+            const tbody = document.getElementById('characterRows');
+            
+            // Clear "No characters" message if it exists
+            if (document.querySelector('.no-characters')) {
+                tbody.innerHTML = '';
+            }
+            
+            const row = document.createElement('tr');
+            
+            // Character Info
+            // Format archetypes for display
+            const archetypesDisplay = character.archetypes.length > 0 
+                ? character.archetypes.join(', ') 
+                : '-';
+                
+            row.innerHTML = `
+                <td class="character-name info-group">${character.name}</td>
+                <td class="info-group">${character.class}</td>
+                <td class="info-group">${archetypesDisplay}</td>
+                <td class="info-group">${character.level}</td>
+                
+                <td class="ability-group">${character.abilities.str}</td>
+                <td class="ability-group">${character.abilities.dex}</td>
+                <td class="ability-group">${character.abilities.con}</td>
+                <td class="ability-group">${character.abilities.int}</td>
+                <td class="ability-group">${character.abilities.wis}</td>
+                <td class="ability-group">${character.abilities.cha}</td>
+                
+                <td class="defense-group">${character.defenses.ac}</td>
+                <td class="defense-group">${character.defenses.fort}</td>
+                <td class="defense-group">${character.defenses.ref}</td>
+                <td class="defense-group">${character.defenses.will}</td>
+            `;
+            
+            // Skills
+            for (const skill of Object.keys(skillMap)) {
+                row.innerHTML += `<td class="skill-group">${character.skills[skill]}</td>`;
+            }
+            
+            tbody.appendChild(row);
+        }
+
+        // Function to update the highest values row
+        function updateHighestValues() {
+            if (characters.length === 0) {
+                return;
+            }
+
+            const highestRow = document.getElementById('highestValues');
+            const cells = highestRow.cells;
+            
+            // Skip the first cell (the "Highest Values" header)
+            
+            // The first cell is a colspan=3, so we start at index 1
+            // Abilities (starting at index 1)
+            cells[1].textContent = Math.max(...characters.map(c => c.abilities.str));
+            cells[2].textContent = Math.max(...characters.map(c => c.abilities.dex));
+            cells[3].textContent = Math.max(...characters.map(c => c.abilities.con));
+            cells[4].textContent = Math.max(...characters.map(c => c.abilities.int));
+            cells[5].textContent = Math.max(...characters.map(c => c.abilities.wis));
+            cells[6].textContent = Math.max(...characters.map(c => c.abilities.cha));
+            
+            // Defenses (starting at index 7)
+            cells[7].textContent = Math.max(...characters.map(c => c.defenses.ac));
+            cells[8].textContent = Math.max(...characters.map(c => c.defenses.fort));
+            cells[9].textContent = Math.max(...characters.map(c => c.defenses.ref));
+            cells[10].textContent = Math.max(...characters.map(c => c.defenses.will));
+            
+            // Skills (starting at index 11)
+            let cellIndex = 11;
+            for (const skill of Object.keys(skillMap)) {
+                cells[cellIndex].textContent = Math.max(...characters.map(c => c.skills[skill]));
+                cellIndex++;
+            }
+
+            // Highlight highest values in the table
+            highlightHighestValues();
+        }
+
+        // Function to highlight the highest values in each column
+        function highlightHighestValues() {
+            const table = document.getElementById('characterTable');
+            const tbody = document.getElementById('characterRows');
+            const rows = tbody.rows;
+            
+            if (rows.length === 0) return;
+            
+            // Start from column 3 (STR) to the end
+            for (let col = 3; col < table.rows[1].cells.length; col++) {
+                let maxValue = -Infinity;
+                let maxRows = [];
+                
+                // Find the maximum value in this column
+                for (let row = 0; row < rows.length; row++) {
+                    const cellValue = parseInt(rows[row].cells[col].textContent);
+                    
+                    if (cellValue > maxValue) {
+                        maxValue = cellValue;
+                        maxRows = [row];
+                    } else if (cellValue === maxValue) {
+                        maxRows.push(row);
+                    }
+                }
+                
+                // Highlight the cells with the maximum value
+                for (let row = 0; row < rows.length; row++) {
+                    if (maxRows.includes(row)) {
+                        rows[row].cells[col].classList.add('highest');
+                    } else {
+                        rows[row].cells[col].classList.remove('highest');
+                    }
+                }
+            }
+        }
+
+        // Event Listener for Import Button (File)
+        document.getElementById('importButton').addEventListener('click', function() {
+            const fileInput = document.getElementById('jsonFileInput');
+            const file = fileInput.files[0];
+            
+            if (!file) {
+                showStatusMessage('Please select a file first', true);
+                return;
+            }
+            
+            const reader = new FileReader();
+            
+            reader.onload = function(e) {
+                const success = processJsonData(e.target.result);
+                if (success) {
+                    // Reset file input
+                    fileInput.value = '';
+                }
+            };
+            
+            reader.readAsText(file);
+        });
+
+        // Event Listener for Import from Clipboard Button
+        document.getElementById('clipboardButton').addEventListener('click', async function() {
+            try {
+                const clipboardText = await navigator.clipboard.readText();
+                
+                if (!clipboardText) {
+                    showStatusMessage('Clipboard is empty', true);
+                    return;
+                }
+                
+                const success = processJsonData(clipboardText);
+                
+            } catch (error) {
+                showStatusMessage('Error accessing clipboard: ' + error.message, true);
+            }
+        });
+
+        // Event Listener for Clear Button
+        document.getElementById('clearButton').addEventListener('click', function() {
+            // Clear the characters array
+            characters = [];
+            
+            // Clear the table body
+            const tbody = document.getElementById('characterRows');
+            tbody.innerHTML = '<tr><td colspan="30" class="no-characters">No characters imported yet</td></tr>';
+            
+            // Reset highest values row
+            const highestRow = document.getElementById('highestValues');
+            const cells = highestRow.cells;
+            
+            for (let i = 3; i < cells.length; i++) {
+                cells[i].textContent = '-';
+            }
+            
+            showStatusMessage('All characters cleared');
+        });
+        
+        // Initialize with example data
+        window.addEventListener('DOMContentLoaded', () => {
+            // Check if we have any character data in the paste.txt
+            try {
+                const jsonString = document.querySelector('.document_content')?.textContent;
+                if (jsonString) {
+                    processJsonData(jsonString);
+                }
+            } catch (e) {
+                console.log('No initial data to load:', e);
+            }
+        });
+    </script>
+</body>
+</html>
