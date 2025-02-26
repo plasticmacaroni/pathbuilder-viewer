@@ -792,20 +792,33 @@ document.getElementById('clearButton').addEventListener('click', function () {
 });
 
 // Add these functions to handle character caching
-function saveCharactersToCache(characters) {
-    localStorage.setItem('pf2eCharacters', JSON.stringify(characters));
+function saveCharactersToCache(charactersToSave) {
+    try {
+        localStorage.setItem('pf2e-characters', JSON.stringify(charactersToSave));
+    } catch (error) {
+        console.error('Error saving characters to cache:', error);
+    }
 }
 
 function loadCharactersFromCache() {
-    const cachedCharacters = localStorage.getItem('pf2eCharacters');
-    if (cachedCharacters) {
-        return JSON.parse(cachedCharacters);
+    try {
+        const cachedCharacters = localStorage.getItem('pf2e-characters');
+        if (cachedCharacters) {
+            characters = JSON.parse(cachedCharacters);
+            console.log('Loaded characters from cache:', characters.length);
+        }
+    } catch (error) {
+        console.error('Error loading characters from cache:', error);
+        showStatusMessage('Error loading saved characters.', true);
     }
-    return [];
 }
 
 function clearCharacterCache() {
-    localStorage.removeItem('pf2eCharacters');
+    try {
+        localStorage.removeItem('pf2e-characters');
+    } catch (error) {
+        console.error('Error clearing character cache:', error);
+    }
 }
 
 // New function to render all characters from the characters array
@@ -838,49 +851,38 @@ function renderCharacters() {
 // Initialize the application
 async function init() {
     try {
-        // Load table structure first
-        const tableStructure = await loadTableStructure();
+        // Load the table structure from YAML
+        const response = await fetch('config/table-structure.yaml');
+        const yamlText = await response.text();
+        const tableStructure = jsyaml.load(yamlText);
 
-        if (!tableStructure) {
-            console.error('Failed to load table structure');
-            return;
-        }
-
-        // Store the table structure for later use
+        // Store the table structure globally for later use
         window.tableStructure = tableStructure;
 
-        // Initialize the table structure
+        // Initialize the table with the loaded structure
         initializeTableStructure(tableStructure);
 
-        // Update the global skill map
-        updateGlobalSkillMap();
-
-        // Load warnings
-        await loadWarnings();
-
-        // Load tenuous tips
-        await loadTenuousTips();
+        // Load warnings, healing abilities, and tenuous tips
+        await Promise.all([
+            loadWarnings(),
+            loadTenuousTips()
+        ]);
 
         // Load characters from cache
-        characters = loadCharactersFromCache();
+        loadCharactersFromCache();
 
-        // Render the characters
+        // Render characters if any were loaded
         renderCharacters();
 
-        // Update party warnings
-        updatePartyWarnings();
+        // Update global skill map
+        updateGlobalSkillMap();
 
-        // Check for data in paste.txt
-        try {
-            const jsonString = document.querySelector('.document_content')?.textContent;
-            if (jsonString) {
-                processJsonData(jsonString);
-            }
-        } catch (e) {
-            console.log('No initial data to load:', e);
-        }
+        // Initialize dropdowns, event listeners, etc.
+        initializeUI();
+
     } catch (error) {
-        console.error('Error during initialization:', error);
+        console.error('Error loading table structure:', error);
+        showStatusMessage('Error initializing application. Please check console for details.', 'error');
     }
 }
 
@@ -1010,8 +1012,8 @@ function generateTableHeader(tableStructure) {
             const columnHeader = document.createElement('th');
             columnHeader.className = `${section.id}-group`;
 
-            // Set column title with icon if specified, but only include the icon once
-            if (column.icon && !column.noIcon) {
+            // Set column title with icon if specified
+            if (column.icon) {
                 columnHeader.innerHTML = `<i class="fas fa-${column.icon}"></i> ${column.title}`;
             } else {
                 columnHeader.textContent = column.title;
