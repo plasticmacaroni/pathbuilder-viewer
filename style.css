@@ -34,16 +34,19 @@ body {
     margin: 0;
     padding: 0;
     background-color: #2d1e12;
-    background-image: url('https://i.imgur.com/87hBRU0.jpg');
-    background-size: cover;
+    background-image: linear-gradient(to bottom, #3a291c, #241911);
     background-attachment: fixed;
-    background-position: center;
 }
 
 .parchment {
     background-color: var(--parchment-color);
-    background-image: url('https://i.imgur.com/qIXTI7k.jpg');
-    background-size: cover;
+    background-image:
+        linear-gradient(rgba(245, 231, 203, 0.6), rgba(232, 213, 170, 0.8)),
+        repeating-linear-gradient(45deg,
+            rgba(222, 184, 135, 0.1),
+            rgba(222, 184, 135, 0.1) 2px,
+            transparent 2px,
+            transparent 4px);
     box-shadow: 0 0 15px rgba(0, 0, 0, 0.8);
     position: relative;
     margin: 20px;
@@ -137,11 +140,15 @@ h1 {
     left: 0;
     right: 0;
     bottom: 0;
-    background-image: url('https://i.imgur.com/uE3qtDC.png');
-    background-size: contain;
+    background-image:
+        radial-gradient(circle at center,
+            rgba(139, 110, 77, 0.15) 0,
+            rgba(139, 110, 77, 0.05) 60%,
+            transparent 70%);
+    background-size: 200px 200px;
     background-position: center;
     background-repeat: no-repeat;
-    opacity: 0.06;
+    opacity: 0.2;
     z-index: -1;
 }
 
@@ -301,6 +308,8 @@ tfoot tr {
         0 0 8px rgba(255, 215, 0, 0.9),
         0 0 12px rgba(255, 215, 0, 0.5),
         1px 1px 2px rgba(0, 0, 0, 0.5);
+    font-size: 1.05em;
+    letter-spacing: 0.02em;
 }
 
 /* Ensure the gold color overrides all column types */
@@ -313,12 +322,6 @@ tfoot tr {
 td.highest,
 td .highest {
     color: #FFD700 !important;
-}
-
-/* Additional styling to make sure numeric values stand out */
-.highest {
-    font-size: 1.05em;
-    letter-spacing: 0.02em;
 }
 
 .character-name {
