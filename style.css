@@ -103,6 +103,8 @@ tfoot tr {
 .healing-group {
     background-color: #304030;
     border-right: 2px solid #555;
+    /* Make the healing column a bit wider to accommodate more pills */
+    min-width: 200px;
 }
 .ability-group {
     background-color: #253444;

@@ -94,16 +94,73 @@ function extractCharacterData(data) {
     // Extract healing feats and abilities
     const healingAbilities = [];
     
-    // Check for Battle Medicine feat
+    // Check for Battle Medicine feat and other healing abilities
     let hasBattleMedicine = false;
+    
+    // List of healing and sustain abilities to check for
+    const healingFeats = [
+        "Healing Font", "Lay on Hands", "Goodberry", "Chirurgeon Field Discovery", 
+        "Life Link", "Soothing Performance", "Hymn of Healing", "Wholeness of Body", 
+        "Heal Companion", "Life Boost", "Vital Beacon", "Healer's Blessing", 
+        "Rebuke Death", "Field Medic Dedication", "Blessed One Dedication", 
+        "Medic Dedication", "Doctor's Visitation", "Resuscitate", "Healing Hands", 
+        "Expanded Domain Initiate", "Sentinel Dedication", "Rapid Recovery", 
+        "Restoration Domain Spell", "Battle Medicine", "Risky Surgery", 
+        "Godless Healing", "Mortal Healing", "Robust Recovery", "Holistic Care", 
+        "Stitch Flesh", "Triage", "Swift Triage", "Incredible Medic", "Legendary Medic", 
+        "Toughness", "Diehard", "Fast Recovery", "Trick Magic Item", "Soothing Ballad", 
+        "Field of Life", "Sanguine Mist", "Soothe", "Generous Fate", "Sun's Blessing", 
+        "Rapid Response", "Fresh Produce", "Dash of Herbs", "Continual Recovery", "Ward Medic"
+    ];
+    
     if (data.build?.feats) {
         data.build.feats.forEach(feat => {
-            if (feat && feat[0] === "Battle Medicine") {
-                hasBattleMedicine = true;
-                healingAbilities.push("Battle Medicine");
+            if (feat && feat.length >= 1) {
+                // Check regular healing feats
+                if (healingFeats.includes(feat[0])) {
+                    healingAbilities.push(feat[0]);
+                    
+                    // Check specifically for Battle Medicine for the warning
+                    if (feat[0] === "Battle Medicine") {
+                        hasBattleMedicine = true;
+                    }
+                }
+                
+                // Special check for Assurance (Medicine)
+                if (feat[0] === "Assurance" && feat.length >= 2 && feat[1] === "Medicine") {
+                    healingAbilities.push("Assurance (Medicine)");
+                }
+                
+                // Check for Forensic Medicine Methodology (special case)
+                if (feat[0].includes("Forensic Medicine")) {
+                    healingAbilities.push("Forensic Medicine");
+                }
             }
-            // Can add more healing feat checks here in the future
         });
+    }
+    
+    // Check for focus spells related to healing
+    if (data.build?.focus) {
+        // Loop through all focus spell categories
+        for (const category in data.build.focus) {
+            for (const subcategory in data.build.focus[category]) {
+                const focusSpells = data.build.focus[category][subcategory]?.focusSpells || [];
+                
+                // Check each focus spell
+                focusSpells.forEach(spell => {
+                    const healingSpells = ["Lay on Hands", "Life Link", "Goodberry", 
+                                          "Hymn of Healing", "Life Boost", "Healer's Blessing", 
+                                          "Vital Beacon", "Heal Companion", "Rebuke Death"];
+                    
+                    if (healingSpells.includes(spell)) {
+                        // Add if not already in the list
+                        if (!healingAbilities.includes(spell)) {
+                            healingAbilities.push(spell);
+                        }
+                    }
+                });
+            }
+        }
     }
 
     // Create the character data object
