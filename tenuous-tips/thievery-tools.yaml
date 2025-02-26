@@ -1,0 +1,70 @@
+title: Maybe Try Knocking?
+description: Checks if characters with Thievery proficiency have thieves' tools
+checkFunction: |
+  function() {
+    // If there are no characters, don't show a warning
+    if (characters.length === 0) return true;
+    
+    // Track if any character has thievery proficiency
+    let anyCharacterWithThievery = false;
+    let thieveryCharacterHasTools = false;
+    
+    for (const character of characters) {
+      // Check for thievery proficiency explicitly to ensure it's >= 2 (Trained in PF2e)
+      let hasThievery = false;
+      
+      // Check build.proficiencies path
+      if (character.proficiencies && character.proficiencies.thievery >= 2) {
+        hasThievery = true;
+      }
+      // Check extracted.skillProficiencies path
+      else if (character.extracted && 
+               character.extracted.skillProficiencies && 
+               character.extracted.skillProficiencies.thievery && 
+               character.extracted.skillProficiencies.thievery !== 'U') {
+        hasThievery = true;
+      }
+      // Check extracted.skills path (numeric value)
+      else if (character.extracted && 
+               character.extracted.skills && 
+               character.extracted.skills.thievery >= 2) {
+        hasThievery = true;
+      }
+      
+      if (hasThievery) {
+        anyCharacterWithThievery = true;
+        
+        // Check equipment for thieves' tools
+        if (character.equipment) {
+          for (const item of character.equipment) {
+            const itemName = String(item[0] || "").toLowerCase();
+            if (itemName.includes("thieve") && itemName.includes("tool")) {
+              thieveryCharacterHasTools = true;
+              break;
+            }
+          }
+        }
+        
+        // Also check in build.equipment if available
+        if (!thieveryCharacterHasTools && character.build && character.build.equipment) {
+          for (const item of character.build.equipment) {
+            const itemName = String(item[0] || "").toLowerCase();
+            if (itemName.includes("thieve") && itemName.includes("tool")) {
+              thieveryCharacterHasTools = true;
+              break;
+            }
+          }
+        }
+      }
+    }
+    
+    // Only show a warning if there's a character with thievery proficiency but without tools
+    // If no one has thievery proficiency, don't show any warning
+    if (!anyCharacterWithThievery) {
+      return true;
+    }
+    
+    return thieveryCharacterHasTools;
+  }
+successMessage: Your party is well-equipped for locks and traps.
+failureMessage: A character with Thievery proficiency needs thieves' tools! Without them, they have a -2 penalty on Pick Lock actions and some locks can't be attempted at all.

@@ -44,6 +44,7 @@ async function loadWarnings() {
             'warnings/skill-coverage.yaml',
             'warnings/level-consistency.yaml',
             'warnings/bard-performance.yaml',
+            'warnings/knowledge-skills.yaml',
             // Add more warning files here
         ];
 
@@ -88,6 +89,8 @@ async function loadTenuousTips() {
         // List of tip files to load
         const tipFiles = [
             'tenuous-tips/bard-performance.yaml',
+            'tenuous-tips/charisma-skills.yaml',
+            'tenuous-tips/thievery-tools.yaml'
             // Add more tip files here
         ];
 

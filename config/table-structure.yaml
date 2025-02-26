@@ -42,17 +42,6 @@ sections:
         displayType: proficiency-pill-list
         highestValue: false
 
-  - id: healing
-    title: Healing & Sustain
-    icon: heart-pulse
-    columns:
-      - id: healingAbilities
-        title: Abilities
-        icon: kit-medical
-        jsonPath: extracted.healingAbilities
-        highestValue: false
-        displayType: pill-list
-
   - id: ability
     title: Ability Scores
     icon: dumbbell
@@ -123,7 +112,7 @@ sections:
 
   - id: skills
     title: Skills
-    icon: graduation-cap
+    icon: book-open-reader
     columns:
       - id: acrobatics
         title: Acro
@@ -269,3 +258,14 @@ sections:
         showProficiency: true
         displayType: proficiency-badge
         highestValue: true
+
+  - id: healing
+    title: Healing & Sustain
+    icon: heart-pulse
+    columns:
+      - id: healingAbilities
+        title: Abilities
+        icon: kit-medical
+        jsonPath: extracted.healingAbilities
+        highestValue: false
+        displayType: pill-list
