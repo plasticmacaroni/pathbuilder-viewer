@@ -1,104 +1,155 @@
 # PF2e Character Comparison Tool
-(pathbuilder-viewer)
+(https://plasticmacaroni.github.io/pathbuilder-viewer/)[https://plasticmacaroni.github.io/pathbuilder-viewer/]
 
-## Overview
+A browser-based tool for comparing Pathfinder 2e character statistics, highlighting highest values, and providing party composition warnings.
 
-This tool allows Pathfinder 2e players to compare multiple character sheets side-by-side with a focus on numerical attributes. It's designed to help Game Masters and players identify the highest values across a party, optimize team composition, or simply compare different character builds.
+## Setup
+
+1. Download all three files (`index.html`, `style.css`, and `script.js`) to the same directory
+2. Open `index.html` in a modern web browser
+3. No server required - works completely in the browser
 
 ## Features
 
-- **Import JSON Character Data**: Load character sheets exported from Pathbuilder 2e or compatible tools
-- **Multiple Import Methods**: Import via file upload or directly from clipboard
-- **Dark Mode Interface**: Eye-friendly design for gaming sessions
-- **Highlight System**:
-  - Bright green highlighting for the highest value in the current view
-  - Darker green highlighting for values that match all-time highest values
-- **Summary Row**: Displays the highest values for each attribute across all imported characters
-- **Archetype Detection**: Automatically detects and displays character archetypes
+- **Character Import**: Load character data from JSON files or clipboard
+- **Stat Comparison**: View character stats side by side
+- **Visual Highlighting**: Golden text for highest values in each category
+- **Party Composition Warnings**: Automatic detection of potential party composition issues
+- **Responsive Design**: Dark mode interface that works on various devices
 
 ## How to Use
 
 ### Importing Characters
 
-1. **File Import**:
-   - Click "Import from File"
-   - Select a JSON file containing a PF2e character (from Pathbuilder or similar)
-   - The character will be added to the comparison table
-
-2. **Clipboard Import**:
-   - Copy JSON character data to your clipboard
-   - Click "Import from Clipboard"
-   - The character will be added to the comparison table
-
-3. **Clear All**:
-   - Click "Clear All" to remove all characters and reset the table
+1. **From File**: Click "Import from File" and select a PF2e character JSON file
+2. **From Clipboard**: Copy JSON data to clipboard and click "Import from Clipboard"
+3. **Clear All**: Remove all characters with the "Clear All" button
 
 ### Reading the Table
 
-- **Character Info**: Name, class, archetypes, and level
-- **Ability Scores**: STR, DEX, CON, INT, WIS, CHA
+- **Character Info**: Name, class (as pill), archetypes (as pills), and level
+- **Healing**: Displays healing-related abilities as color-coded pills
+- **Ability Scores**: STR, DEX, CON, INT, WIS, CHA values
 - **Defenses**: AC, Fortitude, Reflex, Will
-- **Skills**: All 16 core PF2e skills with abbreviated names
-- **Summary Row**: Shows the highest value for each column across all characters
+- **Skills**: Abbreviated skill bonuses
+- **Highest Values**: Bottom row shows the highest value for each column
+- **Highlighting**: Values in gold match the highest in their column
 
-### Understanding Highlighting
+### Party Composition Warnings
 
-- **Bright Green**: The highest value in the current view for that attribute
-- **Darker Green**: Values that match the highest recorded value (from the summary row)
-- Multiple cells may be highlighted if there are ties
+Warnings appear at the bottom of the page and are automatically updated when characters are added or removed:
 
-## Technical Details
+- **Green (✅)**: Indicates a successful check (party meets this requirement)
+- **Red (⚠️)**: Indicates a warning (party may have an issue)
 
-### Data Processing
+## Warning System
 
-The tool extracts the following information from character JSON data:
+The warning system checks for key party composition elements and provides feedback on potential gaps.
 
-1. **Basic Info**:
-   - Character name
-   - Class
-   - Level
-   - Archetypes (detected from Dedication feats)
+### Current Warnings
 
-2. **Ability Scores**: Direct values from the character build
+1. **Battle Medicine**: Checks if at least one character has the Battle Medicine feat
+2. **Skill Coverage**: Checks if at least one character has training in every skill
 
-3. **Defenses**:
-   - AC: Total AC from the character build
-   - Saves: 10 + proficiency bonus (following PF2e rules)
+### How Warnings Work
 
-4. **Skills**:
-   - Calculates total skill values by combining:
-     - Proficiency bonus
-     - Relevant ability modifier
-     - Item bonuses (if present)
+The warning system uses a modular approach:
 
-### Archetype Detection
+1. The `updatePartyWarnings()` function creates the warnings container
+2. Individual checks are run within this function 
+3. The `addWarning()` helper function creates the warning cards
+4. Each warning has:
+   - A title
+   - A description
+   - A success/failure state (determines color)
 
-Archetypes are automatically detected by scanning the character's feats for any containing "Dedication" in the name. The tool strips off the "Dedication" suffix and displays the archetype name.
+## Adding New Warnings
 
-### Limitations
+To add a new warning, follow these steps:
 
-- The tool currently works best with Pathbuilder 2e exports
-- Some custom or homebrew content may not parse correctly
-- Character data is stored in browser memory only and is not persisted between sessions
+### 1. Add a Detection Function (if needed)
 
-## Troubleshooting
+Create a function that returns a boolean indicating if the warning condition is met:
 
-### Import Issues
+```javascript
+// Example: Check if party has a frontline character (STR ≥ 18)
+function hasFrontlineCharacter() {
+    return characters.some(character => character.abilities.str >= 18);
+}
+```
 
-If you encounter problems importing character data:
+### 2. Add the Warning to updatePartyWarnings()
 
-1. **Check JSON Format**: Ensure the data is valid JSON from a PF2e character builder
-2. **Required Fields**: The JSON must contain a `build` object with character information
-3. **Browser Support**: Make sure you're using a modern browser with clipboard API support
+Add your new warning check inside the `updatePartyWarnings()` function in `script.js`:
 
-### Display Issues
+```javascript
+// Add this inside the updatePartyWarnings() function
 
-If the table doesn't display correctly:
+// Frontline Character warning
+addWarning(
+    warningsGrid,
+    'Frontline Character',
+    'Party should have at least one character with high Strength (18+) for frontline combat',
+    hasFrontlineCharacter()
+);
+```
 
-1. **Refresh the Page**: Sometimes a simple refresh can fix display glitches
-2. **Clear All**: Try clearing all characters and reimporting them
-3. **Browser Zoom**: Adjust your browser zoom level if the table is too wide
+### 3. Warning Parameters
 
-## Privacy Note
+When calling `addWarning()`, provide these parameters:
 
-All character data processing happens entirely in your browser. No data is sent to any server or stored permanently. Closing the browser tab will clear all character data.
+1. `container`: The DOM element to add the warning to (use `warningsGrid`)
+2. `title`: Short title for the warning (e.g., "Frontline Character")
+3. `description`: Detailed explanation of the warning
+4. `isSuccess`: Boolean - `true` shows green success, `false` shows red warning
+
+### Example: Adding a Healer Warning
+
+```javascript
+// 1. Add the detection function
+function hasHealer() {
+    return characters.some(character => 
+        character.skills.medicine >= 4 || // High medicine skill
+        character.class === "Cleric" ||   // Class-based healing
+        character.archetypes.includes("Cleric") // Archetype healing
+    );
+}
+
+// 2. Add to updatePartyWarnings()
+addWarning(
+    warningsGrid,
+    'Dedicated Healer',
+    'Party should have at least one character focused on healing',
+    hasHealer()
+);
+```
+
+## Extending the Tool
+
+### Adding Healing Ability Detection
+
+To detect more healing abilities, modify the `extractCharacterData()` function:
+
+```javascript
+// Find this section in extractCharacterData()
+if (data.build?.feats) {
+    data.build.feats.forEach(feat => {
+        if (feat && feat[0] === "Battle Medicine") {
+            hasBattleMedicine = true;
+            healingAbilities.push("Battle Medicine");
+        }
+        // Add new healing feat detection here
+        if (feat && feat[0] === "Treat Wounds") {
+            healingAbilities.push("Treat Wounds");
+        }
+    });
+}
+```
+
+### Customizing Appearance
+
+The tool uses a modular CSS structure. To customize the appearance:
+
+- Edit color schemes in `style.css`
+- Modify pill colors in the `.pill-class`, `.pill-archetype`, and `.pill-healing` classes
+- Adjust the warning card styles in the `.warning-card` section
