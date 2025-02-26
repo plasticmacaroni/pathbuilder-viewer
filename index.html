@@ -1,84 +1,4 @@
-        // Function to check if at least one character has Battle Medicine
-        function hasBattleMedicine() {
-            return characters.some(character => character.hasBattleMedicine);
-        }
-        
-        // Function to update party composition warnings
-        function updatePartyWarnings() {
-            // Create warnings container if it doesn't exist
-            let warningsContainer = document.getElementById('warningsContainer');
-            if (!warningsContainer) {
-                warningsContainer = document.createElement('div');
-                warningsContainer.id = 'warningsContainer';
-                warningsContainer.className = 'warnings-container';
-                
-                const title = document.createElement('h2');
-                title.className = 'warnings-title';
-                title.textContent = 'Party Composition Warnings';
-                warningsContainer.appendChild(title);
-                
-                const warningsGrid = document.createElement('div');
-                warningsGrid.id = 'warningsGrid';
-                warningsGrid.className = 'warnings-grid';
-                warningsContainer.appendChild(warningsGrid);
-                
-                document.querySelector('.container').appendChild(warningsContainer);
-            }
-            
-            const warningsGrid = document.getElementById('warningsGrid');
-            warningsGrid.innerHTML = ''; // Clear existing warnings
-            
-            // Don't show warnings if no characters
-            if (characters.length === 0) {
-                warningsGrid.innerHTML = '<div class="warning-card">No characters imported yet</div>';
-                return;
-            }
-            
-            // Battle Medicine warning
-            addWarning(
-                warningsGrid,
-                'Battle Medicine',
-                'At least one character should have Battle Medicine for emergency healing',
-                hasBattleMedicine()
-            );
-            
-            // Additional warnings can be added here
-        }
-        
-        // Helper function to add a warning card
-        function addWarning(container, title, description, isSuccess) {
-            const card = document.createElement('div');
-            card.className = `warning-card ${isSuccess ? 'success' : 'error'}`;
-            
-            const icon = document.createElement('div');
-            icon.className = 'warning-icon';
-            icon.innerHTML = isSuccess ? '✅' : '⚠️';
-            
-            const content = document.createElement('div');
-            content.className = 'warning-content';
-            
-            const titleElem = document.createElement('div');
-            titleElem.className = 'warning-title';
-            titleElem.textContent = title;
-            
-            const descElem = document.createElement('div');
-            descElem.className = 'warning-description';
-            descElem.textContent = description;
-            
-            content.appendChild(titleElem);
-            content.appendChild(descElem);
-            
-            card.appendChild(icon);
-            card.appendChild(content);
-            
-            container.appendChild(card);
-        }        tfoot tr {
-            background-color: #3a3a3a;
-            font-weight: bold;
-            position: sticky;
-            bottom: 0;
-            box-shadow: 0 -2px 3px rgba(0,0,0,0.3);
-        }<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -165,6 +85,9 @@
         tfoot tr {
             background-color: #3a3a3a;
             font-weight: bold;
+            position: sticky;
+            bottom: 0;
+            box-shadow: 0 -2px 3px rgba(0,0,0,0.3);
         }
         .highest {
             color: #ffd700;
@@ -177,6 +100,10 @@
         }
         .info-group {
             background-color: #2d2d2d;
+            border-right: 2px solid #555;
+        }
+        .healing-group {
+            background-color: #304030;
             border-right: 2px solid #555;
         }
         .ability-group {
@@ -213,6 +140,66 @@
         .error {
             background-color: #c03f3f;
             color: white;
+        }
+        .pill {
+            display: inline-block;
+            padding: 2px 8px;
+            margin: 2px;
+            border-radius: 12px;
+            font-size: 0.8rem;
+            font-weight: bold;
+            background-color: #607d8b;
+            color: white;
+        }
+        .warnings-container {
+            margin-top: 30px;
+            border-radius: 8px;
+            background-color: #2d2d2d;
+            padding: 15px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+        }
+        .warnings-title {
+            font-size: 1.4rem;
+            color: #ffa270;
+            margin-bottom: 15px;
+            border-bottom: 1px solid #444;
+            padding-bottom: 5px;
+        }
+        .warnings-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 15px;
+        }
+        .warning-card {
+            padding: 12px;
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            transition: all 0.3s ease;
+        }
+        .warning-card.success {
+            background-color: rgba(58, 90, 64, 0.5);
+            border: 1px solid #3a5a40;
+        }
+        .warning-card.error {
+            background-color: rgba(192, 63, 63, 0.5);
+            border: 1px solid #c03f3f;
+        }
+        .warning-icon {
+            font-size: 1.5rem;
+            margin-right: 12px;
+            flex-shrink: 0;
+        }
+        .warning-content {
+            flex-grow: 1;
+        }
+        .warning-title {
+            font-weight: bold;
+            margin-bottom: 4px;
+        }
+        .warning-description {
+            font-size: 0.9rem;
+            opacity: 0.9;
         }
     </style>
 </head>
@@ -516,7 +503,6 @@
             
             const row = document.createElement('tr');
             
-            // Character Info
             // Format archetypes for display
             const archetypesDisplay = character.archetypes.length > 0 
                 ? character.archetypes.join(', ') 
@@ -555,6 +541,107 @@
             tbody.appendChild(row);
         }
 
+        // Function to check if at least one character has Battle Medicine
+        function hasBattleMedicine() {
+            return characters.some(character => character.hasBattleMedicine);
+        }
+
+        // Function to update party composition warnings
+        function updatePartyWarnings() {
+            // Create warnings container if it doesn't exist
+            let warningsContainer = document.getElementById('warningsContainer');
+            if (!warningsContainer) {
+                warningsContainer = document.createElement('div');
+                warningsContainer.id = 'warningsContainer';
+                warningsContainer.className = 'warnings-container';
+                
+                const title = document.createElement('h2');
+                title.className = 'warnings-title';
+                title.textContent = 'Party Composition Warnings';
+                warningsContainer.appendChild(title);
+                
+                const warningsGrid = document.createElement('div');
+                warningsGrid.id = 'warningsGrid';
+                warningsGrid.className = 'warnings-grid';
+                warningsContainer.appendChild(warningsGrid);
+                
+                document.querySelector('.container').appendChild(warningsContainer);
+            }
+            
+            const warningsGrid = document.getElementById('warningsGrid');
+            warningsGrid.innerHTML = ''; // Clear existing warnings
+            
+            // Don't show warnings if no characters
+            if (characters.length === 0) {
+                warningsGrid.innerHTML = '<div class="warning-card">No characters imported yet</div>';
+                return;
+            }
+            
+            // Battle Medicine warning
+            addWarning(
+                warningsGrid,
+                'Battle Medicine',
+                'At least one character should have Battle Medicine for emergency healing',
+                hasBattleMedicine()
+            );
+            
+            // Zero Skills warning - directly check the Highest Values row
+            const highestRow = document.getElementById('highestValues');
+            const zeroSkills = [];
+            
+            // Skills start at index 12 in the highest values row
+            let skillIndex = 0;
+            for (let i = 12; i < highestRow.cells.length; i++) {
+                const value = parseInt(highestRow.cells[i].textContent);
+                if (value === 0 || isNaN(value)) { // Check for 0 or NaN (like "-")
+                    const skillKey = Object.keys(skillMap)[skillIndex];
+                    if (skillKey) { // Make sure we have a valid skill key
+                        const skillName = skillKey.charAt(0).toUpperCase() + skillKey.slice(1);
+                        zeroSkills.push(skillName);
+                    }
+                }
+                skillIndex++;
+            }
+            
+            if (zeroSkills.length > 0) {
+                addWarning(
+                    warningsGrid,
+                    'Missing Skills',
+                    `No character has training in: ${zeroSkills.join(', ')}`,
+                    false
+                );
+            }
+        }
+        
+        // Helper function to add a warning card
+        function addWarning(container, title, description, isSuccess) {
+            const card = document.createElement('div');
+            card.className = `warning-card ${isSuccess ? 'success' : 'error'}`;
+            
+            const icon = document.createElement('div');
+            icon.className = 'warning-icon';
+            icon.innerHTML = isSuccess ? '✅' : '⚠️';
+            
+            const content = document.createElement('div');
+            content.className = 'warning-content';
+            
+            const titleElem = document.createElement('div');
+            titleElem.className = 'warning-title';
+            titleElem.textContent = title;
+            
+            const descElem = document.createElement('div');
+            descElem.className = 'warning-description';
+            descElem.textContent = description;
+            
+            content.appendChild(titleElem);
+            content.appendChild(descElem);
+            
+            card.appendChild(icon);
+            card.appendChild(content);
+            
+            container.appendChild(card);
+        }
+
         // Function to update the highest values row
         function updateHighestValues() {
             if (characters.length === 0) {
@@ -564,25 +651,28 @@
             const highestRow = document.getElementById('highestValues');
             const cells = highestRow.cells;
             
-            // Skip the first cell (the "Highest Values" header)
+            // Skip the first cell (the "Highest Values" header with colspan=4)
+            // Cells start at index 1
             
-            // The first cell is a colspan=3, so we start at index 1
-            // Abilities (starting at index 1)
-            cells[1].textContent = Math.max(...characters.map(c => c.abilities.str));
-            cells[2].textContent = Math.max(...characters.map(c => c.abilities.dex));
-            cells[3].textContent = Math.max(...characters.map(c => c.abilities.con));
-            cells[4].textContent = Math.max(...characters.map(c => c.abilities.int));
-            cells[5].textContent = Math.max(...characters.map(c => c.abilities.wis));
-            cells[6].textContent = Math.max(...characters.map(c => c.abilities.cha));
+            // Skip the healing column (it doesn't have highest values)
+            // index 1 is healing
             
-            // Defenses (starting at index 7)
-            cells[7].textContent = Math.max(...characters.map(c => c.defenses.ac));
-            cells[8].textContent = Math.max(...characters.map(c => c.defenses.fort));
-            cells[9].textContent = Math.max(...characters.map(c => c.defenses.ref));
-            cells[10].textContent = Math.max(...characters.map(c => c.defenses.will));
+            // Abilities (starting at index 2)
+            cells[2].textContent = Math.max(...characters.map(c => c.abilities.str));
+            cells[3].textContent = Math.max(...characters.map(c => c.abilities.dex));
+            cells[4].textContent = Math.max(...characters.map(c => c.abilities.con));
+            cells[5].textContent = Math.max(...characters.map(c => c.abilities.int));
+            cells[6].textContent = Math.max(...characters.map(c => c.abilities.wis));
+            cells[7].textContent = Math.max(...characters.map(c => c.abilities.cha));
             
-            // Skills (starting at index 11)
-            let cellIndex = 11;
+            // Defenses (starting at index 8)
+            cells[8].textContent = Math.max(...characters.map(c => c.defenses.ac));
+            cells[9].textContent = Math.max(...characters.map(c => c.defenses.fort));
+            cells[10].textContent = Math.max(...characters.map(c => c.defenses.ref));
+            cells[11].textContent = Math.max(...characters.map(c => c.defenses.will));
+            
+            // Skills (starting at index 12)
+            let cellIndex = 12;
             for (const skill of Object.keys(skillMap)) {
                 cells[cellIndex].textContent = Math.max(...characters.map(c => c.skills[skill]));
                 cellIndex++;
@@ -590,6 +680,9 @@
 
             // Highlight highest values in the table
             highlightHighestValues();
+            
+            // Update party composition warnings
+            updatePartyWarnings();
         }
 
         // Function to highlight the highest values in each column
@@ -677,16 +770,16 @@
             const tbody = document.getElementById('characterRows');
             tbody.innerHTML = '<tr><td colspan="31" class="no-characters">No characters imported yet</td></tr>';
             
-            // Update warnings
-            updatePartyWarnings();
-            
             // Reset highest values row
             const highestRow = document.getElementById('highestValues');
             const cells = highestRow.cells;
             
-            for (let i = 3; i < cells.length; i++) {
+            for (let i = 1; i < cells.length; i++) {
                 cells[i].textContent = '-';
             }
+            
+            // Update warnings
+            updatePartyWarnings();
             
             showStatusMessage('All characters cleared');
         });
