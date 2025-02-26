@@ -245,16 +245,46 @@ input[type="file"] {
 }
 
 .table-container {
-    width: 100%;
-    overflow-x: auto;
+    position: relative;
+    border-radius: 10px;
+    padding: 8px;
+    background: linear-gradient(45deg,
+            var(--border-color) 0%,
+            var(--accent-tertiary) 30%,
+            var(--accent-secondary) 70%,
+            var(--border-color) 100%);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+    overflow: hidden;
     margin-bottom: 20px;
+}
+
+.table-container::before {
+    content: '';
+    position: absolute;
+    top: 4px;
+    left: 4px;
+    right: 4px;
+    bottom: 4px;
+    background:
+        repeating-linear-gradient(45deg,
+            var(--border-color) 0px,
+            var(--border-color) 2px,
+            transparent 2px,
+            transparent 8px);
+    opacity: 0.2;
+    pointer-events: none;
 }
 
 table {
     width: 100%;
     table-layout: auto;
     border-collapse: collapse;
-    background-color: rgba(245, 231, 203, 0.7);
+    background-color: rgba(245, 231, 203, 0.9);
+    border: 2px solid var(--border-color);
+    border-radius: 4px;
+    overflow: hidden;
+    position: relative;
+    z-index: 1;
 }
 
 th,
@@ -265,15 +295,21 @@ td {
 }
 
 th {
-    background-color: var(--table-header);
-    color: white;
-    position: sticky;
-    top: 0;
-    font-family: 'Cinzel', serif;
-    text-transform: uppercase;
-    letter-spacing: 1px;
-    font-size: 0.9rem;
-    z-index: 10;
+    position: relative;
+    overflow: hidden;
+}
+
+th::after {
+    content: '';
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    height: 2px;
+    background: linear-gradient(to right,
+            transparent 0%,
+            var(--accent-tertiary) 50%,
+            transparent 100%);
 }
 
 th i {
