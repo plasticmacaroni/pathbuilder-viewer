@@ -1,217 +1,562 @@
-/* Base Styles */
-body {
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    line-height: 1.6;
-    color: #e0e0e0;
-    margin: 0;
-    padding: 20px;
-    background-color: #121212;
+/* Base Styles with Fantasy Theme */
+:root {
+    --parchment-color: #f5e7cb;
+    --parchment-dark: #e8d5aa;
+    --ink-color: #2d2419;
+    --accent-primary: #7b3911;
+    --accent-secondary: #8f5922;
+    --accent-tertiary: #ab6c27;
+    --warning-color: #a52a2a;
+    --success-color: #3a5a40;
+    --border-color: #5c4425;
+    --table-header: #634832;
+    --table-odd: rgba(245, 231, 203, 0.7);
+    --table-even: rgba(232, 213, 170, 0.7);
+    --table-footer: rgba(139, 110, 77, 0.8);
+
+    --info-group-bg: rgba(99, 72, 50, 0.85);
+    --healing-group-bg: rgba(121, 82, 61, 0.85);
+    --ability-group-bg: rgba(99, 72, 50, 0.85);
+    --defense-group-bg: rgba(121, 82, 61, 0.85);
+    --skill-group-bg: rgba(99, 72, 50, 0.85);
+
+    --highlight-color: #ffd447;
 }
+
+* {
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Lato', sans-serif;
+    line-height: 1.6;
+    color: var(--ink-color);
+    margin: 0;
+    padding: 0;
+    background-color: #2d1e12;
+    background-image: url('https://i.imgur.com/87hBRU0.jpg');
+    background-size: cover;
+    background-attachment: fixed;
+    background-position: center;
+}
+
+.parchment {
+    background-color: var(--parchment-color);
+    background-image: url('https://i.imgur.com/qIXTI7k.jpg');
+    background-size: cover;
+    box-shadow: 0 0 15px rgba(0, 0, 0, 0.8);
+    position: relative;
+    margin: 20px;
+    width: auto;
+    max-width: 100%;
+    border-radius: 10px;
+    overflow: hidden;
+}
+
+.parchment::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(245, 231, 203, 0.6);
+    z-index: 0;
+}
+
 .container {
+    position: relative;
+    z-index: 1;
+    width: 100%;
     max-width: 100%;
     margin: 0 auto;
-    background-color: #1e1e1e;
     padding: 20px;
-    border-radius: 8px;
-    box-shadow: 0 2px 10px rgba(0,0,0,0.3);
-}
-h1 {
-    text-align: center;
-    color: #ffa270;
-    margin-bottom: 20px;
 }
 
-/* Import Section */
-.import-section {
+/* Header & Typography */
+header {
+    text-align: center;
+    margin-bottom: 30px;
+    padding-bottom: 20px;
+    border-bottom: 2px solid var(--border-color);
+}
+
+h1,
+h2,
+h3,
+h4,
+h5 {
+    font-family: 'Cinzel', serif;
+    color: var(--accent-primary);
+    margin: 0.5em 0;
+    text-shadow: 1px 1px 0px rgba(255, 255, 255, 0.3);
+}
+
+h1 {
+    font-size: 2.5rem;
+    margin-bottom: 5px;
+    letter-spacing: 1px;
+}
+
+.tagline {
+    font-style: italic;
+    color: var(--accent-secondary);
+    margin-top: 0;
+}
+
+.logo-container {
     display: flex;
     justify-content: center;
-    margin-bottom: 20px;
-    gap: 10px;
-    flex-wrap: wrap;
-}
-button {
-    border: none;
-    padding: 10px 20px;
-    border-radius: 4px;
-    cursor: pointer;
-    transition: background-color 0.3s;
-}
-#importButton, #clipboardButton {
-    background-color: #b27850;
-    color: white;
-}
-#importButton:hover, #clipboardButton:hover {
-    background-color: #8e5c3b;
-}
-#clearButton {
-    background-color: #c03f3f;
-    color: white;
-}
-#clearButton:hover {
-    background-color: #a22f2f;
-}
-input[type="file"] {
-    background-color: #2a2a2a;
-    color: #e0e0e0;
-    padding: 5px;
-    border-radius: 4px;
+    margin-bottom: 10px;
 }
 
-/* Table Styles */
-.table-container {
-    overflow-x: auto;
+.logo {
+    height: 80px;
+    filter: drop-shadow(2px 2px 2px rgba(0, 0, 0, 0.3));
 }
-table {
-    border-collapse: collapse;
+
+/* Import Section Styling */
+.import-section {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 30px;
+    gap: 15px;
+    background-color: rgba(99, 72, 50, 0.15);
+    padding: 20px;
+    border-radius: 8px;
+    border: 1px solid var(--border-color);
+    position: relative;
+}
+
+.import-section::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-image: url('https://i.imgur.com/uE3qtDC.png');
+    background-size: contain;
+    background-position: center;
+    background-repeat: no-repeat;
+    opacity: 0.06;
+    z-index: -1;
+}
+
+.import-controls,
+.export-controls {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 10px;
     width: 100%;
-    min-width: 1000px;
 }
-th, td {
-    padding: 8px;
+
+.export-controls {
+    border-top: 1px dashed var(--border-color);
+    padding-top: 15px;
+    margin-top: 5px;
+}
+
+/* Button Styling */
+.pf-button {
+    font-family: 'Cinzel', serif;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    background-color: var(--accent-primary);
+    color: var(--parchment-color);
+    font-weight: bold;
+    box-shadow: 0 3px 5px rgba(0, 0, 0, 0.2);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    border: 1px solid rgba(0, 0, 0, 0.2);
+}
+
+.pf-button:hover {
+    background-color: var(--accent-tertiary);
+    transform: translateY(-2px);
+    box-shadow: 0 5px 8px rgba(0, 0, 0, 0.3);
+}
+
+.pf-button:active {
+    transform: translateY(1px);
+    box-shadow: 0 2px 3px rgba(0, 0, 0, 0.1);
+}
+
+.pf-button.secondary {
+    background-color: var(--accent-secondary);
+}
+
+.pf-button.danger {
+    background-color: var(--warning-color);
+}
+
+/* File Input Styling */
+.file-input-label {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 20px;
+    border-radius: 5px;
+    background-color: var(--accent-secondary);
+    color: var(--parchment-color);
+    cursor: pointer;
+    font-family: 'Cinzel', serif;
+    font-weight: bold;
+    box-shadow: 0 3px 5px rgba(0, 0, 0, 0.2);
+    text-transform: uppercase;
+    transition: all 0.3s ease;
+    border: 1px solid rgba(0, 0, 0, 0.2);
+}
+
+.file-input-label:hover {
+    background-color: var(--accent-tertiary);
+    transform: translateY(-2px);
+    box-shadow: 0 5px 8px rgba(0, 0, 0, 0.3);
+}
+
+input[type="file"] {
+    display: none;
+}
+
+/* Table Styling */
+.scroll-frame {
+    border: 8px solid transparent;
+    border-image: url('https://i.imgur.com/W8qsCZr.png') 20 round;
+    border-radius: 5px;
+    margin-bottom: 30px;
+    position: relative;
+    overflow: hidden;
+}
+
+.table-container {
+    width: 100%;
+    overflow-x: auto;
+    margin-bottom: 20px;
+}
+
+table {
+    width: 100%;
+    table-layout: auto;
+    border-collapse: collapse;
+    background-color: rgba(245, 231, 203, 0.7);
+}
+
+th,
+td {
+    padding: 10px 8px;
     text-align: center;
-    border: 1px solid #444;
+    border: 1px solid var(--border-color);
 }
+
 th {
-    background-color: #8e5c3b;
+    background-color: var(--table-header);
     color: white;
     position: sticky;
     top: 0;
+    font-family: 'Cinzel', serif;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    font-size: 0.9rem;
+    z-index: 10;
 }
+
+th i {
+    margin-right: 5px;
+}
+
+tr:nth-child(odd) {
+    background-color: var(--table-odd);
+}
+
 tr:nth-child(even) {
-    background-color: #2a2a2a;
+    background-color: var(--table-even);
 }
+
 tfoot tr {
-    background-color: #3a3a3a;
+    background-color: var(--table-footer);
+    color: white;
     font-weight: bold;
     position: sticky;
     bottom: 0;
-    box-shadow: 0 -2px 3px rgba(0,0,0,0.3);
+    box-shadow: 0 -2px 3px rgba(0, 0, 0, 0.3);
+    font-family: 'Cinzel', serif;
+    z-index: 10;
 }
+
+/* Enhanced gold highlighting with stronger glow effect */
 .highest {
-    color: #ffd700;
+    color: #FFD700 !important;
+    /* Force gold color with !important */
     font-weight: bold;
-    text-shadow: 0 0 1px #000;
+    text-shadow:
+        0 0 8px rgba(255, 215, 0, 0.9),
+        0 0 12px rgba(255, 215, 0, 0.5),
+        1px 1px 2px rgba(0, 0, 0, 0.5);
 }
+
+/* Ensure the gold color overrides all column types */
+.ability-group.highest,
+.ability-group .highest,
+.defense-group.highest,
+.defense-group .highest,
+.skill-group.highest,
+.skill-group .highest,
+td.highest,
+td .highest {
+    color: #FFD700 !important;
+}
+
+/* Additional styling to make sure numeric values stand out */
+.highest {
+    font-size: 1.05em;
+    letter-spacing: 0.02em;
+}
+
 .character-name {
     font-weight: bold;
     text-align: left;
+    font-family: 'Cinzel', serif;
 }
+
 .info-group {
-    background-color: #2d2d2d;
-    border-right: 2px solid #555;
+    background-color: var(--info-group-bg);
+    color: white;
+    border-right: 2px solid var(--border-color);
 }
+
 .healing-group {
-    background-color: #304030;
-    border-right: 2px solid #555;
-    /* Make the healing column a bit wider to accommodate more pills */
-    min-width: 200px;
+    background-color: var(--healing-group-bg);
+    color: white;
+    border-right: 2px solid var(--border-color);
+    min-width: 250px;
+    max-width: none;
+    width: auto;
+    padding: 5px;
 }
+
 .ability-group {
-    background-color: #253444;
-    border-right: 2px solid #555;
+    background-color: var(--ability-group-bg);
+    color: white;
+    border-right: 2px solid var(--border-color);
 }
+
 .defense-group {
-    background-color: #3d2e2a;
-    border-right: 2px solid #555;
+    background-color: var(--defense-group-bg);
+    color: white;
+    border-right: 2px solid var(--border-color);
 }
+
 .skill-group {
-    background-color: #2e382e;
-}
-.group-header {
-    background-color: #444;
+    background-color: var(--skill-group-bg);
     color: white;
 }
+
 .no-characters {
     text-align: center;
-    padding: 20px;
+    padding: 30px;
     font-style: italic;
-    color: #888;
+    color: var(--accent-secondary);
+    font-size: 1.2rem;
+    background-image: url('https://i.imgur.com/uE3qtDC.png');
+    background-size: 150px;
+    background-position: center top;
+    background-repeat: no-repeat;
+    padding-top: 150px;
 }
 
-/* Status Message */
+/* Status Message Styling */
 #statusMessage {
     text-align: center;
-    padding: 10px;
-    margin-top: 10px;
-    border-radius: 4px;
-}
-.success {
-    background-color: #3a5a40;
-    color: white;
-}
-.error {
-    background-color: #c03f3f;
-    color: white;
+    padding: 15px;
+    margin: 15px 0;
+    border-radius: 5px;
+    font-weight: bold;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    border-left: 5px solid;
 }
 
-/* Pills */
+.success {
+    background-color: rgba(58, 90, 64, 0.2);
+    color: var(--success-color);
+    border-color: var(--success-color) !important;
+}
+
+.error {
+    background-color: rgba(165, 42, 42, 0.2);
+    color: var(--warning-color);
+    border-color: var(--warning-color) !important;
+}
+
+/* Pills Styling */
 .pill {
-    display: inline-block;
-    padding: 2px 8px;
-    margin: 2px;
-    border-radius: 12px;
-    font-size: 0.8rem;
+    display: inline-flex;
+    align-items: center;
+    padding: 2px 6px;
+    margin: 1px;
+    border-radius: 10px;
+    font-size: 0.75rem;
     font-weight: bold;
     color: white;
-}
-.pill-class {
-    background-color: #8e5c3b;
-}
-.pill-archetype {
-    background-color: #6a4f6c;
-}
-.pill-healing {
-    background-color: #607d8b;
+    box-shadow: 0 2px 3px rgba(0, 0, 0, 0.2);
+    border: 1px solid rgba(0, 0, 0, 0.2);
+    white-space: nowrap;
+    flex-shrink: 0;
 }
 
-/* Warning Section */
+.pill-class {
+    background-color: var(--accent-primary);
+}
+
+.pill-archetype {
+    background-color: var(--accent-secondary);
+}
+
+.pill-healing {
+    background-color: var(--accent-tertiary);
+}
+
+/* Warning Section Styling */
 .warnings-container {
     margin-top: 30px;
     border-radius: 8px;
-    background-color: #2d2d2d;
-    padding: 15px;
-    box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+    background-color: rgba(245, 231, 203, 0.7);
+    padding: 20px;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+    border: 1px solid var(--border-color);
 }
+
 .warnings-title {
-    font-size: 1.4rem;
-    color: #ffa270;
-    margin-bottom: 15px;
-    border-bottom: 1px solid #444;
-    padding-bottom: 5px;
+    font-size: 1.6rem;
+    color: var(--accent-primary);
+    margin-bottom: 20px;
+    border-bottom: 2px solid var(--border-color);
+    padding-bottom: 10px;
+    text-align: center;
 }
+
+.warnings-title i {
+    margin-right: 10px;
+}
+
 .warnings-grid {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
     gap: 15px;
 }
+
 .warning-card {
-    padding: 12px;
-    border-radius: 6px;
+    padding: 15px;
+    border-radius: 8px;
     display: flex;
     align-items: center;
     transition: all 0.3s ease;
+    box-shadow: 0 3px 5px rgba(0, 0, 0, 0.1);
 }
+
 .warning-card.success {
-    background-color: rgba(58, 90, 64, 0.5);
-    border: 1px solid #3a5a40;
+    background-color: rgba(58, 90, 64, 0.15);
+    border: 1px solid var(--success-color);
 }
+
 .warning-card.error {
-    background-color: rgba(192, 63, 63, 0.5);
-    border: 1px solid #c03f3f;
+    background-color: rgba(165, 42, 42, 0.15);
+    border: 1px solid var(--warning-color);
 }
+
 .warning-icon {
     font-size: 1.5rem;
-    margin-right: 12px;
+    margin-right: 15px;
     flex-shrink: 0;
 }
+
 .warning-content {
     flex-grow: 1;
 }
+
 .warning-title {
+    font-family: 'Cinzel', serif;
     font-weight: bold;
-    margin-bottom: 4px;
+    margin-bottom: 5px;
+    color: var(--accent-primary);
 }
+
 .warning-description {
     font-size: 0.9rem;
-    opacity: 0.9;
+}
+
+/* Footer */
+footer {
+    text-align: center;
+    margin-top: 40px;
+    padding-top: 20px;
+    border-top: 2px solid var(--border-color);
+    color: var(--accent-secondary);
+    font-style: italic;
+}
+
+footer a {
+    color: var(--accent-primary);
+    text-decoration: none;
+    font-weight: bold;
+    transition: color 0.3s;
+}
+
+footer a:hover {
+    color: var(--accent-tertiary);
+    text-decoration: underline;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .parchment {
+        margin: 10px;
+    }
+
+    h1 {
+        font-size: 1.8rem;
+    }
+
+    .warnings-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .import-controls,
+    .export-controls {
+        flex-direction: column;
+    }
+
+    .pf-button,
+    .file-input-label {
+        width: 100%;
+    }
+}
+
+/* Container for healing ability pills */
+.healing-pills-container {
+    display: flex;
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    justify-content: flex-start;
+    gap: 3px;
+    padding: 2px;
+    width: 100%;
+}
+
+@media (max-width: 900px) {
+    .healing-pills-container {
+        flex-wrap: wrap;
+    }
+
+    .parchment {
+        margin: 10px;
+    }
 }

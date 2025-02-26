@@ -6,109 +6,154 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>PF2e Character Comparison</title>
     <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;800&family=Lato:wght@300;400;700&display=swap"
+        rel="stylesheet">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/js-yaml/4.1.0/js-yaml.min.js"
         integrity="sha512-CSBhVREyzHAjAFfBlIBpjadIXYq7w8DJprYV/LCHItjbvcgRPa1pMoQ8FtJLFBtONdAZpvFhWiGmbCSzfUqKlA=="
         crossorigin="anonymous" referrerpolicy="no-referrer"></script>
 </head>
 
 <body>
-    <div class="container">
-        <h1>PF2e Character Comparison</h1>
-        <div class="import-section">
-            <input type="file" id="jsonFileInput" accept=".json,.txt">
-            <button id="importButton">Import Pathbuilder from File</button>
-            <button id="clipboardButton">Import Pathbuilder from Clipboard</button>
-            <button id="clearButton">Clear All</button>
-            <button id="exportPartyClipboardButton">Copy These Results to Clipboard</button>
-            <button id="importPartyClipboardButton">Import Results from Clipboard</button>
-        </div>
-        <div id="statusMessage" style="display: none;"></div>
-        <div class="table-container">
-            <table id="characterTable">
-                <thead>
-                    <tr>
-                        <th class="info-group" colspan="4">Character Info</th>
-                        <th class="healing-group" colspan="1">Healing and Sustain</th>
-                        <th class="ability-group" colspan="6">Ability Scores</th>
-                        <th class="defense-group" colspan="4">Defenses</th>
-                        <th class="skill-group" colspan="16">Skills</th>
-                    </tr>
-                    <tr>
-                        <th class="info-group">Name</th>
-                        <th class="info-group">Class</th>
-                        <th class="info-group">Archetypes</th>
-                        <th class="info-group">Level</th>
+    <div class="parchment">
+        <div class="container">
+            <header>
+                <div class="logo-container">
+                    <img src="images/pathfinder.webp" alt="Pathfinder Logo" class="logo">
+                </div>
+                <h1><i class="fas fa-users-between-lines"></i> Character Comparison <i
+                        class="fas fa-users-between-lines"></i></h1>
+                <p class="tagline">Analyze your party's strengths and discover your weaknesses</p>
+            </header>
 
-                        <th class="healing-group">Abilities</th>
+            <div class="import-section">
+                <div class="import-controls">
+                    <label for="jsonFileInput" class="file-input-label">
+                        <i class="fas fa-file-import"></i> Select File
+                        <input type="file" id="jsonFileInput" accept=".json,.txt">
+                    </label>
+                    <button id="importButton" class="pf-button"><i class="fas fa-file-arrow-up"></i> Import from
+                        File</button>
+                    <button id="clipboardButton" class="pf-button"><i class="fas fa-clipboard"></i> Import from
+                        Clipboard</button>
+                    <button id="clearButton" class="pf-button danger"><i class="fas fa-trash-can"></i> Clear
+                        All</button>
+                </div>
+                <div class="export-controls">
+                    <button id="exportPartyClipboardButton" class="pf-button secondary"><i
+                            class="fas fa-share-nodes"></i> Share Party</button>
+                    <button id="importPartyClipboardButton" class="pf-button secondary"><i
+                            class="fas fa-people-group"></i> Import Party</button>
+                </div>
+            </div>
 
-                        <th class="ability-group">STR</th>
-                        <th class="ability-group">DEX</th>
-                        <th class="ability-group">CON</th>
-                        <th class="ability-group">INT</th>
-                        <th class="ability-group">WIS</th>
-                        <th class="ability-group">CHA</th>
+            <div id="statusMessage" style="display: none;"></div>
 
-                        <th class="defense-group">AC</th>
-                        <th class="defense-group">Fort</th>
-                        <th class="defense-group">Ref</th>
-                        <th class="defense-group">Will</th>
+            <div class="table-container scroll-frame">
+                <table id="characterTable">
+                    <thead>
+                        <tr>
+                            <th class="info-group" colspan="4"><i class="fas fa-id-card"></i> Character Info</th>
+                            <th class="healing-group" colspan="1"><i class="fas fa-heart-pulse"></i> Healing & Sustain
+                            </th>
+                            <th class="ability-group" colspan="6"><i class="fas fa-dumbbell"></i> Ability Scores</th>
+                            <th class="defense-group" colspan="4"><i class="fas fa-shield-halved"></i> Defenses</th>
+                            <th class="skill-group" colspan="16"><i class="fas fa-book-open-reader"></i> Skills</th>
+                        </tr>
+                        <tr>
+                            <th class="info-group"><i class="fas fa-signature"></i> Name</th>
+                            <th class="info-group"><i class="fas fa-hat-wizard"></i> Class</th>
+                            <th class="info-group"><i class="fas fa-mortar-pestle"></i> Archetypes</th>
+                            <th class="info-group"><i class="fas fa-award"></i> Level</th>
 
-                        <th class="skill-group">Acro</th>
-                        <th class="skill-group">Arca</th>
-                        <th class="skill-group">Athl</th>
-                        <th class="skill-group">Craf</th>
-                        <th class="skill-group">Dece</th>
-                        <th class="skill-group">Dipl</th>
-                        <th class="skill-group">Inti</th>
-                        <th class="skill-group">Medi</th>
-                        <th class="skill-group">Natu</th>
-                        <th class="skill-group">Occu</th>
-                        <th class="skill-group">Perf</th>
-                        <th class="skill-group">Reli</th>
-                        <th class="skill-group">Soci</th>
-                        <th class="skill-group">Stea</th>
-                        <th class="skill-group">Surv</th>
-                        <th class="skill-group">Thie</th>
-                    </tr>
-                </thead>
-                <tbody id="characterRows">
-                    <tr>
-                        <td colspan="31" class="no-characters">No characters imported yet</td>
-                    </tr>
-                </tbody>
-                <tfoot>
-                    <tr id="highestValues">
-                        <td colspan="4" class="info-group">Highest Values</td>
-                        <td class="healing-group">-</td>
-                        <td class="ability-group">-</td>
-                        <td class="ability-group">-</td>
-                        <td class="ability-group">-</td>
-                        <td class="ability-group">-</td>
-                        <td class="ability-group">-</td>
-                        <td class="ability-group">-</td>
-                        <td class="defense-group">-</td>
-                        <td class="defense-group">-</td>
-                        <td class="defense-group">-</td>
-                        <td class="defense-group">-</td>
-                        <td class="skill-group">-</td>
-                        <td class="skill-group">-</td>
-                        <td class="skill-group">-</td>
-                        <td class="skill-group">-</td>
-                        <td class="skill-group">-</td>
-                        <td class="skill-group">-</td>
-                        <td class="skill-group">-</td>
-                        <td class="skill-group">-</td>
-                        <td class="skill-group">-</td>
-                        <td class="skill-group">-</td>
-                        <td class="skill-group">-</td>
-                        <td class="skill-group">-</td>
-                        <td class="skill-group">-</td>
-                        <td class="skill-group">-</td>
-                        <td class="skill-group">-</td>
-                        <td class="skill-group">-</td>
-                    </tr>
-                </tfoot>
-            </table>
+                            <th class="healing-group"><i class="fas fa-kit-medical"></i> Abilities</th>
+
+                            <th class="ability-group">STR</th>
+                            <th class="ability-group">DEX</th>
+                            <th class="ability-group">CON</th>
+                            <th class="ability-group">INT</th>
+                            <th class="ability-group">WIS</th>
+                            <th class="ability-group">CHA</th>
+
+                            <th class="defense-group">AC</th>
+                            <th class="defense-group">Fort</th>
+                            <th class="defense-group">Ref</th>
+                            <th class="defense-group">Will</th>
+
+                            <th class="skill-group" title="Acrobatics"><i class="fas fa-person-falling"></i> Acro</th>
+                            <th class="skill-group" title="Arcana"><i class="fas fa-wand-sparkles"></i> Arca</th>
+                            <th class="skill-group" title="Athletics"><i class="fas fa-person-running"></i> Athl</th>
+                            <th class="skill-group" title="Crafting"><i class="fas fa-hammer"></i> Craf</th>
+                            <th class="skill-group" title="Deception"><i class="fas fa-mask"></i> Dece</th>
+                            <th class="skill-group" title="Diplomacy"><i class="fas fa-handshake"></i> Dipl</th>
+                            <th class="skill-group" title="Intimidation"><i class="fas fa-skull"></i> Inti</th>
+                            <th class="skill-group" title="Medicine"><i class="fas fa-staff-snake"></i> Medi</th>
+                            <th class="skill-group" title="Nature"><i class="fas fa-leaf"></i> Natu</th>
+                            <th class="skill-group" title="Occultism"><i class="fas fa-eye"></i> Occu</th>
+                            <th class="skill-group" title="Performance"><i class="fas fa-masks-theater"></i> Perf</th>
+                            <th class="skill-group" title="Religion"><i class="fas fa-pray"></i> Reli</th>
+                            <th class="skill-group" title="Society"><i class="fas fa-landmark"></i> Soci</th>
+                            <th class="skill-group" title="Stealth"><i class="fas fa-user-ninja"></i> Stea</th>
+                            <th class="skill-group" title="Survival"><i class="fas fa-campground"></i> Surv</th>
+                            <th class="skill-group" title="Thievery"><i class="fas fa-lock-open"></i> Thie</th>
+                        </tr>
+                    </thead>
+                    <tbody id="characterRows">
+                        <tr>
+                            <td colspan="31" class="no-characters">No adventurers in your party yet. Import some brave
+                                souls!</td>
+                        </tr>
+                    </tbody>
+                    <tfoot>
+                        <tr id="highestValues">
+                            <td colspan="4" class="info-group">Highest Values</td>
+                            <td class="healing-group">-</td>
+                            <td class="ability-group">-</td>
+                            <td class="ability-group">-</td>
+                            <td class="ability-group">-</td>
+                            <td class="ability-group">-</td>
+                            <td class="ability-group">-</td>
+                            <td class="ability-group">-</td>
+                            <td class="defense-group">-</td>
+                            <td class="defense-group">-</td>
+                            <td class="defense-group">-</td>
+                            <td class="defense-group">-</td>
+                            <td class="skill-group">-</td>
+                            <td class="skill-group">-</td>
+                            <td class="skill-group">-</td>
+                            <td class="skill-group">-</td>
+                            <td class="skill-group">-</td>
+                            <td class="skill-group">-</td>
+                            <td class="skill-group">-</td>
+                            <td class="skill-group">-</td>
+                            <td class="skill-group">-</td>
+                            <td class="skill-group">-</td>
+                            <td class="skill-group">-</td>
+                            <td class="skill-group">-</td>
+                            <td class="skill-group">-</td>
+                            <td class="skill-group">-</td>
+                            <td class="skill-group">-</td>
+                            <td class="skill-group">-</td>
+                        </tr>
+                    </tfoot>
+                </table>
+            </div>
+
+            <div id="warningsContainer" class="warnings-container">
+                <h2 class="warnings-title"><i class="fas fa-triangle-exclamation"></i> Party Composition Insights</h2>
+                <div id="warningsGrid" class="warnings-grid">
+                    <div class="warning-card">No adventurers in your party yet. Import some brave souls!</div>
+                </div>
+            </div>
+
+            <footer>
+                <p>Crafted for Pathfinder adventurers everywhere. <a
+                        href="https://github.com/plasticmacaroni/pathbuilder-viewer" target="_blank"><i
+                            class="fab fa-github"></i> Visit on GitHub</a></p>
+            </footer>
         </div>
     </div>
 
