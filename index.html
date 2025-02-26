@@ -91,6 +91,11 @@
             color: #e0e0e0;
             font-weight: bold;
         }
+        .matches-highest {
+            background-color: #2d4a33;
+            color: #e0e0e0;
+            font-weight: bold;
+        }
         .character-name {
             font-weight: bold;
             text-align: left;
@@ -489,12 +494,20 @@
         function highlightHighestValues() {
             const table = document.getElementById('characterTable');
             const tbody = document.getElementById('characterRows');
+            const highestRow = document.getElementById('highestValues');
             const rows = tbody.rows;
             
             if (rows.length === 0) return;
             
-            // Start from column 3 (STR) to the end
-            for (let col = 3; col < table.rows[1].cells.length; col++) {
+            // Get the highest values from the summary row
+            const highestValues = [];
+            for (let i = 1; i < highestRow.cells.length; i++) {
+                const value = highestRow.cells[i].textContent;
+                highestValues.push(value === '-' ? -Infinity : parseInt(value));
+            }
+            
+            // Start from column 4 (STR, index 3 in tbody rows) to the end
+            for (let col = 4; col < table.rows[1].cells.length; col++) {
                 let maxValue = -Infinity;
                 let maxRows = [];
                 
@@ -510,12 +523,26 @@
                     }
                 }
                 
+                // The highest value in the summary row is at the appropriate index
+                // Col 4 (STR) in body corresponds to index 1 in the summary row (since it has a colspan)
+                const summaryIndex = col - 3;
+                const highestValueForCol = highestValues[summaryIndex];
+                
                 // Highlight the cells with the maximum value
                 for (let row = 0; row < rows.length; row++) {
+                    const cellValue = parseInt(rows[row].cells[col].textContent);
+                    
+                    // Clear previous highlighting
+                    rows[row].cells[col].classList.remove('highest');
+                    rows[row].cells[col].classList.remove('matches-highest');
+                    
+                    // Add appropriate highlighting
                     if (maxRows.includes(row)) {
+                        // This is the highest value in the column
                         rows[row].cells[col].classList.add('highest');
-                    } else {
-                        rows[row].cells[col].classList.remove('highest');
+                    } else if (cellValue === highestValueForCol) {
+                        // This matches the highest value overall
+                        rows[row].cells[col].classList.add('matches-highest');
                     }
                 }
             }
