@@ -874,11 +874,17 @@ async function init() {
         // Render characters if any were loaded
         renderCharacters();
 
-        // Update global skill map
-        updateGlobalSkillMap();
+        // Update global skill map - if this function exists in your codebase
+        if (typeof updateGlobalSkillMap === 'function') {
+            updateGlobalSkillMap();
+        }
 
-        // Initialize dropdowns, event listeners, etc.
-        initializeUI();
+        // Since initializeUI doesn't exist, use any existing initialization code
+        // If you have event listeners or other initialization code, call them directly here
+        // For example, if you have setupEventListeners(), call it:
+        if (typeof setupEventListeners === 'function') {
+            setupEventListeners();
+        }
 
     } catch (error) {
         console.error('Error loading table structure:', error);
@@ -886,8 +892,40 @@ async function init() {
     }
 }
 
-// When DOM is ready, initialize the app
-window.addEventListener('DOMContentLoaded', init);
+// Load characters from localStorage
+function loadCharactersFromCache() {
+    try {
+        const cachedCharacters = localStorage.getItem('pf2e-characters');
+        if (cachedCharacters) {
+            characters = JSON.parse(cachedCharacters);
+            console.log('Loaded characters from cache:', characters.length);
+        }
+    } catch (error) {
+        console.error('Error loading characters from cache:', error);
+        showStatusMessage('Error loading saved characters.', true);
+    }
+}
+
+// Save characters to localStorage
+function saveCharactersToCache() {
+    try {
+        localStorage.setItem('pf2e-characters', JSON.stringify(characters));
+    } catch (error) {
+        console.error('Error saving characters to cache:', error);
+    }
+}
+
+// Clear character cache
+function clearCharacterCache() {
+    try {
+        localStorage.removeItem('pf2e-characters');
+    } catch (error) {
+        console.error('Error clearing character cache:', error);
+    }
+}
+
+// Make sure this code is executed when the document is loaded
+document.addEventListener('DOMContentLoaded', init);
 
 // Add party export to clipboard functionality
 async function exportPartyToClipboard() {
