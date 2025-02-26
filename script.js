@@ -630,3 +630,73 @@ function init() {
 
 // When DOM is ready, initialize the app
 window.addEventListener('DOMContentLoaded', init);
+
+// Add party export to clipboard functionality
+async function exportPartyToClipboard() {
+    if (characters.length === 0) {
+        showStatusMessage('No characters to export!', true);
+        return;
+    }
+
+    // Create a party object with metadata and character array
+    const partyExport = {
+        format: 'pf2e-character-comparison-party',
+        version: '1.0',
+        exportDate: new Date().toISOString(),
+        characters: characters
+    };
+
+    // Convert to JSON string
+    const partyJson = JSON.stringify(partyExport);
+
+    try {
+        // Copy to clipboard
+        await navigator.clipboard.writeText(partyJson);
+        showStatusMessage(`Party with ${characters.length} characters copied to clipboard! Share this text with others.`);
+    } catch (error) {
+        console.error('Failed to copy to clipboard:', error);
+        showStatusMessage('Failed to copy to clipboard. Please check browser permissions.', true);
+    }
+}
+
+// Add party import from clipboard functionality
+async function importPartyFromClipboard() {
+    try {
+        const clipboardText = await navigator.clipboard.readText();
+
+        if (!clipboardText) {
+            showStatusMessage('Clipboard is empty', true);
+            return;
+        }
+
+        try {
+            const partyData = JSON.parse(clipboardText);
+
+            // Validate it's a party export file
+            if (!partyData.format || partyData.format !== 'pf2e-character-comparison-party') {
+                showStatusMessage('Invalid party data format in clipboard', true);
+                return;
+            }
+
+            // Load all characters
+            if (Array.isArray(partyData.characters) && partyData.characters.length > 0) {
+                characters = partyData.characters;
+                renderCharacters();
+                showStatusMessage(`Imported party with ${partyData.characters.length} characters!`);
+                saveCharactersToCache();
+            } else {
+                showStatusMessage('No characters found in the party data', true);
+            }
+        } catch (error) {
+            console.error('Error parsing party data:', error);
+            showStatusMessage('Error parsing clipboard content. Make sure it contains valid party data.', true);
+        }
+    } catch (error) {
+        console.error('Error accessing clipboard:', error);
+        showStatusMessage('Error accessing clipboard: ' + error.message, true);
+    }
+}
+
+// Replace the file-based party export/import event listeners with these in your initialization code
+document.getElementById('exportPartyClipboardButton').addEventListener('click', exportPartyToClipboard);
+document.getElementById('importPartyClipboardButton').addEventListener('click', importPartyFromClipboard);
