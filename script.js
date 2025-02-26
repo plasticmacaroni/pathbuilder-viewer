@@ -1,5 +1,6 @@
 // Global variables
 let characters = [];
+let warnings = [];
 const skillMap = {
     'acrobatics': 'Acro',
     'arcana': 'Arca',
@@ -25,36 +26,68 @@ function showStatusMessage(message, isError = false) {
     statusDiv.textContent = message;
     statusDiv.className = isError ? 'error' : 'success';
     statusDiv.style.display = 'block';
-    
+
     // Hide after 3 seconds
     setTimeout(() => {
         statusDiv.style.display = 'none';
     }, 3000);
 }
 
+// Function to load warnings from YAML files
+async function loadWarnings() {
+    try {
+        // List of warning files to load
+        const warningFiles = [
+            'warnings/battle-medicine.yaml',
+            'warnings/skill-coverage.yaml',
+            'warnings/frontline.yaml',
+            'warnings/magic-user.yaml'
+            // Add more warning files here
+        ];
+
+        warnings = [];
+
+        // Load each warning file
+        for (const file of warningFiles) {
+            const response = await fetch(file);
+            if (response.ok) {
+                const yamlText = await response.text();
+                const warningConfig = jsyaml.load(yamlText);
+                warnings.push(warningConfig);
+            } else {
+                console.error(`Failed to load warning file: ${file}`);
+            }
+        }
+
+        console.log(`Loaded ${warnings.length} warnings`);
+    } catch (error) {
+        console.error('Error loading warnings:', error);
+    }
+}
+
 // Function to process JSON data
 function processJsonData(jsonText) {
     try {
         const jsonData = JSON.parse(jsonText);
-        
+
         // Check if this is valid PF2e character data
         if (!jsonData.build) {
             showStatusMessage('Invalid PF2e character data. Make sure your JSON contains character build information.', true);
             return false;
         }
-        
+
         // Extract character data
         const characterData = extractCharacterData(jsonData);
-        
+
         // Add character to our list
         characters.push(characterData);
-        
+
         // Add row to the table
         addCharacterRow(characterData);
-        
+
         // Update highest values
         updateHighestValues();
-        
+
         showStatusMessage(`Character "${characterData.name}" imported successfully!`);
         return true;
     } catch (error) {
@@ -93,44 +126,36 @@ function extractCharacterData(data) {
 
     // Extract healing feats and abilities
     const healingAbilities = [];
-    
-    // Check for Battle Medicine feat and other healing abilities
-    let hasBattleMedicine = false;
-    
+
     // List of healing and sustain abilities to check for
     const healingFeats = [
-        "Healing Font", "Lay on Hands", "Goodberry", "Chirurgeon Field Discovery", 
-        "Life Link", "Soothing Performance", "Hymn of Healing", "Wholeness of Body", 
-        "Heal Companion", "Life Boost", "Vital Beacon", "Healer's Blessing", 
-        "Rebuke Death", "Field Medic Dedication", "Blessed One Dedication", 
-        "Medic Dedication", "Doctor's Visitation", "Resuscitate", "Healing Hands", 
-        "Expanded Domain Initiate", "Sentinel Dedication", "Rapid Recovery", 
-        "Restoration Domain Spell", "Battle Medicine", "Risky Surgery", 
-        "Godless Healing", "Mortal Healing", "Robust Recovery", "Holistic Care", 
-        "Stitch Flesh", "Triage", "Swift Triage", "Incredible Medic", "Legendary Medic", 
-        "Toughness", "Diehard", "Fast Recovery", "Trick Magic Item", "Soothing Ballad", 
-        "Field of Life", "Sanguine Mist", "Soothe", "Generous Fate", "Sun's Blessing", 
+        "Healing Font", "Lay on Hands", "Goodberry", "Chirurgeon Field Discovery",
+        "Life Link", "Soothing Performance", "Hymn of Healing", "Wholeness of Body",
+        "Heal Companion", "Life Boost", "Vital Beacon", "Healer's Blessing",
+        "Rebuke Death", "Field Medic Dedication", "Blessed One Dedication",
+        "Medic Dedication", "Doctor's Visitation", "Resuscitate", "Healing Hands",
+        "Expanded Domain Initiate", "Sentinel Dedication", "Rapid Recovery",
+        "Restoration Domain Spell", "Battle Medicine", "Risky Surgery",
+        "Godless Healing", "Mortal Healing", "Robust Recovery", "Holistic Care",
+        "Stitch Flesh", "Triage", "Swift Triage", "Incredible Medic", "Legendary Medic",
+        "Toughness", "Diehard", "Fast Recovery", "Trick Magic Item", "Soothing Ballad",
+        "Field of Life", "Sanguine Mist", "Soothe", "Generous Fate", "Sun's Blessing",
         "Rapid Response", "Fresh Produce", "Dash of Herbs", "Continual Recovery", "Ward Medic"
     ];
-    
+
     if (data.build?.feats) {
         data.build.feats.forEach(feat => {
             if (feat && feat.length >= 1) {
                 // Check regular healing feats
                 if (healingFeats.includes(feat[0])) {
                     healingAbilities.push(feat[0]);
-                    
-                    // Check specifically for Battle Medicine for the warning
-                    if (feat[0] === "Battle Medicine") {
-                        hasBattleMedicine = true;
-                    }
                 }
-                
+
                 // Special check for Assurance (Medicine)
                 if (feat[0] === "Assurance" && feat.length >= 2 && feat[1] === "Medicine") {
                     healingAbilities.push("Assurance (Medicine)");
                 }
-                
+
                 // Check for Forensic Medicine Methodology (special case)
                 if (feat[0].includes("Forensic Medicine")) {
                     healingAbilities.push("Forensic Medicine");
@@ -138,20 +163,20 @@ function extractCharacterData(data) {
             }
         });
     }
-    
+
     // Check for focus spells related to healing
     if (data.build?.focus) {
         // Loop through all focus spell categories
         for (const category in data.build.focus) {
             for (const subcategory in data.build.focus[category]) {
                 const focusSpells = data.build.focus[category][subcategory]?.focusSpells || [];
-                
+
                 // Check each focus spell
                 focusSpells.forEach(spell => {
-                    const healingSpells = ["Lay on Hands", "Life Link", "Goodberry", 
-                                          "Hymn of Healing", "Life Boost", "Healer's Blessing", 
-                                          "Vital Beacon", "Heal Companion", "Rebuke Death"];
-                    
+                    const healingSpells = ["Lay on Hands", "Life Link", "Goodberry",
+                        "Hymn of Healing", "Life Boost", "Healer's Blessing",
+                        "Vital Beacon", "Heal Companion", "Rebuke Death"];
+
                     if (healingSpells.includes(spell)) {
                         // Add if not already in the list
                         if (!healingAbilities.includes(spell)) {
@@ -170,8 +195,7 @@ function extractCharacterData(data) {
         archetypes: archetypes,
         level: getNumeric(data.build?.level, 1),
         healingAbilities: healingAbilities,
-        hasBattleMedicine: hasBattleMedicine,
-        
+
         // Ability scores
         abilities: {
             str: getNumeric(data.build?.abilities?.str),
@@ -181,7 +205,7 @@ function extractCharacterData(data) {
             wis: getNumeric(data.build?.abilities?.wis),
             cha: getNumeric(data.build?.abilities?.cha)
         },
-        
+
         // Defenses
         defenses: {
             ac: getNumeric(data.build?.acTotal?.acTotal),
@@ -189,7 +213,7 @@ function extractCharacterData(data) {
             ref: 10 + getNumeric(data.build?.proficiencies?.reflex),
             will: 10 + getNumeric(data.build?.proficiencies?.will)
         },
-        
+
         // Skills
         skills: {}
     };
@@ -197,10 +221,10 @@ function extractCharacterData(data) {
     // Process all skills
     for (const [skill, abbrev] of Object.entries(skillMap)) {
         const profValue = getNumeric(data.build?.proficiencies?.[skill]);
-        
+
         // Determine which ability score to use for this skill
         let abilityScore;
-        switch(skill) {
+        switch (skill) {
             case 'athletics':
                 abilityScore = characterData.abilities.str;
                 break;
@@ -230,13 +254,13 @@ function extractCharacterData(data) {
             default:
                 abilityScore = 10; // Fallback
         }
-        
+
         // Add item bonus if present
         let itemBonus = 0;
         if (data.build?.mods && data.build.mods[skill.charAt(0).toUpperCase() + skill.slice(1)]) {
             itemBonus = getNumeric(data.build.mods[skill.charAt(0).toUpperCase() + skill.slice(1)]["Item Bonus"]);
         }
-        
+
         // Calculate total skill value
         characterData.skills[skill] = calculateSkillValue(profValue, abilityScore) + itemBonus;
     }
@@ -247,27 +271,27 @@ function extractCharacterData(data) {
 // Function to add a character row to the table
 function addCharacterRow(character) {
     const tbody = document.getElementById('characterRows');
-    
+
     // Clear "No characters" message if it exists
     if (document.querySelector('.no-characters')) {
         tbody.innerHTML = '';
     }
-    
+
     const row = document.createElement('tr');
-    
+
     // Format class as pill
     const classDisplay = `<span class="pill pill-class">${character.class}</span>`;
-    
+
     // Format archetypes as pills
-    const archetypesDisplay = character.archetypes.length > 0 
+    const archetypesDisplay = character.archetypes.length > 0
         ? character.archetypes.map(archetype => `<span class="pill pill-archetype">${archetype}</span>`).join(' ')
         : '-';
-        
+
     // Format healing abilities as pills
     const healingDisplay = character.healingAbilities.length > 0
         ? character.healingAbilities.map(ability => `<span class="pill pill-healing">${ability}</span>`).join(' ')
         : '-';
-        
+
     row.innerHTML = `
         <td class="character-name info-group">${character.name}</td>
         <td class="info-group">${classDisplay}</td>
@@ -287,21 +311,16 @@ function addCharacterRow(character) {
         <td class="defense-group">${character.defenses.ref}</td>
         <td class="defense-group">${character.defenses.will}</td>
     `;
-    
+
     // Skills
     for (const skill of Object.keys(skillMap)) {
         row.innerHTML += `<td class="skill-group">${character.skills[skill]}</td>`;
     }
-    
+
     tbody.appendChild(row);
 }
 
-// Function to check if at least one character has Battle Medicine
-function hasBattleMedicine() {
-    return characters.some(character => character.hasBattleMedicine);
-}
-
-// Function to update party composition warnings
+// Function to update party composition warnings using the loaded YAML warnings
 function updatePartyWarnings() {
     // Create warnings container if it doesn't exist
     let warningsContainer = document.getElementById('warningsContainer');
@@ -309,99 +328,93 @@ function updatePartyWarnings() {
         warningsContainer = document.createElement('div');
         warningsContainer.id = 'warningsContainer';
         warningsContainer.className = 'warnings-container';
-        
+
         const title = document.createElement('h2');
         title.className = 'warnings-title';
         title.textContent = 'Party Composition Warnings';
         warningsContainer.appendChild(title);
-        
+
         const warningsGrid = document.createElement('div');
         warningsGrid.id = 'warningsGrid';
         warningsGrid.className = 'warnings-grid';
         warningsContainer.appendChild(warningsGrid);
-        
+
         document.querySelector('.container').appendChild(warningsContainer);
     }
-    
+
     const warningsGrid = document.getElementById('warningsGrid');
     warningsGrid.innerHTML = ''; // Clear existing warnings
-    
+
     // Don't show warnings if no characters
     if (characters.length === 0) {
         warningsGrid.innerHTML = '<div class="warning-card">No characters imported yet</div>';
         return;
     }
-    
-    // Battle Medicine warning
-    addWarning(
-        warningsGrid,
-        'Battle Medicine',
-        'At least one character should have Battle Medicine for emergency healing',
-        hasBattleMedicine()
-    );
-    
-    // Zero Skills warning - directly check the Highest Values row
-    const highestRow = document.getElementById('highestValues');
-    const zeroSkills = [];
-    
-    // Skills start at index 12 in the highest values row
-    let skillIndex = 0;
-    for (let i = 12; i < highestRow.cells.length; i++) {
-        const value = parseInt(highestRow.cells[i].textContent);
-        if (value === 0 || isNaN(value)) { // Check for 0 or NaN (like "-")
-            const skillKey = Object.keys(skillMap)[skillIndex];
-            if (skillKey) { // Make sure we have a valid skill key
-                const skillName = skillKey.charAt(0).toUpperCase() + skillKey.slice(1);
-                zeroSkills.push(skillName);
+
+    // Process each warning from loaded YAML files
+    warnings.forEach(warning => {
+        try {
+            // Evaluate the check function
+            let isSuccess = false;
+
+            // Handle multi-line function
+            if (typeof warning.checkFunction === 'string') {
+                const fn = new Function('return ' + warning.checkFunction)();
+                isSuccess = fn();
             }
+
+            // Process message templates
+            let message = isSuccess ? warning.successMessage : warning.failureMessage;
+
+            // Handle template variables in the message - replace {{variable}} with its value
+            message = message.replace(/{{(.*?)}}/g, (match, expr) => {
+                try {
+                    return eval(expr) || '';
+                } catch (e) {
+                    console.error(`Error evaluating template expression ${expr}:`, e);
+                    return '';
+                }
+            });
+
+            // Add the warning card
+            addWarning(
+                warningsGrid,
+                warning.title,
+                message,
+                isSuccess
+            );
+        } catch (error) {
+            console.error(`Error processing warning "${warning.title}":`, error);
         }
-        skillIndex++;
-    }
-    
-    // Always display a skills warning card, but make it success or error as appropriate
-    if (zeroSkills.length > 0) {
-        addWarning(
-            warningsGrid,
-            'Missing Skills',
-            `No character has training in: ${zeroSkills.join(', ')}`,
-            false
-        );
-    } else {
-        addWarning(
-            warningsGrid,
-            'Skill Coverage',
-            'Full skill coverage achieved. At least one character has training in every skill.',
-            true
-        );
-    }
+    });
 }
 
 // Helper function to add a warning card
 function addWarning(container, title, description, isSuccess) {
     const card = document.createElement('div');
     card.className = `warning-card ${isSuccess ? 'success' : 'error'}`;
-    
+
     const icon = document.createElement('div');
     icon.className = 'warning-icon';
     icon.innerHTML = isSuccess ? '✅' : '⚠️';
-    
+
     const content = document.createElement('div');
     content.className = 'warning-content';
-    
+
     const titleElem = document.createElement('div');
     titleElem.className = 'warning-title';
     titleElem.textContent = title;
-    
+
     const descElem = document.createElement('div');
     descElem.className = 'warning-description';
     descElem.textContent = description;
-    
+
     content.appendChild(titleElem);
     content.appendChild(descElem);
-    
+
     card.appendChild(icon);
     card.appendChild(content);
-    
+
     container.appendChild(card);
 }
 
@@ -413,13 +426,13 @@ function updateHighestValues() {
 
     const highestRow = document.getElementById('highestValues');
     const cells = highestRow.cells;
-    
+
     // Skip the first cell (the "Highest Values" header with colspan=4)
     // Cells start at index 1
-    
+
     // Skip the healing column (it doesn't have highest values)
     // index 1 is healing
-    
+
     // Abilities (starting at index 2)
     cells[2].textContent = Math.max(...characters.map(c => c.abilities.str));
     cells[3].textContent = Math.max(...characters.map(c => c.abilities.dex));
@@ -427,13 +440,13 @@ function updateHighestValues() {
     cells[5].textContent = Math.max(...characters.map(c => c.abilities.int));
     cells[6].textContent = Math.max(...characters.map(c => c.abilities.wis));
     cells[7].textContent = Math.max(...characters.map(c => c.abilities.cha));
-    
+
     // Defenses (starting at index 8)
     cells[8].textContent = Math.max(...characters.map(c => c.defenses.ac));
     cells[9].textContent = Math.max(...characters.map(c => c.defenses.fort));
     cells[10].textContent = Math.max(...characters.map(c => c.defenses.ref));
     cells[11].textContent = Math.max(...characters.map(c => c.defenses.will));
-    
+
     // Skills (starting at index 12)
     let cellIndex = 12;
     for (const skill of Object.keys(skillMap)) {
@@ -443,7 +456,7 @@ function updateHighestValues() {
 
     // Highlight highest values in the table
     highlightHighestValues();
-    
+
     // Update party composition warnings
     updatePartyWarnings();
 }
@@ -454,19 +467,19 @@ function highlightHighestValues() {
     const tbody = document.getElementById('characterRows');
     const tfoot = document.querySelector('tfoot');
     const rows = tbody.rows;
-    
+
     if (rows.length === 0) return;
-    
+
     // Get the highest values from the footer row
     const highestRow = tfoot.rows[0];
     const highestValues = [];
-    
+
     // Skip healing column which doesn't have highest values
     // Collect highest values starting from abilities
     for (let i = 2; i < highestRow.cells.length; i++) {
         highestValues.push(parseInt(highestRow.cells[i].textContent));
     }
-    
+
     // For each value cell in the character rows
     for (let row = 0; row < rows.length; row++) {
         // Start at column 5 (STR) - skip name, class, archetypes, level, healing
@@ -474,7 +487,7 @@ function highlightHighestValues() {
             const cellValue = parseInt(rows[row].cells[col].textContent);
             // Compare with corresponding value in highestValues (accounting for the offset)
             const highestValue = highestValues[col - 5];
-            
+
             if (!isNaN(cellValue) && !isNaN(highestValue) && cellValue === highestValue) {
                 rows[row].cells[col].classList.add('highest');
             } else {
@@ -485,70 +498,73 @@ function highlightHighestValues() {
 }
 
 // Event Listener for Import Button (File)
-document.getElementById('importButton').addEventListener('click', function() {
+document.getElementById('importButton').addEventListener('click', function () {
     const fileInput = document.getElementById('jsonFileInput');
     const file = fileInput.files[0];
-    
+
     if (!file) {
         showStatusMessage('Please select a file first', true);
         return;
     }
-    
+
     const reader = new FileReader();
-    
-    reader.onload = function(e) {
+
+    reader.onload = function (e) {
         const success = processJsonData(e.target.result);
         if (success) {
             // Reset file input
             fileInput.value = '';
         }
     };
-    
+
     reader.readAsText(file);
 });
 
 // Event Listener for Import from Clipboard Button
-document.getElementById('clipboardButton').addEventListener('click', async function() {
+document.getElementById('clipboardButton').addEventListener('click', async function () {
     try {
         const clipboardText = await navigator.clipboard.readText();
-        
+
         if (!clipboardText) {
             showStatusMessage('Clipboard is empty', true);
             return;
         }
-        
+
         const success = processJsonData(clipboardText);
-        
+
     } catch (error) {
         showStatusMessage('Error accessing clipboard: ' + error.message, true);
     }
 });
 
 // Event Listener for Clear Button
-document.getElementById('clearButton').addEventListener('click', function() {
+document.getElementById('clearButton').addEventListener('click', function () {
     // Clear the characters array
     characters = [];
-    
+
     // Clear the table body
     const tbody = document.getElementById('characterRows');
     tbody.innerHTML = '<tr><td colspan="31" class="no-characters">No characters imported yet</td></tr>';
-    
+
     // Reset highest values row
     const highestRow = document.getElementById('highestValues');
     const cells = highestRow.cells;
-    
+
     for (let i = 1; i < cells.length; i++) {
         cells[i].textContent = '-';
     }
-    
+
     // Update warnings
     updatePartyWarnings();
-    
+
     showStatusMessage('All characters cleared');
 });
 
-// Initialize with example data
-window.addEventListener('DOMContentLoaded', () => {
+// Initialize the application
+async function init() {
+    // Load warnings
+    await loadWarnings();
+
     // Check if we have any character data in the paste.txt
     try {
         const jsonString = document.querySelector('.document_content')?.textContent;
@@ -558,4 +574,7 @@ window.addEventListener('DOMContentLoaded', () => {
     } catch (e) {
         console.log('No initial data to load:', e);
     }
-});
+}
+
+// When DOM is ready, initialize the app
+window.addEventListener('DOMContentLoaded', init);

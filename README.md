@@ -1,11 +1,25 @@
 # PF2e Character Comparison Tool
+
 https://plasticmacaroni.github.io/pathbuilder-viewer/
 
 A browser-based tool for comparing Pathfinder 2e character statistics, highlighting highest values, and providing party composition warnings.
 
 ## Setup
 
-1. Download all three files (`index.html`, `style.css`, and `script.js`) to the same directory
+1. Download all files to maintain the following folder structure:
+
+   ```
+   pf2e-character-comparison/
+   ├── index.html        # Main HTML file
+   ├── style.css         # Styles
+   ├── script.js         # Main JavaScript
+   └── warnings/         # Warning YAML files
+       ├── battle-medicine.yaml
+       ├── skill-coverage.yaml
+       ├── frontline.yaml
+       └── magic-user.yaml
+   ```
+
 2. Open `index.html` in a modern web browser
 3. No server required - works completely in the browser
 
@@ -16,6 +30,8 @@ A browser-based tool for comparing Pathfinder 2e character statistics, highlight
 - **Visual Highlighting**: Golden text for highest values in each category
 - **Party Composition Warnings**: Automatic detection of potential party composition issues
 - **Responsive Design**: Dark mode interface that works on various devices
+- **Healing Detection**: Comprehensive tracking of healing-related abilities
+- **Modular Warnings**: YAML-based configuration for easy extensibility
 
 ## How to Use
 
@@ -28,7 +44,7 @@ A browser-based tool for comparing Pathfinder 2e character statistics, highlight
 ### Reading the Table
 
 - **Character Info**: Name, class (as pill), archetypes (as pills), and level
-- **Healing**: Displays healing-related abilities as color-coded pills
+- **Healing and Sustain**: Displays healing abilities as color-coded pills
 - **Ability Scores**: STR, DEX, CON, INT, WIS, CHA values
 - **Defenses**: AC, Fortitude, Reflex, Will
 - **Skills**: Abbreviated skill bonuses
@@ -42,114 +58,162 @@ Warnings appear at the bottom of the page and are automatically updated when cha
 - **Green (✅)**: Indicates a successful check (party meets this requirement)
 - **Red (⚠️)**: Indicates a warning (party may have an issue)
 
-## Warning System
-
-The warning system checks for key party composition elements and provides feedback on potential gaps.
-
-### Current Warnings
-
-1. **Battle Medicine**: Checks if at least one character has the Battle Medicine feat
-2. **Skill Coverage**: Checks if at least one character has training in every skill
-
-### How Warnings Work
-
-The warning system uses a modular approach:
-
-1. The `updatePartyWarnings()` function creates the warnings container
-2. Individual checks are run within this function 
-3. The `addWarning()` helper function creates the warning cards
-4. Each warning has:
-   - A title
-   - A description
-   - A success/failure state (determines color)
-
 ## Adding New Warnings
 
-To add a new warning, follow these steps:
+The warning system is designed to be completely modular using YAML files. Each warning is defined in its own file and contains all the logic needed to perform its check.
 
-### 1. Add a Detection Function (if needed)
+### Warning File Structure
 
-Create a function that returns a boolean indicating if the warning condition is met:
+Each warning file follows this structure:
 
-```javascript
-// Example: Check if party has a frontline character (STR ≥ 18)
-function hasFrontlineCharacter() {
-    return characters.some(character => character.abilities.str >= 18);
-}
-```
-
-### 2. Add the Warning to updatePartyWarnings()
-
-Add your new warning check inside the `updatePartyWarnings()` function in `script.js`:
-
-```javascript
-// Add this inside the updatePartyWarnings() function
-
-// Frontline Character warning
-addWarning(
-    warningsGrid,
-    'Frontline Character',
-    'Party should have at least one character with high Strength (18+) for frontline combat',
-    hasFrontlineCharacter()
-);
-```
-
-### 3. Warning Parameters
-
-When calling `addWarning()`, provide these parameters:
-
-1. `container`: The DOM element to add the warning to (use `warningsGrid`)
-2. `title`: Short title for the warning (e.g., "Frontline Character")
-3. `description`: Detailed explanation of the warning
-4. `isSuccess`: Boolean - `true` shows green success, `false` shows red warning
-
-### Example: Adding a Healer Warning
-
-```javascript
-// 1. Add the detection function
-function hasHealer() {
-    return characters.some(character => 
-        character.skills.medicine >= 4 || // High medicine skill
-        character.class === "Cleric" ||   // Class-based healing
-        character.archetypes.includes("Cleric") // Archetype healing
-    );
-}
-
-// 2. Add to updatePartyWarnings()
-addWarning(
-    warningsGrid,
-    'Dedicated Healer',
-    'Party should have at least one character focused on healing',
-    hasHealer()
-);
-```
-
-## Extending the Tool
-
-### Adding Healing Ability Detection
-
-To detect more healing abilities, modify the `extractCharacterData()` function:
-
-```javascript
-// Find this section in extractCharacterData()
-if (data.build?.feats) {
-    data.build.feats.forEach(feat => {
-        if (feat && feat[0] === "Battle Medicine") {
-            hasBattleMedicine = true;
-            healingAbilities.push("Battle Medicine");
+```yaml
+title: Battle Medicine
+description: Emergency healing option
+checkFunction: |
+  function() {
+    // Check if any character has Battle Medicine
+    for (const character of characters) {
+      if (character.healingAbilities) {
+        for (const ability of character.healingAbilities) {
+          if (ability === "Battle Medicine") {
+            return true;
+          }
         }
-        // Add new healing feat detection here
-        if (feat && feat[0] === "Treat Wounds") {
-            healingAbilities.push("Treat Wounds");
-        }
-    });
-}
+      }
+    }
+    return false;
+  }
+successMessage: At least one character has Battle Medicine for emergency healing
+failureMessage: No character has Battle Medicine for emergency healing
 ```
 
-### Customizing Appearance
+- **title**: The title of the warning shown in the card
+- **description**: Brief description of what this warning checks for
+- **checkFunction**: JavaScript function that returns true (success) or false (warning)
+  - This must be completely self-contained and only reference the global `characters` array
+  - Can access any property of characters defined in the data extraction logic
+- **successMessage**: Message displayed when the check passes
+- **failureMessage**: Message displayed when the check fails
 
-The tool uses a modular CSS structure. To customize the appearance:
+### How to Add a New Warning
 
-- Edit color schemes in `style.css`
-- Modify pill colors in the `.pill-class`, `.pill-archetype`, and `.pill-healing` classes
-- Adjust the warning card styles in the `.warning-card` section
+1. **Create a new YAML file** in the `warnings/` directory
+2. **Write your warning configuration** following the structure above
+3. **Add your warning to the list** in the `loadWarnings()` function in `script.js`:
+
+```javascript
+const warningFiles = [
+  "warnings/battle-medicine.yaml",
+  "warnings/skill-coverage.yaml",
+  "warnings/frontline.yaml",
+  "warnings/magic-user.yaml",
+  "warnings/your-new-warning.yaml", // Add your file here
+];
+```
+
+### Template Variables in Messages
+
+You can use template variables in your success and failure messages by using double curly braces:
+
+```yaml
+failureMessage: "No character has training in: {{zeroSkillsList.join(', ')}}"
+```
+
+Inside the template, you can use any JavaScript expression. To make data available to templates:
+
+1. Store data in a global variable within your `checkFunction`
+2. Reference that variable in your template
+
+### Examples
+
+#### Simple Check: Frontline Character
+
+```yaml
+title: Frontline Character
+description: Tank or frontline combat role
+checkFunction: |
+  function() {
+    for (const character of characters) {
+      if (character.abilities && character.defenses) {
+        if (character.abilities.str >= 16 && character.defenses.ac >= 18) {
+          return true;
+        }
+      }
+    }
+    return false;
+  }
+successMessage: Party has at least one character with good Strength and AC for frontline combat
+failureMessage: Consider adding a character with high Strength and AC to tank damage in combat
+```
+
+#### Complex Check with Template Variables: Skill Coverage
+
+```yaml
+title: Skill Coverage
+description: Party skill proficiency distribution
+checkFunction: |
+  function() {
+    // If there are no characters, don't show a warning
+    if (characters.length === 0) return true;
+    
+    // Define all skills to check
+    const allSkills = {
+      'acrobatics': 'Acrobatics',
+      'arcana': 'Arcana',
+      // ... more skills ...
+    };
+    
+    // Find skills with no training
+    const zeroSkills = [];
+    
+    for (const [skillKey, skillName] of Object.entries(allSkills)) {
+      // Check if any character has a non-zero value for this skill
+      let hasTraining = false;
+      
+      for (const character of characters) {
+        if (character.skills && character.skills[skillKey] > 0) {
+          hasTraining = true;
+          break;
+        }
+      }
+      
+      if (!hasTraining) {
+        zeroSkills.push(skillName);
+      }
+    }
+    
+    // Store for use in the message template
+    window.zeroSkillsList = zeroSkills;
+    
+    return zeroSkills.length === 0;
+  }
+successMessage: Full skill coverage achieved. At least one character has training in every skill.
+failureMessage: "No character has training in: {{zeroSkillsList.join(', ')}}"
+```
+
+## Character Data Structure
+
+When writing warning checks, you can access the following properties of each character:
+
+- `name` - Character name
+- `class` - Character class
+- `archetypes` - Array of archetype names
+- `level` - Character level
+- `healingAbilities` - Array of healing-related abilities
+- `abilities` - Object with `str`, `dex`, `con`, `int`, `wis`, `cha` values
+- `defenses` - Object with `ac`, `fort`, `ref`, `will` values
+- `skills` - Object with skill values mapped to skill keys from `skillMap`
+
+## Customizing the Tool
+
+### Adding More Healing Abilities
+
+To detect more healing-related abilities, add them to the `healingFeats` array in the `extractCharacterData()` function.
+
+### Changing Appearance
+
+Modify the `style.css` file to adjust colors, spacing, and layout.
+
+### Adding Character Properties
+
+If you need to extract additional properties from character data for warnings, add them to the `characterData` object in the `extractCharacterData()` function.
