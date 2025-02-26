@@ -109,21 +109,91 @@ function processJsonData(jsonString) {
     }
 }
 
-// Preprocess character data to extract derived values
-function preprocessCharacterData(data) {
-    // Store original data and add extracted data section
-    const processedData = {
-        ...data,
-        extracted: {
-            archetypes: extractArchetypes(data),
-            healingAbilities: extractHealingAbilities(data),
-            skills: extractSkillValues(data),
-            skillProficiencies: extractSkillProficiencies(data),
-            defenses: extractDefenseValues(data)
-        }
+// Extract proficiency values generically based on a path
+function extractProficiencyValue(data, path) {
+    const value = getValueByPath(data, path);
+    if (value === undefined || value === null) return 'U'; // Default to Untrained
+
+    // Convert numeric proficiency to letter code
+    if (value === 0) return 'U'; // Untrained
+    if (value === 2) return 'T'; // Trained
+    if (value === 4) return 'E'; // Expert
+    if (value === 6) return 'M'; // Master
+    if (value === 8) return 'L'; // Legendary
+
+    // If it's already a letter, return it
+    if (typeof value === 'string' && ['U', 'T', 'E', 'M', 'L'].includes(value.toUpperCase())) {
+        return value.toUpperCase();
+    }
+
+    return 'U'; // Fallback to Untrained
+}
+
+// Extract skill values
+function extractSkills(data) {
+    const skills = {};
+    const skillProficiencies = {};
+    const level = data.build?.level || 0; // Get character level
+
+    // Map skills to abilities
+    const skillMap = {
+        'acrobatics': 'dex',
+        'arcana': 'int',
+        'athletics': 'str',
+        'crafting': 'int',
+        'deception': 'cha',
+        'diplomacy': 'cha',
+        'intimidation': 'cha',
+        'medicine': 'wis',
+        'nature': 'wis',
+        'occultism': 'int',
+        'performance': 'cha',
+        'religion': 'wis',
+        'society': 'int',
+        'stealth': 'dex',
+        'survival': 'wis',
+        'thievery': 'dex'
     };
 
-    return processedData;
+    for (const skill in skillMap) {
+        const abilityKey = skillMap[skill];
+        const profBonus = getNumeric(data.build?.proficiencies?.[skill]);
+        const abilityScore = getNumeric(data.build?.abilities?.[abilityKey]);
+        const abilityMod = Math.floor((abilityScore - 10) / 2);
+
+        // Store proficiency letter
+        skillProficiencies[skill] = getProficiencyLevel(profBonus);
+
+        // Add level to the calculation
+        const itemBonus = data.build?.mods?.[capitalizeFirstLetter(skill)]?.["Item Bonus"] || 0;
+        skills[skill] = level + profBonus + abilityMod + itemBonus;
+    }
+
+    // Same fix needed for perception
+    const perceptionProf = getNumeric(data.build?.proficiencies?.perception);
+    const wisScore = getNumeric(data.build?.abilities?.wis);
+    const wisMod = Math.floor((wisScore - 10) / 2);
+    const perceptionItemBonus = data.build?.mods?.Perception?.["Item Bonus"] || 0;
+    skills.perception = level + perceptionProf + wisMod + perceptionItemBonus;
+
+    return { skills, skillProficiencies };
+}
+
+// Helper to get proficiency level from numeric value
+function getProficiencyLevel(numericValue) {
+    switch (numericValue) {
+        case 0: return "U"; // Untrained
+        case 2: return "T"; // Trained
+        case 4: return "E"; // Expert
+        case 6: return "M"; // Master
+        case 8: return "L"; // Legendary
+        default: return "U"; // Default to Untrained
+    }
+}
+
+// Helper to capitalize first letter for mod matching
+function capitalizeFirstLetter(string) {
+    return string.charAt(0).toUpperCase() + string.slice(1);
 }
 
 // Extract archetypes from feats
@@ -190,82 +260,6 @@ function extractDefenseValues(data) {
     };
 }
 
-// Extract skill proficiency levels
-function extractSkillProficiencies(data) {
-    const proficiencies = {};
-
-    for (const skill in skillMap) {
-        const profValue = getNumeric(data.build?.proficiencies?.[skill]);
-
-        // Convert numeric proficiency to letter code
-        let profLevel = "U"; // Default to Untrained
-        if (profValue === 2) profLevel = "T";
-        else if (profValue === 4) profLevel = "E";
-        else if (profValue === 6) profLevel = "M";
-        else if (profValue === 8) profLevel = "L";
-
-        proficiencies[skill] = profLevel;
-    }
-
-    return proficiencies;
-}
-
-// Extract skill values
-function extractSkillValues(data) {
-    const skills = {};
-
-    for (const skill in skillMap) {
-        const profValue = getNumeric(data.build?.proficiencies?.[skill]);
-
-        // Determine which ability score to use for this skill
-        let abilityScore;
-        switch (skill) {
-            case 'athletics':
-                abilityScore = getNumeric(data.build?.abilities?.str);
-                break;
-            case 'acrobatics':
-            case 'stealth':
-            case 'thievery':
-                abilityScore = getNumeric(data.build?.abilities?.dex);
-                break;
-            case 'arcana':
-            case 'crafting':
-            case 'society':
-            case 'occultism':
-                abilityScore = getNumeric(data.build?.abilities?.int);
-                break;
-            case 'medicine':
-            case 'nature':
-            case 'religion':
-            case 'survival':
-                abilityScore = getNumeric(data.build?.abilities?.wis);
-                break;
-            case 'deception':
-            case 'diplomacy':
-            case 'intimidation':
-            case 'performance':
-                abilityScore = getNumeric(data.build?.abilities?.cha);
-                break;
-            default:
-                abilityScore = 10; // Fallback
-        }
-
-        // Calculate ability modifier
-        const abilityMod = Math.floor((abilityScore - 10) / 2);
-
-        // Add item bonus if present
-        let itemBonus = 0;
-        if (data.build?.mods && data.build.mods[skill.charAt(0).toUpperCase() + skill.slice(1)]) {
-            itemBonus = getNumeric(data.build.mods[skill.charAt(0).toUpperCase() + skill.slice(1)]["Item Bonus"]);
-        }
-
-        // Calculate total skill value
-        skills[skill] = profValue + abilityMod + itemBonus;
-    }
-
-    return skills;
-}
-
 // Get numeric value or default
 function getNumeric(value, defaultValue = 0) {
     return (value !== undefined && value !== null) ? Number(value) : defaultValue;
@@ -288,7 +282,7 @@ function getValueByPath(obj, path) {
     return current;
 }
 
-// Add a character row based on YAML schema
+// Update the character row function to properly handle proficiency display
 function addCharacterRow(character) {
     const tbody = document.getElementById('characterRows');
     const tableStructure = window.tableStructure;
@@ -304,26 +298,41 @@ function addCharacterRow(character) {
     tableStructure.sections.forEach(section => {
         section.columns.forEach(column => {
             const cell = document.createElement('td');
-            cell.className = `${section.id}-group`;
-
-            // Store column info as data attributes
-            cell.dataset.columnId = column.id;
-            cell.dataset.jsonPath = column.jsonPath || '';
-            cell.dataset.highestValue = column.highestValue.toString();
-
-            // Set proficiency data attribute if needed
-            if (column.showProficiency) {
-                const proficiency = getValueByPath(character, column.proficiencyPath);
-                if (proficiency) {
-                    cell.dataset.proficiency = proficiency;
-                }
-            }
-
-            // Extract value from character JSON using path from YAML
+            // Get the actual value based on YAML jsonPath
             const value = getValueByPath(character, column.jsonPath);
 
-            // Format value based on display type specified in YAML
-            if (column.displayType === 'pill' && value) {
+            // Add class based on section for styling
+            cell.classList.add(`${section.id}-group`);
+
+            // Handle proficiency display if specified in YAML
+            if (column.showProficiency && column.proficiencyPath) {
+                // Get proficiency from the specified path
+                const proficiency = getValueByPath(character, column.proficiencyPath);
+                // Get the actual skill value (not just proficiency)
+                const skillValue = getValueByPath(character, column.jsonPath);
+
+                if (proficiency) {
+                    // Set proficiency as a data attribute for styling
+                    cell.dataset.proficiency = proficiency;
+
+                    // Display based on the YAML-specified display type
+                    if (column.displayType === 'proficiency-badge') {
+                        const profLabel = getProficiencyLabel(proficiency);
+
+                        // Show the actual skill value WITH the proficiency badge
+                        cell.innerHTML = `<span class="value">${skillValue !== undefined ? skillValue : '-'}</span>
+                                        <span class="prof-badge prof-${proficiency.toLowerCase()}" 
+                                        title="${profLabel}">${proficiency}</span>`;
+                    } else {
+                        // Default to just showing the value
+                        cell.textContent = skillValue !== undefined ? skillValue : '-';
+                    }
+                } else {
+                    cell.textContent = skillValue !== undefined ? skillValue : '-';
+                }
+            }
+            // Handle other display types from YAML
+            else if (column.displayType === 'pill' && value) {
                 cell.innerHTML = `<span class="pill pill-${section.id}">${value}</span>`;
             } else if (column.displayType === 'pill-list' && Array.isArray(value) && value.length > 0) {
                 cell.innerHTML = value.map(item =>
@@ -339,6 +348,18 @@ function addCharacterRow(character) {
     });
 
     tbody.appendChild(row);
+}
+
+// Helper function to get the full proficiency label
+function getProficiencyLabel(profCode) {
+    switch (profCode) {
+        case 'U': return 'Untrained';
+        case 'T': return 'Trained';
+        case 'E': return 'Expert';
+        case 'M': return 'Master';
+        case 'L': return 'Legendary';
+        default: return 'Unknown';
+    }
 }
 
 // Update the highest values row based on YAML schema
@@ -821,11 +842,16 @@ function generateTableHeader(tableStructure) {
             const columnHeader = document.createElement('th');
             columnHeader.className = `${section.id}-group`;
 
-            // Add icon if specified
-            if (column.icon) {
+            // Set column title with icon if specified, but only include the icon once
+            if (column.icon && !column.noIcon) {
                 columnHeader.innerHTML = `<i class="fas fa-${column.icon}"></i> ${column.title}`;
             } else {
                 columnHeader.textContent = column.title;
+            }
+
+            // Add tooltip if fullTitle is specified
+            if (column.fullTitle) {
+                columnHeader.title = column.fullTitle;
             }
 
             columnRow.appendChild(columnHeader);
@@ -833,7 +859,6 @@ function generateTableHeader(tableStructure) {
     });
 
     thead.appendChild(columnRow);
-
     return thead;
 }
 
@@ -934,4 +959,74 @@ async function loadTableStructure() {
         console.error('Error loading table structure:', error);
         return null;
     }
+}
+
+// Extract skill proficiency levels
+function extractSkillProficiencies(data) {
+    const proficiencies = {};
+    const skillMap = {
+        'acrobatics': 'Acrobatics',
+        'arcana': 'Arcana',
+        'athletics': 'Athletics',
+        'crafting': 'Crafting',
+        'deception': 'Deception',
+        'diplomacy': 'Diplomacy',
+        'intimidation': 'Intimidation',
+        'medicine': 'Medicine',
+        'nature': 'Nature',
+        'occultism': 'Occultism',
+        'performance': 'Performance',
+        'religion': 'Religion',
+        'society': 'Society',
+        'stealth': 'Stealth',
+        'survival': 'Survival',
+        'thievery': 'Thievery'
+    };
+
+    // Convert skill proficiencies to letter codes (U/T/E/M/L)
+    for (const skill in skillMap) {
+        const profValue = getNumeric(data.build?.proficiencies?.[skill]);
+        let profLevel = "U";
+        if (profValue === 2) profLevel = "T";
+        else if (profValue === 4) profLevel = "E";
+        else if (profValue === 6) profLevel = "M";
+        else if (profValue === 8) profLevel = "L";
+        proficiencies[skill] = profLevel;
+    }
+
+    // Handle perception separately
+    const perceptionValue = getNumeric(data.build?.proficiencies?.perception);
+    let perceptionLevel = "U";
+    if (perceptionValue === 2) perceptionLevel = "T";
+    else if (perceptionValue === 4) perceptionLevel = "E";
+    else if (perceptionValue === 6) perceptionLevel = "M";
+    else if (perceptionValue === 8) perceptionLevel = "L";
+    proficiencies.perception = perceptionLevel;
+
+    return proficiencies;
+}
+
+// Preprocess character data to extract all needed values
+function preprocessCharacterData(data) {
+    // Extract skills and proficiencies 
+    const { skills, skillProficiencies } = extractSkills(data);
+
+    // Create the extracted data object
+    const extracted = {
+        archetypes: extractArchetypes(data),
+        healingAbilities: extractHealingAbilities(data),
+        skills: skills,  // Now this is the actual skills object
+        skillProficiencies: skillProficiencies,
+        defenses: extractDefenseValues(data)
+    };
+
+    // Debug: Log the extracted skills to verify calculation
+    console.log("Extracted Skills:", extracted.skills);
+    console.log("Extracted Proficiencies:", extracted.skillProficiencies);
+
+    // Return the processed data
+    return {
+        ...data,
+        extracted
+    };
 }

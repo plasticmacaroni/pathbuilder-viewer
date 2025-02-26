@@ -672,3 +672,46 @@ footer a:hover {
     color: white;
     border-right: 2px solid var(--border-color);
 }
+
+/* Proficiency badge styling */
+.prof-badge {
+    display: inline-block;
+    font-size: 0.7em;
+    width: 1.2em;
+    height: 1.2em;
+    line-height: 1.2em;
+    text-align: center;
+    border-radius: 50%;
+    margin-left: 4px;
+    font-weight: bold;
+    vertical-align: super;
+}
+
+.prof-u {
+    background-color: #888;
+    color: #eee;
+}
+
+.prof-t {
+    background-color: #4a94cd;
+    color: white;
+}
+
+.prof-e {
+    background-color: #3a75bd;
+    color: white;
+}
+
+.prof-m {
+    background-color: #9b59b6;
+    color: white;
+}
+
+.prof-l {
+    background-color: #f39c12;
+    color: white;
+}
+
+td .value {
+    display: inline-block;
+}

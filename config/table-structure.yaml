@@ -81,7 +81,10 @@ sections:
         title: Perc
         icon: eye
         fullTitle: Perception
-        jsonPath: build.proficiencies.perception
+        jsonPath: extracted.skills.perception
+        proficiencyPath: extracted.skillProficiencies.perception
+        showProficiency: true
+        displayType: proficiency-badge
         highestValue: true
 
   - id: defense
@@ -105,9 +108,9 @@ sections:
         jsonPath: extracted.defenses.will
         highestValue: true
 
-  - id: skill
+  - id: skills
     title: Skills
-    icon: book-open-reader
+    icon: graduation-cap
     columns:
       - id: acrobatics
         title: Acro
@@ -115,125 +118,141 @@ sections:
         fullTitle: Acrobatics
         jsonPath: extracted.skills.acrobatics
         proficiencyPath: extracted.skillProficiencies.acrobatics
-        highestValue: true
         showProficiency: true
+        displayType: proficiency-badge
+        highestValue: true
       - id: arcana
         title: Arca
         icon: wand-sparkles
         fullTitle: Arcana
         jsonPath: extracted.skills.arcana
         proficiencyPath: extracted.skillProficiencies.arcana
-        highestValue: true
         showProficiency: true
+        displayType: proficiency-badge
+        highestValue: true
       - id: athletics
         title: Athl
         icon: person-running
         fullTitle: Athletics
         jsonPath: extracted.skills.athletics
         proficiencyPath: extracted.skillProficiencies.athletics
-        highestValue: true
         showProficiency: true
+        displayType: proficiency-badge
+        highestValue: true
       - id: crafting
         title: Craf
         icon: hammer
         fullTitle: Crafting
         jsonPath: extracted.skills.crafting
         proficiencyPath: extracted.skillProficiencies.crafting
-        highestValue: true
         showProficiency: true
+        displayType: proficiency-badge
+        highestValue: true
       - id: deception
         title: Dece
         icon: mask
         fullTitle: Deception
         jsonPath: extracted.skills.deception
         proficiencyPath: extracted.skillProficiencies.deception
-        highestValue: true
         showProficiency: true
+        displayType: proficiency-badge
+        highestValue: true
       - id: diplomacy
         title: Dipl
         icon: handshake
         fullTitle: Diplomacy
         jsonPath: extracted.skills.diplomacy
         proficiencyPath: extracted.skillProficiencies.diplomacy
-        highestValue: true
         showProficiency: true
+        displayType: proficiency-badge
+        highestValue: true
       - id: intimidation
         title: Inti
-        icon: skull
+        icon: face-angry
         fullTitle: Intimidation
         jsonPath: extracted.skills.intimidation
         proficiencyPath: extracted.skillProficiencies.intimidation
-        highestValue: true
         showProficiency: true
+        displayType: proficiency-badge
+        highestValue: true
       - id: medicine
         title: Medi
-        icon: staff-snake
+        icon: stethoscope
         fullTitle: Medicine
         jsonPath: extracted.skills.medicine
         proficiencyPath: extracted.skillProficiencies.medicine
-        highestValue: true
         showProficiency: true
+        displayType: proficiency-badge
+        highestValue: true
       - id: nature
         title: Natu
         icon: leaf
         fullTitle: Nature
         jsonPath: extracted.skills.nature
         proficiencyPath: extracted.skillProficiencies.nature
-        highestValue: true
         showProficiency: true
+        displayType: proficiency-badge
+        highestValue: true
       - id: occultism
         title: Occu
         icon: eye
         fullTitle: Occultism
         jsonPath: extracted.skills.occultism
         proficiencyPath: extracted.skillProficiencies.occultism
-        highestValue: true
         showProficiency: true
+        displayType: proficiency-badge
+        highestValue: true
       - id: performance
         title: Perf
         icon: masks-theater
         fullTitle: Performance
         jsonPath: extracted.skills.performance
         proficiencyPath: extracted.skillProficiencies.performance
-        highestValue: true
         showProficiency: true
+        displayType: proficiency-badge
+        highestValue: true
       - id: religion
         title: Reli
         icon: pray
         fullTitle: Religion
         jsonPath: extracted.skills.religion
         proficiencyPath: extracted.skillProficiencies.religion
-        highestValue: true
         showProficiency: true
+        displayType: proficiency-badge
+        highestValue: true
       - id: society
         title: Soci
         icon: landmark
         fullTitle: Society
         jsonPath: extracted.skills.society
         proficiencyPath: extracted.skillProficiencies.society
-        highestValue: true
         showProficiency: true
+        displayType: proficiency-badge
+        highestValue: true
       - id: stealth
         title: Stea
         icon: user-ninja
         fullTitle: Stealth
         jsonPath: extracted.skills.stealth
         proficiencyPath: extracted.skillProficiencies.stealth
-        highestValue: true
         showProficiency: true
+        displayType: proficiency-badge
+        highestValue: true
       - id: survival
         title: Surv
         icon: campground
         fullTitle: Survival
         jsonPath: extracted.skills.survival
         proficiencyPath: extracted.skillProficiencies.survival
-        highestValue: true
         showProficiency: true
+        displayType: proficiency-badge
+        highestValue: true
       - id: thievery
         title: Thie
         icon: lock-open
         fullTitle: Thievery
         jsonPath: extracted.skills.thievery
         proficiencyPath: extracted.skillProficiencies.thievery
-        highestValue: true
         showProficiency: true
+        displayType: proficiency-badge
+        highestValue: true
