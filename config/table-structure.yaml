@@ -42,6 +42,17 @@ sections:
         displayType: proficiency-pill-list
         highestValue: false
 
+  - id: healing
+    title: Healing & Sustain
+    icon: heart-pulse
+    columns:
+      - id: healingAbilities
+        title: Abilities
+        icon: kit-medical
+        jsonPath: extracted.healingAbilities
+        highestValue: false
+        displayType: pill-list
+
   - id: ability
     title: Ability Scores
     icon: dumbbell
@@ -71,24 +82,19 @@ sections:
         jsonPath: build.abilities.cha
         highestValue: true
 
-  - id: perception
-    title: Perception
-    icon: eye
+  - id: defense
+    title: Defenses
+    icon: shield-halved
     columns:
       - id: perception
         title: Perc
         icon: eye
         fullTitle: Perception
         jsonPath: extracted.skills.perception
-        proficiencyPath: extracted.skillProficiencies.perception
+        proficiencyPath: build.proficiencies.perception
         showProficiency: true
         displayType: proficiency-badge
         highestValue: true
-
-  - id: defense
-    title: Defenses
-    icon: shield-halved
-    columns:
       - id: ac
         title: AC
         jsonPath: build.acTotal.acTotal
@@ -96,14 +102,23 @@ sections:
       - id: fort
         title: Fort
         jsonPath: extracted.defenses.fort
+        proficiencyPath: build.proficiencies.fortitude
+        showProficiency: true
+        displayType: proficiency-badge
         highestValue: true
       - id: ref
         title: Ref
         jsonPath: extracted.defenses.ref
+        proficiencyPath: build.proficiencies.reflex
+        showProficiency: true
+        displayType: proficiency-badge
         highestValue: true
       - id: will
         title: Will
         jsonPath: extracted.defenses.will
+        proficiencyPath: build.proficiencies.will
+        showProficiency: true
+        displayType: proficiency-badge
         highestValue: true
 
   - id: skills
@@ -254,14 +269,3 @@ sections:
         showProficiency: true
         displayType: proficiency-badge
         highestValue: true
-
-  - id: healing
-    title: Healing & Sustain
-    icon: heart-pulse
-    columns:
-      - id: healingAbilities
-        title: Abilities
-        icon: kit-medical
-        jsonPath: extracted.healingAbilities
-        highestValue: false
-        displayType: pill-list

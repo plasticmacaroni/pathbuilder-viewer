@@ -1,0 +1,29 @@
+title: Performance Skill Issue
+description: Checks if non-bard characters have Performance proficiency
+checkFunction: |
+  function() {
+    // If there are no characters, don't show a warning
+    if (characters.length === 0) return true;
+    
+    // Check if any non-bard character has Performance proficiency
+    for (const character of characters) {
+      // Skip if missing required data
+      if (!character.build || !character.extracted || !character.extracted.skillProficiencies) {
+        continue;
+      }
+      
+      // Get character's class and performance proficiency
+      const characterClass = character.build.class;
+      const performanceProf = character.extracted.skillProficiencies.performance;
+      
+      // If this character is not a Bard and has any proficiency in Performance
+      if (characterClass !== 'Bard' && performanceProf !== 'U') {
+        return false; // Trigger the warning
+      }
+    }
+    
+    // No non-bard characters with Performance proficiency found
+    return true;
+  }
+successMessage: Performance training is appropriately distributed, since it sucks on anyone but Bards.
+failureMessage: Performance Fucking Sucks for Anyone but Bards.

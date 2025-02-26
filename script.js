@@ -2,6 +2,7 @@
 let characters = [];
 let warnings = [];
 let healingAbilities = []; // New variable to store healing abilities
+let tenuousTips = []; // New array to store tenuous tips
 const skillMap = {
     'acrobatics': 'Acro',
     'arcana': 'Arca',
@@ -42,6 +43,7 @@ async function loadWarnings() {
             'warnings/battle-medicine.yaml',
             'warnings/skill-coverage.yaml',
             'warnings/level-consistency.yaml',
+            'warnings/bard-performance.yaml',
             // Add more warning files here
         ];
 
@@ -77,6 +79,35 @@ async function loadWarnings() {
         }
     } catch (error) {
         console.error('Error loading warnings or healing abilities:', error);
+    }
+}
+
+// Function to load tenuous tips from YAML files
+async function loadTenuousTips() {
+    try {
+        // List of tip files to load
+        const tipFiles = [
+            'tenuous-tips/bard-performance.yaml',
+            // Add more tip files here
+        ];
+
+        tenuousTips = [];
+
+        // Load each tip file
+        for (const file of tipFiles) {
+            const response = await fetch(file);
+            if (response.ok) {
+                const yamlText = await response.text();
+                const tipConfig = jsyaml.load(yamlText);
+                tenuousTips.push(tipConfig);
+            } else {
+                console.error(`Failed to load tip file: ${file}`);
+            }
+        }
+
+        console.log(`Loaded ${tenuousTips.length} tenuous tips`);
+    } catch (error) {
+        console.error('Error loading tenuous tips:', error);
     }
 }
 
@@ -382,29 +413,42 @@ function addCharacterRow(character) {
 
             // Handle proficiency display if specified in YAML
             if (column.showProficiency && column.proficiencyPath) {
-                // Get proficiency from the specified path
-                const proficiency = getValueByPath(character, column.proficiencyPath);
-                // Get the actual skill value (not just proficiency)
+                const proficiencyValue = getValueByPath(character, column.proficiencyPath);
                 const skillValue = getValueByPath(character, column.jsonPath);
 
-                if (proficiency) {
+                if (proficiencyValue !== undefined) {
+                    // Convert numeric proficiency to string code if needed
+                    let profCode;
+                    if (typeof proficiencyValue === 'number') {
+                        // Convert numerical proficiency to letter code
+                        if (proficiencyValue === 0) profCode = 'U'; // Untrained
+                        else if (proficiencyValue === 2) profCode = 'T'; // Trained
+                        else if (proficiencyValue === 4) profCode = 'E'; // Expert
+                        else if (proficiencyValue === 6) profCode = 'M'; // Master
+                        else if (proficiencyValue === 8) profCode = 'L'; // Legendary
+                        else profCode = 'U'; // Default
+                    } else {
+                        // If it's already a string code, use it as is
+                        profCode = proficiencyValue;
+                    }
+
                     // Set proficiency as a data attribute for styling
-                    cell.dataset.proficiency = proficiency;
+                    cell.dataset.proficiency = profCode;
 
                     // Display based on the YAML-specified display type
                     if (column.displayType === 'proficiency-badge') {
-                        const profLabel = getProficiencyLabel(proficiency);
+                        const profLabel = getProficiencyLabel(profCode);
 
                         // Show the actual skill value WITH the proficiency badge
                         cell.innerHTML = `<span class="value">${skillValue !== undefined ? skillValue : '-'}</span>
-                                        <span class="prof-badge prof-${proficiency.toLowerCase()}" 
-                                        title="${profLabel}">${proficiency}</span>`;
+                                        <span class="prof-badge prof-${profCode.toLowerCase()}" 
+                                        title="${profLabel}">${profCode}</span>`;
                     } else if (column.displayType === 'proficiency-pill-list' && Array.isArray(skillValue)) {
                         // For traditions, display pills with proficiency badges
                         if (skillValue.length > 0) {
                             const items = skillValue.map(item => {
                                 const itemKey = item.toLowerCase();
-                                const itemProf = proficiency[itemKey] || 'U';
+                                const itemProf = proficiencyValue[itemKey] || 'U';
                                 const profLabel = getProficiencyLabel(itemProf);
 
                                 return `<span class="pill pill-${section.id}">
@@ -780,6 +824,12 @@ function renderCharacters() {
 
     // Update the highest values and highlighting
     updateHighestValues();
+
+    // Update warnings
+    updatePartyWarnings();
+
+    // Update tenuous tips
+    updateTenuousTips();
 }
 
 // Initialize the application
@@ -804,6 +854,9 @@ async function init() {
 
         // Load warnings
         await loadWarnings();
+
+        // Load tenuous tips
+        await loadTenuousTips();
 
         // Load characters from cache
         characters = loadCharactersFromCache();
@@ -1176,4 +1229,72 @@ function preprocessCharacterData(data) {
         ...data,
         extracted
     };
+}
+
+// Function to update tenuous tips display
+function updateTenuousTips() {
+    const tipsGrid = document.getElementById('tenuousTipsGrid');
+    tipsGrid.innerHTML = ''; // Clear existing tips
+
+    // Don't show tips if no characters
+    if (characters.length === 0) {
+        tipsGrid.innerHTML = '<div class="warning-card">No adventurers in your party yet. Import some brave souls!</div>';
+        return;
+    }
+
+    // Process each tip
+    tenuousTips.forEach(tip => {
+        try {
+            // Evaluate the check function
+            let isSuccess = false;
+
+            // Handle multi-line function
+            if (typeof tip.checkFunction === 'string') {
+                const fn = new Function('return ' + tip.checkFunction)();
+                isSuccess = fn();
+            }
+
+            // Process message templates
+            let message = isSuccess ? tip.successMessage : tip.failureMessage;
+
+            // Replace template variables (same as in updatePartyWarnings)
+            message = message.replace(/{{(.*?)}}/g, (match, expr) => {
+                try {
+                    // Handle common window variables
+                    if (expr.startsWith('window.')) {
+                        const windowVarPath = expr.replace('window.', '');
+                        return window[windowVarPath] || '';
+                    }
+
+                    // Handle direct variable references
+                    if (window[expr] !== undefined) {
+                        return window[expr];
+                    }
+
+                    // Handle method calls safely (like .join)
+                    if (expr.includes('.join')) {
+                        const varName = expr.split('.')[0];
+                        if (window[varName] && Array.isArray(window[varName])) {
+                            return window[varName].join(', ');
+                        }
+                    }
+
+                    return '';
+                } catch (e) {
+                    console.error(`Error processing template expression ${expr}:`, e);
+                    return '';
+                }
+            });
+
+            // Use the same addWarning function as updatePartyWarnings
+            addWarning(
+                tipsGrid,
+                tip.title,
+                message,
+                isSuccess
+            );
+        } catch (error) {
+            console.error(`Error processing tip "${tip.title}":`, error);
+        }
+    });
 }

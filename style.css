@@ -239,7 +239,7 @@ input[type="file"] {
     overflow: hidden;
 }
 
-/* Add decorative pattern to frame border */
+/* Remove the background pattern from scroll-frame::before */
 .scroll-frame::before {
     content: '';
     position: absolute;
@@ -249,11 +249,7 @@ input[type="file"] {
     bottom: 0;
     pointer-events: none;
     border: 4px solid rgba(255, 255, 255, 0.1);
-    background-image:
-        linear-gradient(45deg, transparent 65%, var(--accent-secondary) 65%, var(--accent-secondary) 70%, transparent 70%),
-        linear-gradient(-45deg, transparent 65%, var(--accent-secondary) 65%, var(--accent-secondary) 70%, transparent 70%);
-    background-size: 20px 20px;
-    background-position: 0 0, 10px 10px;
+    /* Removed the linear-gradient background-image pattern */
     opacity: 0.3;
     z-index: 10;
 }
@@ -264,6 +260,7 @@ input[type="file"] {
     overflow-y: auto;
     max-height: 70vh;
     position: relative;
+    background-image: none !important;
 }
 
 .scroll-frame {
@@ -279,6 +276,7 @@ table {
     /* Ensure it takes at least full width */
     border-collapse: collapse;
     border-spacing: 0;
+    background-image: none !important;
 }
 
 th,
@@ -532,25 +530,15 @@ td .highest {
 
 /* Warning Section Styling */
 .warnings-container {
-    margin-top: 30px;
-    border-radius: 8px;
-    background-color: rgba(245, 231, 203, 0.7);
-    padding: 20px;
-    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
-    border: 1px solid var(--border-color);
+    margin-bottom: 20px;
+    padding: 0 0 10px 0;
 }
 
 .warnings-title {
-    font-size: 1.6rem;
-    color: var(--accent-primary);
-    margin-bottom: 20px;
-    border-bottom: 2px solid var(--border-color);
-    padding-bottom: 10px;
-    text-align: center;
-}
-
-.warnings-title i {
-    margin-right: 10px;
+    margin-bottom: 15px;
+    color: var(--accent-secondary);
+    padding-bottom: 5px;
+    border-bottom: 1px solid var(--border-color);
 }
 
 .warnings-grid {
@@ -560,43 +548,33 @@ td .highest {
 }
 
 .warning-card {
+    background-color: var(--parchment-dark);
+    border-radius: 5px;
     padding: 15px;
-    border-radius: 8px;
-    display: flex;
-    align-items: center;
-    transition: all 0.3s ease;
-    box-shadow: 0 3px 5px rgba(0, 0, 0, 0.1);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    border-left: 4px solid #999;
+    position: relative;
 }
 
 .warning-card.success {
-    background-color: rgba(58, 90, 64, 0.15);
-    border: 1px solid var(--success-color);
+    border-left: 4px solid #2ecc71;
+    background-color: rgba(46, 204, 113, 0.1);
 }
 
-.warning-card.error {
-    background-color: rgba(165, 42, 42, 0.15);
-    border: 1px solid var(--warning-color);
-}
-
-.warning-icon {
-    font-size: 1.5rem;
-    margin-right: 15px;
-    flex-shrink: 0;
-}
-
-.warning-content {
-    flex-grow: 1;
+.warning-card.failure {
+    border-left: 4px solid #e74c3c;
+    background-color: rgba(231, 76, 60, 0.1);
 }
 
 .warning-title {
-    font-family: 'Cinzel', serif;
     font-weight: bold;
-    margin-bottom: 5px;
+    margin-bottom: 8px;
+    font-family: 'Cinzel', serif;
     color: var(--accent-primary);
 }
 
-.warning-description {
-    font-size: 0.9rem;
+.warning-message {
+    font-size: 0.95rem;
 }
 
 /* Footer */
@@ -714,4 +692,22 @@ footer a:hover {
 
 td .value {
     display: inline-block;
+}
+
+/* Make warning title colors match their status */
+.warning-card.success .warning-title {
+    color: #27ae60;
+}
+
+.warning-card.failure .warning-title {
+    color: #c0392b;
+}
+
+/* Make icons match their status */
+.warning-card.success .warning-title i {
+    color: #27ae60;
+}
+
+.warning-card.failure .warning-title i {
+    color: #c0392b;
 }
