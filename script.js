@@ -1,6 +1,7 @@
 // Global variables
 let characters = [];
 let warnings = [];
+let healingAbilities = []; // New variable to store healing abilities
 const skillMap = {
     'acrobatics': 'Acro',
     'arcana': 'Arca',
@@ -33,7 +34,7 @@ function showStatusMessage(message, isError = false) {
     }, 3000);
 }
 
-// Function to load warnings from YAML files
+// Function to load warnings and healing abilities from YAML files
 async function loadWarnings() {
     try {
         // List of warning files to load
@@ -59,8 +60,23 @@ async function loadWarnings() {
         }
 
         console.log(`Loaded ${warnings.length} warnings`);
+
+        // Load healing abilities from YAML
+        const healingResponse = await fetch('content/healing-abilities.yaml');
+        if (healingResponse.ok) {
+            const healingYaml = await healingResponse.text();
+            const healingConfig = jsyaml.load(healingYaml);
+
+            // Store the abilities list
+            healingAbilities = healingConfig.abilities || [];
+            console.log(`Loaded ${healingAbilities.length} healing abilities`);
+        } else {
+            console.error('Failed to load healing abilities');
+            // Fallback to a minimal list if file can't be loaded
+            healingAbilities = ["Battle Medicine", "Healing Font", "Lay on Hands", "Shield Block"];
+        }
     } catch (error) {
-        console.error('Error loading warnings:', error);
+        console.error('Error loading warnings or healing abilities:', error);
     }
 }
 
@@ -127,40 +143,24 @@ function extractCharacterData(data) {
     }
 
     // Extract healing feats and abilities
-    const healingAbilities = [];
-
-    // List of healing and sustain abilities to check for
-    const healingFeats = [
-        "Healing Font", "Lay on Hands", "Goodberry", "Chirurgeon Field Discovery",
-        "Life Link", "Soothing Performance", "Hymn of Healing", "Wholeness of Body",
-        "Heal Companion", "Life Boost", "Vital Beacon", "Healer's Blessing",
-        "Rebuke Death", "Field Medic Dedication", "Blessed One Dedication",
-        "Medic Dedication", "Doctor's Visitation", "Resuscitate", "Healing Hands",
-        "Expanded Domain Initiate", "Sentinel Dedication", "Rapid Recovery",
-        "Restoration Domain Spell", "Battle Medicine", "Risky Surgery",
-        "Godless Healing", "Mortal Healing", "Robust Recovery", "Holistic Care",
-        "Stitch Flesh", "Triage", "Swift Triage", "Incredible Medic", "Legendary Medic",
-        "Toughness", "Diehard", "Fast Recovery", "Trick Magic Item", "Soothing Ballad",
-        "Field of Life", "Sanguine Mist", "Soothe", "Generous Fate", "Sun's Blessing",
-        "Rapid Response", "Fresh Produce", "Dash of Herbs", "Continual Recovery", "Ward Medic"
-    ];
+    const characterHealingAbilities = [];
 
     if (data.build?.feats) {
         data.build.feats.forEach(feat => {
             if (feat && feat.length >= 1) {
-                // Check regular healing feats
-                if (healingFeats.includes(feat[0])) {
-                    healingAbilities.push(feat[0]);
+                // Check against our loaded healing abilities list
+                if (healingAbilities.includes(feat[0])) {
+                    characterHealingAbilities.push(feat[0]);
                 }
 
                 // Special check for Assurance (Medicine)
                 if (feat[0] === "Assurance" && feat.length >= 2 && feat[1] === "Medicine") {
-                    healingAbilities.push("Assurance (Medicine)");
+                    characterHealingAbilities.push("Assurance (Medicine)");
                 }
 
                 // Check for Forensic Medicine Methodology (special case)
                 if (feat[0].includes("Forensic Medicine")) {
-                    healingAbilities.push("Forensic Medicine");
+                    characterHealingAbilities.push("Forensic Medicine");
                 }
             }
         });
@@ -173,16 +173,12 @@ function extractCharacterData(data) {
             for (const subcategory in data.build.focus[category]) {
                 const focusSpells = data.build.focus[category][subcategory]?.focusSpells || [];
 
-                // Check each focus spell
+                // Check each focus spell against our loaded list
                 focusSpells.forEach(spell => {
-                    const healingSpells = ["Lay on Hands", "Life Link", "Goodberry",
-                        "Hymn of Healing", "Life Boost", "Healer's Blessing",
-                        "Vital Beacon", "Heal Companion", "Rebuke Death"];
-
-                    if (healingSpells.includes(spell)) {
+                    if (healingAbilities.includes(spell)) {
                         // Add if not already in the list
-                        if (!healingAbilities.includes(spell)) {
-                            healingAbilities.push(spell);
+                        if (!characterHealingAbilities.includes(spell)) {
+                            characterHealingAbilities.push(spell);
                         }
                     }
                 });
@@ -196,7 +192,7 @@ function extractCharacterData(data) {
         class: data.build?.class || 'Unknown',
         archetypes: archetypes,
         level: getNumeric(data.build?.level, 1),
-        healingAbilities: healingAbilities,
+        healingAbilities: characterHealingAbilities,
 
         // Ability scores
         abilities: {
