@@ -40,6 +40,7 @@ async function loadWarnings() {
         const warningFiles = [
             'warnings/battle-medicine.yaml',
             'warnings/skill-coverage.yaml',
+            'warnings/level-consistency.yaml',
             // Add more warning files here
         ];
 

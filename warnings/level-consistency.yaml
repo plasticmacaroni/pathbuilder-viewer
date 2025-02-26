@@ -1,0 +1,9 @@
+title: "Character Level Consistency"
+checkFunction: "function() {
+    if (characters.length <= 1) return true;
+    
+    const firstLevel = characters[0].level;
+    return characters.every(char => char.level === firstLevel);
+}"
+successMessage: "All characters are at the same level (Level {{characters[0].level}})."
+failureMessage: "Characters have different levels! This can cause imbalance in party comparison. Consider exporting all characters at the same level."
