@@ -1,5 +1,5 @@
 # PF2e Character Comparison Tool
-(https://plasticmacaroni.github.io/pathbuilder-viewer/)[https://plasticmacaroni.github.io/pathbuilder-viewer/]
+https://plasticmacaroni.github.io/pathbuilder-viewer/
 
 A browser-based tool for comparing Pathfinder 2e character statistics, highlighting highest values, and providing party composition warnings.
 
