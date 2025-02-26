@@ -1,0 +1,215 @@
+/* Base Styles */
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    line-height: 1.6;
+    color: #e0e0e0;
+    margin: 0;
+    padding: 20px;
+    background-color: #121212;
+}
+.container {
+    max-width: 100%;
+    margin: 0 auto;
+    background-color: #1e1e1e;
+    padding: 20px;
+    border-radius: 8px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.3);
+}
+h1 {
+    text-align: center;
+    color: #ffa270;
+    margin-bottom: 20px;
+}
+
+/* Import Section */
+.import-section {
+    display: flex;
+    justify-content: center;
+    margin-bottom: 20px;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+button {
+    border: none;
+    padding: 10px 20px;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background-color 0.3s;
+}
+#importButton, #clipboardButton {
+    background-color: #b27850;
+    color: white;
+}
+#importButton:hover, #clipboardButton:hover {
+    background-color: #8e5c3b;
+}
+#clearButton {
+    background-color: #c03f3f;
+    color: white;
+}
+#clearButton:hover {
+    background-color: #a22f2f;
+}
+input[type="file"] {
+    background-color: #2a2a2a;
+    color: #e0e0e0;
+    padding: 5px;
+    border-radius: 4px;
+}
+
+/* Table Styles */
+.table-container {
+    overflow-x: auto;
+}
+table {
+    border-collapse: collapse;
+    width: 100%;
+    min-width: 1000px;
+}
+th, td {
+    padding: 8px;
+    text-align: center;
+    border: 1px solid #444;
+}
+th {
+    background-color: #8e5c3b;
+    color: white;
+    position: sticky;
+    top: 0;
+}
+tr:nth-child(even) {
+    background-color: #2a2a2a;
+}
+tfoot tr {
+    background-color: #3a3a3a;
+    font-weight: bold;
+    position: sticky;
+    bottom: 0;
+    box-shadow: 0 -2px 3px rgba(0,0,0,0.3);
+}
+.highest {
+    color: #ffd700;
+    font-weight: bold;
+    text-shadow: 0 0 1px #000;
+}
+.character-name {
+    font-weight: bold;
+    text-align: left;
+}
+.info-group {
+    background-color: #2d2d2d;
+    border-right: 2px solid #555;
+}
+.healing-group {
+    background-color: #304030;
+    border-right: 2px solid #555;
+}
+.ability-group {
+    background-color: #253444;
+    border-right: 2px solid #555;
+}
+.defense-group {
+    background-color: #3d2e2a;
+    border-right: 2px solid #555;
+}
+.skill-group {
+    background-color: #2e382e;
+}
+.group-header {
+    background-color: #444;
+    color: white;
+}
+.no-characters {
+    text-align: center;
+    padding: 20px;
+    font-style: italic;
+    color: #888;
+}
+
+/* Status Message */
+#statusMessage {
+    text-align: center;
+    padding: 10px;
+    margin-top: 10px;
+    border-radius: 4px;
+}
+.success {
+    background-color: #3a5a40;
+    color: white;
+}
+.error {
+    background-color: #c03f3f;
+    color: white;
+}
+
+/* Pills */
+.pill {
+    display: inline-block;
+    padding: 2px 8px;
+    margin: 2px;
+    border-radius: 12px;
+    font-size: 0.8rem;
+    font-weight: bold;
+    color: white;
+}
+.pill-class {
+    background-color: #8e5c3b;
+}
+.pill-archetype {
+    background-color: #6a4f6c;
+}
+.pill-healing {
+    background-color: #607d8b;
+}
+
+/* Warning Section */
+.warnings-container {
+    margin-top: 30px;
+    border-radius: 8px;
+    background-color: #2d2d2d;
+    padding: 15px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+}
+.warnings-title {
+    font-size: 1.4rem;
+    color: #ffa270;
+    margin-bottom: 15px;
+    border-bottom: 1px solid #444;
+    padding-bottom: 5px;
+}
+.warnings-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 15px;
+}
+.warning-card {
+    padding: 12px;
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    transition: all 0.3s ease;
+}
+.warning-card.success {
+    background-color: rgba(58, 90, 64, 0.5);
+    border: 1px solid #3a5a40;
+}
+.warning-card.error {
+    background-color: rgba(192, 63, 63, 0.5);
+    border: 1px solid #c03f3f;
+}
+.warning-icon {
+    font-size: 1.5rem;
+    margin-right: 12px;
+    flex-shrink: 0;
+}
+.warning-content {
+    flex-grow: 1;
+}
+.warning-title {
+    font-weight: bold;
+    margin-bottom: 4px;
+}
+.warning-description {
+    font-size: 0.9rem;
+    opacity: 0.9;
+}
