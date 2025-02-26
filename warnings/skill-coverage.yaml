@@ -33,7 +33,7 @@ checkFunction: |
       let hasTraining = false;
       
       for (const character of characters) {
-        if (character.skills && character.skills[skillKey] > 0) {
+        if (character.extracted && character.extracted.skills && character.extracted.skills[skillKey] > 0) {
           hasTraining = true;
           break;
         }

@@ -80,60 +80,58 @@ async function loadWarnings() {
     }
 }
 
-// Function to process JSON data
-function processJsonData(jsonText) {
+// Function to process the JSON data from input
+function processJsonData(jsonString) {
     try {
-        const jsonData = JSON.parse(jsonText);
+        // Parse the JSON data
+        const inputData = JSON.parse(jsonString);
+        const processedData = preprocessCharacterData(inputData);
 
-        // Check if this is valid PF2e character data
-        if (!jsonData.build) {
-            showStatusMessage('Invalid PF2e character data. Make sure your JSON contains character build information.', true);
-            return false;
-        }
+        // Add to characters array
+        characters.push(processedData);
 
-        // Extract character data
-        const characterData = extractCharacterData(jsonData);
-
-        // Add character to our list
-        characters.push(characterData);
-
-        // Add row to the table
-        addCharacterRow(characterData);
+        // Add to the table
+        addCharacterRow(processedData);
 
         // Update highest values
         updateHighestValues();
 
-        // Save to cache
-        saveCharactersToCache();
+        // Update party warnings
+        updatePartyWarnings();
 
-        showStatusMessage(`Character "${characterData.name}" imported successfully!`);
-        return true;
+        // Save to cache
+        saveCharactersToCache(characters);
+
+        showStatusMessage('Character imported successfully!');
     } catch (error) {
-        showStatusMessage('Error parsing JSON: ' + error.message, true);
-        return false;
+        console.error('Error processing JSON data:', error);
+        showStatusMessage('Error processing character data: ' + error.message, true);
     }
 }
 
-// Function to extract character data from JSON
-function extractCharacterData(data) {
-    // Get numeric values or handle if not present
-    function getNumeric(value, defaultValue = 0) {
-        return (value !== undefined && value !== null) ? Number(value) : defaultValue;
-    }
+// Preprocess character data to extract derived values
+function preprocessCharacterData(data) {
+    // Store original data and add extracted data section
+    const processedData = {
+        ...data,
+        extracted: {
+            archetypes: extractArchetypes(data),
+            healingAbilities: extractHealingAbilities(data),
+            skills: extractSkillValues(data),
+            skillProficiencies: extractSkillProficiencies(data),
+            defenses: extractDefenseValues(data)
+        }
+    };
 
-    // Calculate total skill value by adding proficiency level plus ability modifier
-    function calculateSkillValue(profValue, abilityScore) {
-        const abilityMod = Math.floor((abilityScore - 10) / 2);
-        return getNumeric(profValue) + abilityMod;
-    }
+    return processedData;
+}
 
-    // Extract archetypes from feats
+// Extract archetypes from feats
+function extractArchetypes(data) {
     const archetypes = [];
     if (data.build?.feats) {
         data.build.feats.forEach(feat => {
-            // Check for Dedication feats which indicate archetypes
             if (feat && feat[0] && feat[0].includes('Dedication')) {
-                // Extract the archetype name (remove " Dedication" suffix)
                 const archetypeName = feat[0].replace(' Dedication', '');
                 if (!archetypes.includes(archetypeName)) {
                     archetypes.push(archetypeName);
@@ -141,127 +139,119 @@ function extractCharacterData(data) {
             }
         });
     }
+    return archetypes;
+}
 
-    // Extract healing feats and abilities
-    const characterHealingAbilities = [];
+// Extract healing abilities
+function extractHealingAbilities(data) {
+    const healingAbilities = [];
+    // Example healing abilities to look for
+    const healingFeats = [
+        'Battle Medicine',
+        'Treat Wounds',
+        'Healing Hands',
+        'Lay on Hands',
+        'Wholeness of Body'
+    ];
 
+    // Check for healing class features and feats
     if (data.build?.feats) {
         data.build.feats.forEach(feat => {
-            if (feat && feat.length >= 1) {
-                // Check against our loaded healing abilities list
-                if (healingAbilities.includes(feat[0])) {
-                    characterHealingAbilities.push(feat[0]);
-                }
-
-                // Special check for Assurance (Medicine)
-                if (feat[0] === "Assurance" && feat.length >= 2 && feat[1] === "Medicine") {
-                    characterHealingAbilities.push("Assurance (Medicine)");
-                }
-
-                // Check for Forensic Medicine Methodology (special case)
-                if (feat[0].includes("Forensic Medicine")) {
-                    characterHealingAbilities.push("Forensic Medicine");
-                }
+            if (feat && feat[0] && healingFeats.includes(feat[0])) {
+                healingAbilities.push(feat[0]);
             }
         });
     }
 
-    // Check for focus spells related to healing
-    if (data.build?.focus) {
-        // Loop through all focus spell categories
-        for (const category in data.build.focus) {
-            for (const subcategory in data.build.focus[category]) {
-                const focusSpells = data.build.focus[category][subcategory]?.focusSpells || [];
-
-                // Check each focus spell against our loaded list
-                focusSpells.forEach(spell => {
-                    if (healingAbilities.includes(spell)) {
-                        // Add if not already in the list
-                        if (!characterHealingAbilities.includes(spell)) {
-                            characterHealingAbilities.push(spell);
-                        }
+    // Check for healing spells
+    if (data.build?.spellsKnown) {
+        for (const level in data.build.spellsKnown) {
+            const spells = data.build.spellsKnown[level];
+            spells.forEach(spell => {
+                if (spell && spell.includes('Heal')) {
+                    if (!healingAbilities.includes('Healing Spells')) {
+                        healingAbilities.push('Healing Spells');
                     }
-                });
-            }
+                }
+            });
         }
     }
 
-    // Create the character data object
-    const characterData = {
-        name: data.build?.name || 'Unknown',
-        class: data.build?.class || 'Unknown',
-        archetypes: archetypes,
-        level: getNumeric(data.build?.level, 1),
-        healingAbilities: characterHealingAbilities,
+    return healingAbilities;
+}
 
-        // Ability scores
-        abilities: {
-            str: getNumeric(data.build?.abilities?.str),
-            dex: getNumeric(data.build?.abilities?.dex),
-            con: getNumeric(data.build?.abilities?.con),
-            int: getNumeric(data.build?.abilities?.int),
-            wis: getNumeric(data.build?.abilities?.wis),
-            cha: getNumeric(data.build?.abilities?.cha)
-        },
-
-        // Defenses
-        defenses: {
-            ac: getNumeric(data.build?.acTotal?.acTotal),
-            fort: 10 + getNumeric(data.build?.proficiencies?.fortitude),
-            ref: 10 + getNumeric(data.build?.proficiencies?.reflex),
-            will: 10 + getNumeric(data.build?.proficiencies?.will)
-        },
-
-        // Skills
-        skills: {},
-        skillProficiencies: {} // Store proficiency levels here
+// Extract defense values
+function extractDefenseValues(data) {
+    return {
+        ac: getNumeric(data.build?.acTotal?.acTotal),
+        fort: 10 + getNumeric(data.build?.proficiencies?.fortitude),
+        ref: 10 + getNumeric(data.build?.proficiencies?.reflex),
+        will: 10 + getNumeric(data.build?.proficiencies?.will)
     };
+}
 
-    // Process all skills
-    for (const [skill, abbrev] of Object.entries(skillMap)) {
+// Extract skill proficiency levels
+function extractSkillProficiencies(data) {
+    const proficiencies = {};
+
+    for (const skill in skillMap) {
         const profValue = getNumeric(data.build?.proficiencies?.[skill]);
 
-        // Store proficiency level
+        // Convert numeric proficiency to letter code
         let profLevel = "U"; // Default to Untrained
         if (profValue === 2) profLevel = "T";
         else if (profValue === 4) profLevel = "E";
         else if (profValue === 6) profLevel = "M";
         else if (profValue === 8) profLevel = "L";
 
-        characterData.skillProficiencies[skill] = profLevel;
+        proficiencies[skill] = profLevel;
+    }
+
+    return proficiencies;
+}
+
+// Extract skill values
+function extractSkillValues(data) {
+    const skills = {};
+
+    for (const skill in skillMap) {
+        const profValue = getNumeric(data.build?.proficiencies?.[skill]);
 
         // Determine which ability score to use for this skill
         let abilityScore;
         switch (skill) {
             case 'athletics':
-                abilityScore = characterData.abilities.str;
+                abilityScore = getNumeric(data.build?.abilities?.str);
                 break;
             case 'acrobatics':
             case 'stealth':
             case 'thievery':
-                abilityScore = characterData.abilities.dex;
+                abilityScore = getNumeric(data.build?.abilities?.dex);
                 break;
             case 'arcana':
             case 'crafting':
             case 'society':
             case 'occultism':
-                abilityScore = characterData.abilities.int;
+                abilityScore = getNumeric(data.build?.abilities?.int);
                 break;
             case 'medicine':
             case 'nature':
             case 'religion':
             case 'survival':
-                abilityScore = characterData.abilities.wis;
+                abilityScore = getNumeric(data.build?.abilities?.wis);
                 break;
             case 'deception':
             case 'diplomacy':
             case 'intimidation':
             case 'performance':
-                abilityScore = characterData.abilities.cha;
+                abilityScore = getNumeric(data.build?.abilities?.cha);
                 break;
             default:
                 abilityScore = 10; // Fallback
         }
+
+        // Calculate ability modifier
+        const abilityMod = Math.floor((abilityScore - 10) / 2);
 
         // Add item bonus if present
         let itemBonus = 0;
@@ -270,15 +260,38 @@ function extractCharacterData(data) {
         }
 
         // Calculate total skill value
-        characterData.skills[skill] = calculateSkillValue(profValue, abilityScore) + itemBonus;
+        skills[skill] = profValue + abilityMod + itemBonus;
     }
 
-    return characterData;
+    return skills;
 }
 
-// Function to add a character row to the table
+// Get numeric value or default
+function getNumeric(value, defaultValue = 0) {
+    return (value !== undefined && value !== null) ? Number(value) : defaultValue;
+}
+
+// Extract a value from an object using a dot-notation path
+function getValueByPath(obj, path) {
+    if (!path) return undefined;
+
+    const parts = path.split('.');
+    let current = obj;
+
+    for (const part of parts) {
+        if (current === null || current === undefined) {
+            return undefined;
+        }
+        current = current[part];
+    }
+
+    return current;
+}
+
+// Add a character row based on YAML schema
 function addCharacterRow(character) {
     const tbody = document.getElementById('characterRows');
+    const tableStructure = window.tableStructure;
 
     // Clear "No characters" message if it exists
     if (document.querySelector('.no-characters')) {
@@ -287,46 +300,104 @@ function addCharacterRow(character) {
 
     const row = document.createElement('tr');
 
-    // Format class as pill
-    const classDisplay = `<span class="pill pill-class">${character.class}</span>`;
+    // For each section and column in the structure
+    tableStructure.sections.forEach(section => {
+        section.columns.forEach(column => {
+            const cell = document.createElement('td');
+            cell.className = `${section.id}-group`;
 
-    // Format archetypes as pills
-    const archetypesDisplay = character.archetypes.length > 0
-        ? character.archetypes.map(archetype => `<span class="pill pill-archetype">${archetype}</span>`).join(' ')
-        : '-';
+            // Store column info as data attributes
+            cell.dataset.columnId = column.id;
+            cell.dataset.jsonPath = column.jsonPath || '';
+            cell.dataset.highestValue = column.highestValue.toString();
 
-    // Format healing abilities as pills
-    const healingDisplay = character.healingAbilities.length > 0
-        ? character.healingAbilities.map(ability => `<span class="pill pill-healing">${ability}</span>`).join(' ')
-        : '-';
+            // Set proficiency data attribute if needed
+            if (column.showProficiency) {
+                const proficiency = getValueByPath(character, column.proficiencyPath);
+                if (proficiency) {
+                    cell.dataset.proficiency = proficiency;
+                }
+            }
 
-    row.innerHTML = `
-        <td class="character-name info-group">${character.name}</td>
-        <td class="info-group">${classDisplay}</td>
-        <td class="info-group">${archetypesDisplay}</td>
-        <td class="info-group">${character.level}</td>
-        <td class="healing-group">${healingDisplay}</td>
-        
-        <td class="ability-group">${character.abilities.str}</td>
-        <td class="ability-group">${character.abilities.dex}</td>
-        <td class="ability-group">${character.abilities.con}</td>
-        <td class="ability-group">${character.abilities.int}</td>
-        <td class="ability-group">${character.abilities.wis}</td>
-        <td class="ability-group">${character.abilities.cha}</td>
-        
-        <td class="defense-group">${character.defenses.ac}</td>
-        <td class="defense-group">${character.defenses.fort}</td>
-        <td class="defense-group">${character.defenses.ref}</td>
-        <td class="defense-group">${character.defenses.will}</td>
-    `;
+            // Extract value from character JSON using path from YAML
+            const value = getValueByPath(character, column.jsonPath);
 
-    // Skills
-    for (const skill of Object.keys(skillMap)) {
-        const profLevel = character.skillProficiencies[skill];
-        row.innerHTML += `<td class="skill-group" data-proficiency="${profLevel}">${character.skills[skill]}</td>`;
-    }
+            // Format value based on display type specified in YAML
+            if (column.displayType === 'pill' && value) {
+                cell.innerHTML = `<span class="pill pill-${section.id}">${value}</span>`;
+            } else if (column.displayType === 'pill-list' && Array.isArray(value) && value.length > 0) {
+                cell.innerHTML = value.map(item =>
+                    `<span class="pill pill-${section.id}">${item}</span>`
+                ).join(' ');
+            } else {
+                // Default display
+                cell.textContent = value !== undefined ? value : '-';
+            }
+
+            row.appendChild(cell);
+        });
+    });
 
     tbody.appendChild(row);
+}
+
+// Update the highest values row based on YAML schema
+function updateHighestValues() {
+    if (characters.length === 0) {
+        return;
+    }
+
+    const tableStructure = window.tableStructure;
+    const highestRow = document.getElementById('highestValues');
+
+    // Skip the first cell (the "Highest Values" header)
+    let cellIndex = 1;
+
+    // Process each section and column from YAML
+    tableStructure.sections.slice(1).forEach(section => {
+        section.columns.forEach(column => {
+            if (cellIndex < highestRow.cells.length) {
+                const cell = highestRow.cells[cellIndex];
+
+                // Only update if this column should track highest value (from YAML)
+                if (column.highestValue) {
+                    // Calculate highest value using jsonPath from YAML
+                    const values = characters.map(character => {
+                        const value = getValueByPath(character, column.jsonPath);
+                        return typeof value === 'number' ? value : Number.MIN_SAFE_INTEGER;
+                    });
+
+                    const highestValue = Math.max(...values);
+                    cell.textContent = isNaN(highestValue) || highestValue === Number.MIN_SAFE_INTEGER ? '-' : highestValue;
+                } else {
+                    cell.textContent = '-';
+                }
+
+                cellIndex++;
+            }
+        });
+    });
+
+    // Highlight highest values in the table
+    highlightHighestValues();
+}
+
+// Build skill map from YAML structure
+function buildSkillMap() {
+    const tableStructure = window.tableStructure;
+    const skillsSection = tableStructure.sections.find(s => s.id === 'skills');
+
+    if (!skillsSection) return {};
+
+    const skillMap = {};
+    skillsSection.columns.forEach(column => {
+        // Use the last part of the jsonPath as the key if it has dots
+        const key = column.jsonPath?.includes('.') ?
+            column.jsonPath.split('.').pop() : column.id;
+        skillMap[key] = column.fullTitle || column.title;
+    });
+
+    return skillMap;
 }
 
 // Function to update party composition warnings using the loaded YAML warnings
@@ -403,6 +474,11 @@ function addWarning(container, title, description, isSuccess) {
     const card = document.createElement('div');
     card.className = `warning-card ${isSuccess ? 'success' : 'error'}`;
 
+    // Add more context information
+    if (!isSuccess) {
+        card.dataset.priority = 'high'; // Add priority attribute
+    }
+
     const icon = document.createElement('div');
     icon.className = 'warning-icon';
     icon.innerHTML = isSuccess ? '✅' : '⚠️';
@@ -427,80 +503,42 @@ function addWarning(container, title, description, isSuccess) {
     container.appendChild(card);
 }
 
-// Function to update the highest values row
-function updateHighestValues() {
-    if (characters.length === 0) {
-        return;
-    }
-
-    const highestRow = document.getElementById('highestValues');
-    const cells = highestRow.cells;
-
-    // Skip the first cell (the "Highest Values" header with colspan=4)
-    // Cells start at index 1
-
-    // Skip the healing column (it doesn't have highest values)
-    // index 1 is healing
-
-    // Abilities (starting at index 2)
-    cells[2].textContent = Math.max(...characters.map(c => c.abilities.str));
-    cells[3].textContent = Math.max(...characters.map(c => c.abilities.dex));
-    cells[4].textContent = Math.max(...characters.map(c => c.abilities.con));
-    cells[5].textContent = Math.max(...characters.map(c => c.abilities.int));
-    cells[6].textContent = Math.max(...characters.map(c => c.abilities.wis));
-    cells[7].textContent = Math.max(...characters.map(c => c.abilities.cha));
-
-    // Defenses (starting at index 8)
-    cells[8].textContent = Math.max(...characters.map(c => c.defenses.ac));
-    cells[9].textContent = Math.max(...characters.map(c => c.defenses.fort));
-    cells[10].textContent = Math.max(...characters.map(c => c.defenses.ref));
-    cells[11].textContent = Math.max(...characters.map(c => c.defenses.will));
-
-    // Skills (starting at index 12)
-    let cellIndex = 12;
-    for (const skill of Object.keys(skillMap)) {
-        cells[cellIndex].textContent = Math.max(...characters.map(c => c.skills[skill]));
-        cellIndex++;
-    }
-
-    // Highlight highest values in the table
-    highlightHighestValues();
-
-    // Update party composition warnings
-    updatePartyWarnings();
-}
-
 // Function to highlight the highest values in each column
 function highlightHighestValues() {
-    const table = document.getElementById('characterTable');
     const tbody = document.getElementById('characterRows');
-    const tfoot = document.querySelector('tfoot');
+    const highestRow = document.getElementById('highestValues');
     const rows = tbody.rows;
 
     if (rows.length === 0) return;
 
-    // Get the highest values from the footer row
-    const highestRow = tfoot.rows[0];
-    const highestValues = [];
+    // For each character row
+    for (let rowIndex = 0; rowIndex < rows.length; rowIndex++) {
+        const cells = rows[rowIndex].cells;
 
-    // Skip healing column which doesn't have highest values
-    // Collect highest values starting from abilities
-    for (let i = 2; i < highestRow.cells.length; i++) {
-        highestValues.push(parseInt(highestRow.cells[i].textContent));
-    }
+        // For each cell in the row
+        for (let cellIndex = 0; cellIndex < cells.length; cellIndex++) {
+            const cell = cells[cellIndex];
 
-    // For each value cell in the character rows
-    for (let row = 0; row < rows.length; row++) {
-        // Start at column 5 (STR) - skip name, class, archetypes, level, healing
-        for (let col = 5; col < rows[row].cells.length; col++) {
-            const cellValue = parseInt(rows[row].cells[col].textContent);
-            // Compare with corresponding value in highestValues (accounting for the offset)
-            const highestValue = highestValues[col - 5];
+            // Skip cells without jsonPath or not marked for highest value
+            if (!cell.dataset.jsonPath || cell.dataset.highestValue !== 'true') {
+                continue;
+            }
 
-            if (!isNaN(cellValue) && !isNaN(highestValue) && cellValue === highestValue) {
-                rows[row].cells[col].classList.add('highest');
-            } else {
-                rows[row].cells[col].classList.remove('highest');
+            // Find matching column in highest row by columnId
+            const columnId = cell.dataset.columnId;
+            const highestCell = Array.from(highestRow.cells).find(
+                hc => hc.dataset.columnId === columnId
+            );
+
+            if (highestCell) {
+                const cellValue = parseInt(cell.textContent);
+                const highestValue = parseInt(highestCell.textContent);
+
+                if (!isNaN(cellValue) && !isNaN(highestValue) && cellValue === highestValue) {
+                    cell.classList.add('highest');
+                } else {
+                    cell.classList.remove('highest');
+                }
             }
         }
     }
@@ -553,7 +591,8 @@ document.getElementById('clearButton').addEventListener('click', function () {
 
     // Clear the table body
     const tbody = document.getElementById('characterRows');
-    tbody.innerHTML = '<tr><td colspan="31" class="no-characters">No characters imported yet</td></tr>';
+    const totalColumns = calculateTotalColumns(window.tableStructure);
+    tbody.innerHTML = `<tr><td colspan="${totalColumns}" class="no-characters">No characters imported yet</td></tr>`;
 
     // Reset highest values row
     const highestRow = document.getElementById('highestValues');
@@ -573,7 +612,7 @@ document.getElementById('clearButton').addEventListener('click', function () {
 });
 
 // Add these functions to handle character caching
-function saveCharactersToCache() {
+function saveCharactersToCache(characters) {
     localStorage.setItem('pf2eCharacters', JSON.stringify(characters));
 }
 
@@ -610,10 +649,29 @@ function renderCharacters() {
     updateHighestValues();
 }
 
-// Fix initialization to load from cache and render properly
-function init() {
-    // Load warnings first
-    loadWarnings().then(() => {
+// Initialize the application
+async function init() {
+    try {
+        // Load table structure first
+        const tableStructure = await loadTableStructure();
+
+        if (!tableStructure) {
+            console.error('Failed to load table structure');
+            return;
+        }
+
+        // Store the table structure for later use
+        window.tableStructure = tableStructure;
+
+        // Initialize the table structure
+        initializeTableStructure(tableStructure);
+
+        // Update the global skill map
+        updateGlobalSkillMap();
+
+        // Load warnings
+        await loadWarnings();
+
         // Load characters from cache
         characters = loadCharactersFromCache();
 
@@ -623,7 +681,7 @@ function init() {
         // Update party warnings
         updatePartyWarnings();
 
-        // Check for data in paste.txt (as in your original init function)
+        // Check for data in paste.txt
         try {
             const jsonString = document.querySelector('.document_content')?.textContent;
             if (jsonString) {
@@ -632,7 +690,9 @@ function init() {
         } catch (e) {
             console.log('No initial data to load:', e);
         }
-    });
+    } catch (error) {
+        console.error('Error during initialization:', error);
+    }
 }
 
 // When DOM is ready, initialize the app
@@ -707,3 +767,170 @@ async function importPartyFromClipboard() {
 // Replace the file-based party export/import event listeners with these in your initialization code
 document.getElementById('exportPartyClipboardButton').addEventListener('click', exportPartyToClipboard);
 document.getElementById('importPartyClipboardButton').addEventListener('click', importPartyFromClipboard);
+
+// Extract value from character based on path specified in YAML
+function extractValueByPath(object, path) {
+    if (!path) return undefined;
+
+    // Handle nested properties via dot notation
+    const parts = path.split('.');
+    let current = object;
+
+    for (const part of parts) {
+        if (current === null || current === undefined) {
+            return undefined;
+        }
+        current = current[part];
+    }
+
+    return current;
+}
+
+// Generate the table header from YAML structure
+function generateTableHeader(tableStructure) {
+    const thead = document.createElement('thead');
+
+    // Create the section headers row
+    const sectionRow = document.createElement('tr');
+
+    // Add section headers
+    tableStructure.sections.forEach(section => {
+        const th = document.createElement('th');
+        th.className = `${section.id}-group`;
+        th.colSpan = section.colspan;
+
+        if (section.icon) {
+            const icon = document.createElement('i');
+            icon.className = `fas fa-${section.icon}`;
+            th.appendChild(icon);
+            th.appendChild(document.createTextNode(` ${section.title}`));
+        } else {
+            th.textContent = section.title;
+        }
+
+        sectionRow.appendChild(th);
+    });
+
+    // Create the column headers row
+    const columnRow = document.createElement('tr');
+
+    // Add column headers for each section
+    tableStructure.sections.forEach(section => {
+        section.columns.forEach(column => {
+            const th = document.createElement('th');
+            th.className = `${section.id}-group`;
+
+            if (column.fullTitle) {
+                th.title = column.fullTitle;
+            }
+
+            if (column.icon) {
+                const icon = document.createElement('i');
+                icon.className = `fas fa-${column.icon}`;
+                th.appendChild(icon);
+                th.appendChild(document.createTextNode(` ${column.title}`));
+            } else {
+                th.textContent = column.title;
+            }
+
+            columnRow.appendChild(th);
+        });
+    });
+
+    thead.appendChild(sectionRow);
+    thead.appendChild(columnRow);
+
+    return thead;
+}
+
+// Initialize the table structure from YAML
+function initializeTableStructure(tableStructure) {
+    const table = document.getElementById('characterTable');
+
+    // Clear existing content
+    table.innerHTML = '';
+
+    // Add the headers
+    table.appendChild(generateTableHeader(tableStructure));
+
+    // Add the body
+    const tbody = document.createElement('tbody');
+    tbody.id = 'characterRows';
+
+    // Calculate total columns
+    const totalColumns = calculateTotalColumns(tableStructure);
+
+    // Add the "No characters" row
+    const noCharactersRow = document.createElement('tr');
+    const noCharactersCell = document.createElement('td');
+    noCharactersCell.className = 'no-characters';
+    noCharactersCell.colSpan = totalColumns;
+    noCharactersCell.textContent = 'No adventurers in your party yet. Import some brave souls!';
+
+    noCharactersRow.appendChild(noCharactersCell);
+    tbody.appendChild(noCharactersRow);
+    table.appendChild(tbody);
+
+    // Add the footer with highest values row
+    const tfoot = document.createElement('tfoot');
+    tfoot.appendChild(generateHighestValuesRow(tableStructure));
+    table.appendChild(tfoot);
+}
+
+// Calculate total columns from YAML structure
+function calculateTotalColumns(tableStructure) {
+    return tableStructure.sections.reduce((total, section) => {
+        return total + section.columns.length;
+    }, 0);
+}
+
+// Generate the highest values row based on YAML structure
+function generateHighestValuesRow(tableStructure) {
+    const row = document.createElement('tr');
+    row.id = 'highestValues';
+
+    // For each section
+    tableStructure.sections.forEach((section, sectionIndex) => {
+        if (sectionIndex === 0) {
+            // First section is usually a header like "Highest Values"
+            const cell = document.createElement('td');
+            cell.className = `${section.id}-group`;
+            cell.colSpan = section.colspan;
+            cell.textContent = 'Highest Values';
+            row.appendChild(cell);
+        } else {
+            // For remaining sections, add individual column cells
+            section.columns.forEach(column => {
+                const cell = document.createElement('td');
+                cell.className = `${section.id}-group`;
+                cell.textContent = '-';
+
+                // Store column info as data attributes for later reference
+                cell.dataset.columnId = column.id;
+                cell.dataset.jsonPath = column.jsonPath || '';
+                cell.dataset.highestValue = column.highestValue.toString();
+
+                row.appendChild(cell);
+            });
+        }
+    });
+
+    return row;
+}
+
+// Update the global skill map
+function updateGlobalSkillMap() {
+    window.skillMap = buildSkillMap();
+}
+
+// Load the table structure from YAML file
+async function loadTableStructure() {
+    try {
+        const response = await fetch('config/table-structure.yaml');
+        const yamlText = await response.text();
+        return jsyaml.load(yamlText);
+    } catch (error) {
+        console.error('Error loading table structure:', error);
+        return null;
+    }
+}

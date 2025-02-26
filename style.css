@@ -41,12 +41,7 @@ body {
 .parchment {
     background-color: var(--parchment-color);
     background-image:
-        linear-gradient(rgba(245, 231, 203, 0.6), rgba(232, 213, 170, 0.8)),
-        repeating-linear-gradient(45deg,
-            rgba(222, 184, 135, 0.1),
-            rgba(222, 184, 135, 0.1) 2px,
-            transparent 2px,
-            transparent 4px);
+        linear-gradient(rgba(245, 231, 203, 0.6), rgba(232, 213, 170, 0.8));
     box-shadow: 0 0 15px rgba(0, 0, 0, 0.8);
     position: relative;
     margin: 20px;
@@ -345,7 +340,7 @@ tr:nth-child(even) {
 
 tfoot tr {
     background-color: var(--table-footer);
-    color: white;
+    color: #331800;
     font-weight: bold;
     position: sticky;
     bottom: 0;
@@ -690,4 +685,10 @@ footer a:hover {
     .parchment {
         margin: 10px;
     }
+}
+
+.perception-group {
+    background-color: var(--defense-group-bg);
+    color: white;
+    border-right: 2px solid var(--border-color);
 }
