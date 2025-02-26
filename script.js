@@ -213,12 +213,22 @@ function extractCharacterData(data) {
         },
 
         // Skills
-        skills: {}
+        skills: {},
+        skillProficiencies: {} // Store proficiency levels here
     };
 
     // Process all skills
     for (const [skill, abbrev] of Object.entries(skillMap)) {
         const profValue = getNumeric(data.build?.proficiencies?.[skill]);
+
+        // Store proficiency level
+        let profLevel = "U"; // Default to Untrained
+        if (profValue === 2) profLevel = "T";
+        else if (profValue === 4) profLevel = "E";
+        else if (profValue === 6) profLevel = "M";
+        else if (profValue === 8) profLevel = "L";
+
+        characterData.skillProficiencies[skill] = profLevel;
 
         // Determine which ability score to use for this skill
         let abilityScore;
@@ -312,7 +322,8 @@ function addCharacterRow(character) {
 
     // Skills
     for (const skill of Object.keys(skillMap)) {
-        row.innerHTML += `<td class="skill-group">${character.skills[skill]}</td>`;
+        const profLevel = character.skillProficiencies[skill];
+        row.innerHTML += `<td class="skill-group" data-proficiency="${profLevel}">${character.skills[skill]}</td>`;
     }
 
     tbody.appendChild(row);

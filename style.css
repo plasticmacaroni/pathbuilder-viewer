@@ -416,6 +416,51 @@ td .highest {
 .skill-group {
     background-color: var(--skill-group-bg);
     color: white;
+    position: relative;
+}
+
+/* Create a container for both number and proficiency indicator */
+.skill-group[data-proficiency]::after {
+    content: attr(data-proficiency);
+    position: absolute;
+    top: 3px;
+    right: 3px;
+    font-size: 0.6rem;
+    border-radius: 3px;
+    padding: 1px 2px;
+    font-weight: bold;
+    line-height: 1;
+    opacity: 0.8;
+    color: white;
+    font-family: 'Cinzel', serif;
+}
+
+/* Color coding for different proficiency levels */
+.skill-group[data-proficiency="U"]::after {
+    background-color: #888888;
+}
+
+.skill-group[data-proficiency="T"]::after {
+    background-color: #4a6741;
+}
+
+.skill-group[data-proficiency="E"]::after {
+    background-color: #634832;
+}
+
+.skill-group[data-proficiency="M"]::after {
+    background-color: #7b3911;
+}
+
+.skill-group[data-proficiency="L"]::after {
+    background-color: #a07d1a;
+}
+
+/* Make sure the highest indicator still shows properly */
+.skill-group.highest[data-proficiency]::after {
+    background-color: rgba(139, 69, 19, 0.8);
+    color: #FFD700;
+    text-shadow: 0 0 2px black;
 }
 
 /* Replace background image in "no characters" message with CSS decoration */
