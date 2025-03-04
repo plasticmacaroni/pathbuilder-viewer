@@ -10,7 +10,7 @@ checkFunction: |
       // Skip if missing required data
       if (!character.build) continue;
       
-      // Check in build.spells if it exists
+      // 1. Check standard spell structure if it exists
       if (character.build.spells) {
         // Check cantrips array specifically
         if (character.build.spells.cantrips && Array.isArray(character.build.spells.cantrips)) {
@@ -39,42 +39,52 @@ checkFunction: |
         }
       }
       
-      // Check class features specifically for "Arcane Sense" or similar abilities
-      if (character.build.classFeats) {
-        for (const feat of character.build.classFeats) {
-          const featName = typeof feat === 'string' ? feat : (feat.name || feat[0] || '');
-          if (featName.toLowerCase().includes('detect magic') || 
-              featName.toLowerCase().includes('arcane sense')) {
-            return true;
+      // 2. Check spellCasters array structure (PF2e format)
+      if (character.build.spellCasters && Array.isArray(character.build.spellCasters)) {
+        for (const caster of character.build.spellCasters) {
+          // Check spells array
+          if (caster.spells && Array.isArray(caster.spells)) {
+            for (const spellObj of caster.spells) {
+              if (spellObj.list && Array.isArray(spellObj.list)) {
+                for (const spell of spellObj.list) {
+                  const spellName = typeof spell === 'string' ? spell : (spell.name || spell[0] || '');
+                  if (spellName.toLowerCase().includes('detect magic')) {
+                    return true;
+                  }
+                }
+              }
+            }
+          }
+          
+          // Check prepared spells array
+          if (caster.prepared && Array.isArray(caster.prepared)) {
+            for (const spellObj of caster.prepared) {
+              if (spellObj.list && Array.isArray(spellObj.list)) {
+                for (const spell of spellObj.list) {
+                  const spellName = typeof spell === 'string' ? spell : (spell.name || spell[0] || '');
+                  if (spellName.toLowerCase().includes('detect magic')) {
+                    return true;
+                  }
+                }
+              }
+            }
           }
         }
       }
       
-      // Check ancestry feats as well
-      if (character.build.ancestryFeats) {
-        for (const feat of character.build.ancestryFeats) {
-          const featName = typeof feat === 'string' ? feat : (feat.name || feat[0] || '');
-          if (featName.toLowerCase().includes('detect magic') || 
-              featName.toLowerCase().includes('arcane sense')) {
-            return true;
-          }
-        }
-      }
-      
-      // Check general feats too
-      if (character.build.generalFeats) {
-        for (const feat of character.build.generalFeats) {
-          const featName = typeof feat === 'string' ? feat : (feat.name || feat[0] || '');
-          if (featName.toLowerCase().includes('detect magic') || 
-              featName.toLowerCase().includes('arcane sense')) {
+      // 3. Check for class features or special abilities that might grant Detect Magic
+      // If characters can have "Arcane Sense" or similar abilities that replicate Detect Magic
+      if (character.build.specials && Array.isArray(character.build.specials)) {
+        for (const special of character.build.specials) {
+          if (special.toLowerCase().includes('arcane sense')) {
             return true;
           }
         }
       }
     }
     
-    // No character has Detect Magic
+    // No character with Detect Magic found
     return false;
   }
-successMessage: At least one character can cast Detect Magic to identify magical items and effects!
-failureMessage: No one in your party has Detect Magic! This cantrip is invaluable for identifying magical traps, items, and auras. Consider having a spellcaster learn this common cantrip.
+successMessage: Your party has at least one character who can cast Detect Magic.
+failureMessage: No character in your party can cast Detect Magic. This cantrip is invaluable for identifying magic items, detecting illusions, and investigating magical phenomena.
