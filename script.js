@@ -531,7 +531,7 @@ function addCharacterRow(character) {
                     // Calculate the ability modifier
                     const modifier = Math.floor((value - 10) / 2);
 
-                    // Format the modifier with + or - sign
+                    // Format the modifier with + or - sign (- is automatic for negative numbers)
                     const formattedModifier = modifier >= 0 ? `+${modifier}` : `${modifier}`;
 
                     // Display both the raw score and the modifier
@@ -539,23 +539,22 @@ function addCharacterRow(character) {
                 } else {
                     cell.textContent = value !== undefined ? value : '-';
                 }
-            } else if ((section.id === 'defense' || section.id === 'skills') &&
-                typeof value === 'number' && value > 0) {
+            } else if ((section.id === 'defense' || section.id === 'skills') && typeof value === 'number') {
                 // For defenses and skills, add plus sign before positive values
                 if (column.displayType === 'proficiency-badge') {
                     const profCode = column.proficiencyPath ?
                         extractProficiencyValue(character, column.proficiencyPath) : 'U';
                     const profLabel = getProficiencyLabel(profCode);
 
-                    // Format with plus sign for positive numbers
+                    // Format with plus sign for positive numbers, negative numbers already have the minus
                     const displayValue = value > 0 ? `+${value}` : value;
 
                     cell.innerHTML = `<span class="value">${displayValue}</span>
                                     <span class="prof-badge prof-${profCode.toLowerCase()}" 
                                     title="${profLabel}">${profCode}</span>`;
                 } else {
-                    // Simple plus sign for values without badges
-                    cell.textContent = `+${value}`;
+                    // Simple plus sign for positive values without badges
+                    cell.textContent = value > 0 ? `+${value}` : value;
                 }
             } else {
                 // Default display
