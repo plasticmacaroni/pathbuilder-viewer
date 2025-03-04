@@ -491,12 +491,18 @@ function addCharacterRow(character) {
                             const loreName = lore[0];
                             const loreValue = lore[1];
 
+                            // Skip untrained lore skills
+                            if (loreValue === 0) return '';
+
                             // Convert numeric proficiency to letter code
                             let profCode = "U"; // Default to untrained
                             if (loreValue === 2) profCode = "T";
                             else if (loreValue === 4) profCode = "E";
                             else if (loreValue === 6) profCode = "M";
                             else if (loreValue === 8) profCode = "L";
+
+                            // Skip untrained lore skills
+                            if (profCode === "U") return '';
 
                             const profLabel = getProficiencyLabel(profCode);
 
@@ -510,7 +516,7 @@ function addCharacterRow(character) {
                         return '';
                     }).filter(item => item); // Remove empty items
 
-                    cell.innerHTML = items.join(' ');
+                    cell.innerHTML = items.length > 0 ? items.join(' ') : '-';
                 } else {
                     cell.textContent = '-';
                 }
