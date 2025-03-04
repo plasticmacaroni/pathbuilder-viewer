@@ -291,12 +291,26 @@ sections:
         icon: moon
         fullTitle: Darkvision
         jsonPath: extracted.senses.darkvision
-        displayType: boolean
+        displayType: pill
         highestValue: false
       - id: lowLightVision
         title: Low-Light
         icon: lightbulb
         fullTitle: Low-Light Vision
         jsonPath: extracted.senses.lowLightVision
-        displayType: boolean
+        displayType: pill
+        highestValue: false
+      - id: scent
+        title: Scent
+        icon: nose
+        fullTitle: Scent
+        jsonPath: extracted.senses.scent
+        displayType: pill
+        highestValue: false
+      - id: tremorsense
+        title: Tremorsense
+        icon: wave-square
+        fullTitle: Tremorsense
+        jsonPath: extracted.senses.tremorsense
+        displayType: pill
         highestValue: false

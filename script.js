@@ -1411,8 +1411,10 @@ function updateTenuousTips() {
 // Extract vision information
 function extractVisionTypes(data) {
     const senses = {
-        darkvision: false,
-        lowLightVision: false
+        darkvision: null,
+        lowLightVision: null,
+        scent: null,
+        tremorsense: null
     };
 
     // Check for vision types in specials/abilities
@@ -1420,10 +1422,16 @@ function extractVisionTypes(data) {
         for (const special of data.build.specials) {
             if (typeof special === 'string') {
                 if (special.toLowerCase().includes('darkvision')) {
-                    senses.darkvision = true;
+                    senses.darkvision = "Darkvision";
                 }
                 if (special.toLowerCase().includes('low-light vision')) {
-                    senses.lowLightVision = true;
+                    senses.lowLightVision = "Low-Light Vision";
+                }
+                if (special.toLowerCase().includes('scent')) {
+                    senses.scent = "Scent";
+                }
+                if (special.toLowerCase().includes('tremorsense')) {
+                    senses.tremorsense = "Tremorsense";
                 }
             }
         }
@@ -1432,7 +1440,7 @@ function extractVisionTypes(data) {
     // Check for ancestry that might have darkvision inherently
     const darkvisionAncestries = ['dwarf', 'gnome', 'half-orc', 'orc'];
     if (data.build?.ancestry && darkvisionAncestries.includes(data.build.ancestry.toLowerCase())) {
-        senses.darkvision = true;
+        senses.darkvision = "Darkvision";
     }
 
     // Check for familiar vision that might extend to character
@@ -1440,7 +1448,15 @@ function extractVisionTypes(data) {
         for (const familiar of data.build.familiars) {
             if (familiar.abilities && familiar.abilities.includes('Darkvision') &&
                 familiar.abilities.includes('Share Senses')) {
-                senses.darkvision = true;
+                senses.darkvision = "Darkvision (Familiar)";
+            }
+            if (familiar.abilities && familiar.abilities.includes('Scent') &&
+                familiar.abilities.includes('Share Senses')) {
+                senses.scent = "Scent (Familiar)";
+            }
+            if (familiar.abilities && familiar.abilities.includes('Tremorsense') &&
+                familiar.abilities.includes('Share Senses')) {
+                senses.tremorsense = "Tremorsense (Familiar)";
             }
         }
     }
