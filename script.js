@@ -1277,32 +1277,93 @@ function extractSkillProficiencies(data) {
     return proficiencies;
 }
 
-// Extract spell tradition proficiencies
+// Function to extract spell traditions from character data
 function extractSpellTraditions(data) {
     const traditions = [];
     const proficiencies = {};
 
-    // Check each tradition
-    const traditionMap = {
-        'arcane': 'Arcane',
-        'divine': 'Divine',
-        'occult': 'Occult',
-        'primal': 'Primal'
-    };
+    // Check for directly specified spellcasting proficiencies in the build
+    if (data.build && data.build.proficiencies) {
+        const prof = data.build.proficiencies;
 
-    // For each tradition, check if character has proficiency
-    for (const [key, name] of Object.entries(traditionMap)) {
-        const profKey = 'casting' + name;
-        const profValue = getNumeric(data.build?.proficiencies?.[profKey]);
-
-        // Only include traditions where proficiency > 0
-        if (profValue > 0) {
-            traditions.push(name);
-            proficiencies[key.toLowerCase()] = getProficiencyLevel(profValue);
+        // Only add traditions where proficiency is greater than 0
+        if (prof.castingArcane > 0) {
+            traditions.push("Arcane");
+            proficiencies["Arcane"] = prof.castingArcane;
+        }
+        if (prof.castingDivine > 0) {
+            traditions.push("Divine");
+            proficiencies["Divine"] = prof.castingDivine;
+        }
+        if (prof.castingOccult > 0) {
+            traditions.push("Occult");
+            proficiencies["Occult"] = prof.castingOccult;
+        }
+        if (prof.castingPrimal > 0) {
+            traditions.push("Primal");
+            proficiencies["Primal"] = prof.castingPrimal;
         }
     }
 
-    return { traditions, proficiencies };
+    // Check for spellcasters in the build
+    if (data.build && data.build.spellCasters && Array.isArray(data.build.spellCasters)) {
+        for (const caster of data.build.spellCasters) {
+            if (caster.magicTradition && !traditions.includes(caster.magicTradition.charAt(0).toUpperCase() + caster.magicTradition.slice(1))) {
+                const tradition = caster.magicTradition.charAt(0).toUpperCase() + caster.magicTradition.slice(1);
+                traditions.push(tradition);
+
+                // If proficiency isn't already set from build.proficiencies, use the caster's proficiency
+                if (!proficiencies[tradition] && caster.proficiency) {
+                    proficiencies[tradition] = caster.proficiency;
+                }
+            }
+        }
+    }
+
+    // Check for focus spells to identify traditions
+    if (data.build && data.build.focus) {
+        for (const tradition in data.build.focus) {
+            if (tradition !== 'Unassigned' && Object.keys(data.build.focus[tradition]).length > 0) {
+                const normalizedTradition = tradition.charAt(0).toUpperCase() + tradition.slice(1);
+                if (!traditions.includes(normalizedTradition)) {
+                    traditions.push(normalizedTradition);
+
+                    // Try to get proficiency from the ability object, if exists
+                    for (const ability in data.build.focus[tradition]) {
+                        if (data.build.focus[tradition][ability].proficiency && !proficiencies[normalizedTradition]) {
+                            proficiencies[normalizedTradition] = data.build.focus[tradition][ability].proficiency;
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    // For class-specific magic users that might not have standard traditions
+    if (data.build && data.build.specials && Array.isArray(data.build.specials)) {
+        const specialTraditions = {
+            'Occult': 'Occult',
+            'Divine': 'Divine',
+            'Arcane': 'Arcane',
+            'Primal': 'Primal'
+        };
+
+        for (const special of data.build.specials) {
+            if (typeof special === 'string') {
+                for (const [key, value] of Object.entries(specialTraditions)) {
+                    if (special === key && !traditions.includes(value)) {
+                        traditions.push(value);
+                        // Note: We can't determine proficiency from specials alone
+                    }
+                }
+            }
+        }
+    }
+
+    return {
+        traditions: traditions,
+        proficiencies: proficiencies
+    };
 }
 
 // Preprocess character data to extract all needed values
