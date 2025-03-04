@@ -1614,3 +1614,87 @@ function extractVisionTypes(data) {
         allSenses: allSenses
     };
 }
+
+// Add a function to remove a character by index
+function removeCharacter(index) {
+    if (index >= 0 && index < characters.length) {
+        // Remove from array
+        characters.splice(index, 1);
+
+        // Save updated list to cache
+        saveCharactersToCache(characters);
+
+        // Rebuild the entire table with updated characters list
+        buildTable();
+
+        // Update warnings and tips
+        updatePartyWarnings();
+
+        showStatusMessage('Character removed successfully!');
+    }
+}
+
+// Update the renderSection function to add remove buttons in the header
+function renderSection(section, data) {
+    const sectionElement = document.createElement('div');
+    sectionElement.className = 'table-section';
+    sectionElement.id = `section-${section.id}`;
+
+    // Create section header
+    const headerElement = document.createElement('div');
+    headerElement.className = 'section-header';
+    headerElement.innerHTML = `<i class="fas fa-${section.icon}"></i> ${section.title}`;
+    sectionElement.appendChild(headerElement);
+
+    // Generate table
+    const tableElement = document.createElement('table');
+    tableElement.className = 'character-table';
+
+    // Create header row
+    const headerRow = document.createElement('tr');
+    headerRow.className = 'table-header';
+
+    // Add empty cell for row headers
+    headerRow.appendChild(document.createElement('th'));
+
+    // Add character headers with remove buttons
+    characters.forEach((character, index) => {
+        const th = document.createElement('th');
+        th.className = `character-${index}`;
+
+        // Create header content with name and remove button
+        const headerContent = document.createElement('div');
+        headerContent.className = 'character-header';
+
+        // Add character name
+        const nameSpan = document.createElement('span');
+        nameSpan.textContent = character.build?.name || `Character ${index + 1}`;
+        nameSpan.className = 'character-name';
+        headerContent.appendChild(nameSpan);
+
+        // Add remove button (only in the first section)
+        if (section.id === 'info') {
+            const removeButton = document.createElement('button');
+            removeButton.className = 'remove-character-btn';
+            removeButton.innerHTML = '<i class="fas fa-times"></i>';
+            removeButton.title = `Remove ${character.build?.name || 'Character'}`;
+            removeButton.onclick = (e) => {
+                e.stopPropagation(); // Prevent event bubbling
+                if (confirm(`Are you sure you want to remove ${character.build?.name || 'this character'}?`)) {
+                    removeCharacter(index);
+                }
+            };
+            headerContent.appendChild(removeButton);
+        }
+
+        th.appendChild(headerContent);
+        headerRow.appendChild(th);
+    });
+
+    tableElement.appendChild(headerRow);
+
+    // Create rows for each column
+    // ... rest of the rendering logic ...
+
+    return sectionElement;
+}

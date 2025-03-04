@@ -711,3 +711,32 @@ td .value {
 .warning-card.failure .warning-title i {
     color: #c0392b;
 }
+
+/* Character Header with Remove Button */
+.character-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    width: 100%;
+}
+
+.remove-character-btn {
+    background-color: transparent;
+    color: rgba(255, 255, 255, 0.7);
+    border: none;
+    border-radius: 50%;
+    width: 20px;
+    height: 20px;
+    font-size: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    margin-left: 5px;
+}
+
+.remove-character-btn:hover {
+    background-color: rgba(220, 53, 69, 0.8);
+    color: white;
+}
