@@ -44,6 +44,7 @@ async function loadWarnings() {
             'warnings/skill-coverage.yaml',
             'warnings/level-consistency.yaml',
             'warnings/knowledge-skills.yaml',
+            'warnings/charisma-skills.yaml',
             // Add more warning files here
         ];
 
@@ -88,7 +89,6 @@ async function loadTenuousTips() {
         // List of tip files to load
         const tipFiles = [
             'tenuous-tips/bard-performance.yaml',
-            'tenuous-tips/charisma-skills.yaml',
             'tenuous-tips/thievery-tools.yaml',
             'tenuous-tips/detect-magic.yaml',
             'tenuous-tips/dispel-magic.yaml',
@@ -900,9 +900,6 @@ function renderCharacters() {
     for (const character of characters) {
         addCharacterRow(character);
     }
-
-    // Update the highest values and highlighting
-    updateHighestValues();
 
     // Update warnings
     updatePartyWarnings();
