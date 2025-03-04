@@ -286,31 +286,10 @@ sections:
     title: Senses
     icon: eye
     columns:
-      - id: darkvision
-        title: Darkvision
-        icon: moon
-        fullTitle: Darkvision
-        jsonPath: extracted.senses.darkvision
-        displayType: pill
-        highestValue: false
-      - id: lowLightVision
-        title: Low-Light
-        icon: lightbulb
-        fullTitle: Low-Light Vision
-        jsonPath: extracted.senses.lowLightVision
-        displayType: pill
-        highestValue: false
-      - id: scent
-        title: Scent
-        icon: nose
-        fullTitle: Scent
-        jsonPath: extracted.senses.scent
-        displayType: pill
-        highestValue: false
-      - id: tremorsense
-        title: Tremorsense
-        icon: wave-square
-        fullTitle: Tremorsense
-        jsonPath: extracted.senses.tremorsense
-        displayType: pill
+      - id: allSenses
+        title: Senses
+        icon: eye
+        fullTitle: Special Senses
+        jsonPath: extracted.senses.allSenses
+        displayType: pillList
         highestValue: false

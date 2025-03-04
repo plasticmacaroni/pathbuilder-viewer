@@ -1410,28 +1410,23 @@ function updateTenuousTips() {
 
 // Extract vision information
 function extractVisionTypes(data) {
-    const senses = {
-        darkvision: null,
-        lowLightVision: null,
-        scent: null,
-        tremorsense: null
-    };
+    const allSenses = [];
 
     // Check for vision types in specials/abilities
     if (data.build && data.build.specials && Array.isArray(data.build.specials)) {
         for (const special of data.build.specials) {
             if (typeof special === 'string') {
                 if (special.toLowerCase().includes('darkvision')) {
-                    senses.darkvision = "Darkvision";
+                    allSenses.push("Darkvision");
                 }
                 if (special.toLowerCase().includes('low-light vision')) {
-                    senses.lowLightVision = "Low-Light Vision";
+                    allSenses.push("Low-Light Vision");
                 }
                 if (special.toLowerCase().includes('scent')) {
-                    senses.scent = "Scent";
+                    allSenses.push("Scent");
                 }
                 if (special.toLowerCase().includes('tremorsense')) {
-                    senses.tremorsense = "Tremorsense";
+                    allSenses.push("Tremorsense");
                 }
             }
         }
@@ -1439,39 +1434,41 @@ function extractVisionTypes(data) {
 
     // Check for ancestry that might have darkvision inherently
     const darkvisionAncestries = ['dwarf', 'gnome', 'half-orc', 'orc'];
-    if (data.build?.ancestry && darkvisionAncestries.includes(data.build.ancestry.toLowerCase())) {
-        senses.darkvision = "Darkvision";
+    if (data.build?.ancestry &&
+        darkvisionAncestries.includes(data.build.ancestry.toLowerCase()) &&
+        !allSenses.includes("Darkvision")) {
+        allSenses.push("Darkvision");
     }
 
     // Check for familiar senses
     if (data.build?.familiars && Array.isArray(data.build.familiars)) {
         for (const familiar of data.build.familiars) {
             if (familiar.abilities && Array.isArray(familiar.abilities)) {
-                // Check for familiars with special senses
-                // Note: We're no longer requiring "Share Senses" as it may be handled elsewhere
-                // or may be implied by the familiar rules in your game
+                // Define all possible familiar senses
+                const sensesToCheck = [
+                    'Darkvision',
+                    'Low-Light Vision',
+                    'Scent',
+                    'Tremorsense',
+                    'Echolocation',
+                    'Greater Darkvision',
+                    'See Invisibility',
+                    'Wavesense'
+                ];
 
-                if (familiar.abilities.includes('Darkvision')) {
-                    // Only set if not already set from character's own abilities
-                    if (!senses.darkvision) {
-                        senses.darkvision = "Darkvision (Familiar)";
-                    }
-                }
-
-                if (familiar.abilities.includes('Scent')) {
-                    if (!senses.scent) {
-                        senses.scent = "Scent (Familiar)";
-                    }
-                }
-
-                if (familiar.abilities.includes('Tremorsense')) {
-                    if (!senses.tremorsense) {
-                        senses.tremorsense = "Tremorsense (Familiar)";
+                // Check each sense
+                for (const sense of sensesToCheck) {
+                    if (familiar.abilities.includes(sense) &&
+                        !allSenses.includes(sense) &&
+                        !allSenses.includes(`${sense} (Familiar)`)) {
+                        allSenses.push(`${sense} (Familiar)`);
                     }
                 }
             }
         }
     }
 
-    return senses;
+    return {
+        allSenses: allSenses
+    };
 }
