@@ -25,24 +25,21 @@ checkFunction: |
       'thievery': 'Thievery'
     };
     
-    // Find skills with insufficient training (less than +2)
+    // Find skills with insufficient training (untrained or less than +2)
     const insufficientSkills = [];
     
     for (const [skillKey, skillName] of Object.entries(allSkills)) {
-      // Check if any character has at least a +2 value for this skill
+      // Check if any character has adequate training in this skill
       let hasAdequateTraining = false;
       
       for (const character of characters) {
-        if (character.extracted && character.extracted.skills && character.extracted.skills[skillKey] >= 2) {
-          hasAdequateTraining = true;
-          break;
-        }
-        
-        // Also check skill proficiencies if available
+        // First check skill proficiencies to ensure it's not untrained
         if (character.extracted && 
             character.extracted.skillProficiencies && 
             character.extracted.skillProficiencies[skillKey] && 
             character.extracted.skillProficiencies[skillKey] !== 'U') {
+          
+          // Only consider a skill adequate if it's not untrained, regardless of numeric value
           hasAdequateTraining = true;
           break;
         }
@@ -59,5 +56,5 @@ checkFunction: |
     // Return true if there are no insufficient skills
     return insufficientSkills.length === 0;
   }
-successMessage: Full skill coverage achieved! At least one character has trained proficiency or better (+2 or higher) in every skill.
-failureMessage: "No character has adequate training (at least +2) in: {{insufficientSkillsList.join(', ')}}"
+successMessage: Full skill coverage achieved! At least one character has trained proficiency or better in every skill.
+failureMessage: "No character has trained proficiency in: {{insufficientSkillsList.join(', ')}}"
