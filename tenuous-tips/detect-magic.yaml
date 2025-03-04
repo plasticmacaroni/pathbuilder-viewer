@@ -42,11 +42,14 @@ checkFunction: |
       // 2. Check spellCasters array structure (PF2e format)
       if (character.build.spellCasters && Array.isArray(character.build.spellCasters)) {
         for (const caster of character.build.spellCasters) {
-          // Check spells array
+          // Debug logging for development
+          console.log("Checking caster:", caster.name);
+          
+          // Check spells array - THIS IS THE IMPORTANT PART
           if (caster.spells && Array.isArray(caster.spells)) {
-            for (const spellObj of caster.spells) {
-              if (spellObj.list && Array.isArray(spellObj.list)) {
-                for (const spell of spellObj.list) {
+            for (const spellLevel of caster.spells) {
+              if (spellLevel.list && Array.isArray(spellLevel.list)) {
+                for (const spell of spellLevel.list) {
                   const spellName = typeof spell === 'string' ? spell : (spell.name || spell[0] || '');
                   if (spellName.toLowerCase().includes('detect magic')) {
                     return true;
@@ -58,9 +61,9 @@ checkFunction: |
           
           // Check prepared spells array
           if (caster.prepared && Array.isArray(caster.prepared)) {
-            for (const spellObj of caster.prepared) {
-              if (spellObj.list && Array.isArray(spellObj.list)) {
-                for (const spell of spellObj.list) {
+            for (const spellLevel of caster.prepared) {
+              if (spellLevel.list && Array.isArray(spellLevel.list)) {
+                for (const spell of spellLevel.list) {
                   const spellName = typeof spell === 'string' ? spell : (spell.name || spell[0] || '');
                   if (spellName.toLowerCase().includes('detect magic')) {
                     return true;
@@ -73,10 +76,9 @@ checkFunction: |
       }
       
       // 3. Check for class features or special abilities that might grant Detect Magic
-      // If characters can have "Arcane Sense" or similar abilities that replicate Detect Magic
       if (character.build.specials && Array.isArray(character.build.specials)) {
         for (const special of character.build.specials) {
-          if (special.toLowerCase().includes('arcane sense')) {
+          if (typeof special === 'string' && special.toLowerCase().includes('arcane sense')) {
             return true;
           }
         }
