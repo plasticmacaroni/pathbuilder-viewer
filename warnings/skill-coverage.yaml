@@ -25,7 +25,7 @@ checkFunction: |
       'thievery': 'Thievery'
     };
     
-    // Find skills with insufficient training (untrained or less than +2)
+    // Find skills with insufficient training (untrained or 0)
     const insufficientSkills = [];
     
     for (const [skillKey, skillName] of Object.entries(allSkills)) {
