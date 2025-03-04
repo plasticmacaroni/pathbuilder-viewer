@@ -1282,80 +1282,85 @@ function extractSpellTraditions(data) {
     const traditions = [];
     const proficiencies = {};
 
-    // Check for directly specified spellcasting proficiencies in the build
-    if (data.build && data.build.proficiencies) {
-        const prof = data.build.proficiencies;
+    // Determine if the character is a full spellcaster or just has focus spells
+    const hasSpellCasters = Boolean(data.build?.spellCasters && data.build.spellCasters.length > 0);
 
-        // Only add traditions where proficiency is greater than 0
-        if (prof.castingArcane > 0) {
-            traditions.push("Arcane");
-            proficiencies["Arcane"] = prof.castingArcane;
-        }
-        if (prof.castingDivine > 0) {
-            traditions.push("Divine");
-            proficiencies["Divine"] = prof.castingDivine;
-        }
-        if (prof.castingOccult > 0) {
-            traditions.push("Occult");
-            proficiencies["Occult"] = prof.castingOccult;
-        }
-        if (prof.castingPrimal > 0) {
-            traditions.push("Primal");
-            proficiencies["Primal"] = prof.castingPrimal;
-        }
-    }
-
-    // Check for spellcasters in the build
-    if (data.build && data.build.spellCasters && Array.isArray(data.build.spellCasters)) {
+    // Process actual spellcasting traditions (classes with full spellcasting)
+    if (hasSpellCasters) {
+        // Check spellcasters array first for most reliable source
         for (const caster of data.build.spellCasters) {
-            if (caster.magicTradition && !traditions.includes(caster.magicTradition.charAt(0).toUpperCase() + caster.magicTradition.slice(1))) {
+            if (caster.magicTradition) {
                 const tradition = caster.magicTradition.charAt(0).toUpperCase() + caster.magicTradition.slice(1);
-                traditions.push(tradition);
+                if (!traditions.includes(tradition)) {
+                    traditions.push(tradition);
 
-                // If proficiency isn't already set from build.proficiencies, use the caster's proficiency
-                if (!proficiencies[tradition] && caster.proficiency) {
-                    proficiencies[tradition] = caster.proficiency;
-                }
-            }
-        }
-    }
-
-    // Check for focus spells to identify traditions
-    if (data.build && data.build.focus) {
-        for (const tradition in data.build.focus) {
-            if (tradition !== 'Unassigned' && Object.keys(data.build.focus[tradition]).length > 0) {
-                const normalizedTradition = tradition.charAt(0).toUpperCase() + tradition.slice(1);
-                if (!traditions.includes(normalizedTradition)) {
-                    traditions.push(normalizedTradition);
-
-                    // Try to get proficiency from the ability object, if exists
-                    for (const ability in data.build.focus[tradition]) {
-                        if (data.build.focus[tradition][ability].proficiency && !proficiencies[normalizedTradition]) {
-                            proficiencies[normalizedTradition] = data.build.focus[tradition][ability].proficiency;
-                        }
+                    // Add proficiency if available
+                    if (caster.proficiency) {
+                        proficiencies[tradition.toLowerCase()] = caster.proficiency;
                     }
                 }
             }
         }
+
+        // If we found actual spellcasters, also check proficiencies as backup
+        if (data.build.proficiencies) {
+            const prof = data.build.proficiencies;
+
+            // Only add traditions not already found in spellCasters
+            if (prof.castingArcane > 0 && !traditions.includes("Arcane")) {
+                traditions.push("Arcane");
+                proficiencies["arcane"] = prof.castingArcane;
+            }
+            if (prof.castingDivine > 0 && !traditions.includes("Divine")) {
+                traditions.push("Divine");
+                proficiencies["divine"] = prof.castingDivine;
+            }
+            if (prof.castingOccult > 0 && !traditions.includes("Occult")) {
+                traditions.push("Occult");
+                proficiencies["occult"] = prof.castingOccult;
+            }
+            if (prof.castingPrimal > 0 && !traditions.includes("Primal")) {
+                traditions.push("Primal");
+                proficiencies["primal"] = prof.castingPrimal;
+            }
+        }
     }
 
-    // For class-specific magic users that might not have standard traditions
-    if (data.build && data.build.specials && Array.isArray(data.build.specials)) {
-        const specialTraditions = {
-            'Occult': 'Occult',
-            'Divine': 'Divine',
-            'Arcane': 'Arcane',
-            'Primal': 'Primal'
-        };
+    // For non-spellcasters with focus magic, we'll only show traditions if they
+    // have specific spellcasting feats that grant limited spell access
+    if (!hasSpellCasters && data.build?.focus) {
+        // Look for feats that grant limited spellcasting
+        const spellcastingFeats = [
+            "Basic Cleric Spellcasting", "Basic Wizard Spellcasting",
+            "Basic Bard Spellcasting", "Basic Druid Spellcasting",
+            "Basic Sorcerer Spellcasting", "Basic Oracle Spellcasting",
+            "Basic Witch Spellcasting", "Basic Psychic Spellcasting"
+        ];
 
-        for (const special of data.build.specials) {
-            if (typeof special === 'string') {
-                for (const [key, value] of Object.entries(specialTraditions)) {
-                    if (special === key && !traditions.includes(value)) {
-                        traditions.push(value);
-                        // Note: We can't determine proficiency from specials alone
-                    }
-                }
+        const hasCastingFeat = data.build.feats &&
+            data.build.feats.some(feat =>
+                feat && spellcastingFeats.includes(typeof feat === 'string' ? feat : feat[0])
+            );
+
+        // Only include focus traditions if they have a spellcasting feat
+        if (hasCastingFeat && data.build.proficiencies) {
+            const prof = data.build.proficiencies;
+
+            if (prof.castingArcane > 0) {
+                traditions.push("Arcane");
+                proficiencies["arcane"] = prof.castingArcane;
+            }
+            if (prof.castingDivine > 0) {
+                traditions.push("Divine");
+                proficiencies["divine"] = prof.castingDivine;
+            }
+            if (prof.castingOccult > 0) {
+                traditions.push("Occult");
+                proficiencies["occult"] = prof.castingOccult;
+            }
+            if (prof.castingPrimal > 0) {
+                traditions.push("Primal");
+                proficiencies["primal"] = prof.castingPrimal;
             }
         }
     }
