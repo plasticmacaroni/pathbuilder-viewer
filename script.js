@@ -447,9 +447,9 @@ function addCharacterRow(character) {
                     if (column.displayType === 'proficiency-badge') {
                         const profLabel = getProficiencyLabel(profCode);
 
-                        // Format the display value with a plus sign for positive numbers
+                        // Format the display value with a plus sign for positive AND zero numbers
                         let displayValue = skillValue;
-                        if (typeof skillValue === 'number' && skillValue > 0) {
+                        if (typeof skillValue === 'number' && skillValue >= 0) {
                             displayValue = '+' + skillValue;
                         }
 
