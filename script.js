@@ -45,7 +45,6 @@ async function loadWarnings() {
             'warnings/level-consistency.yaml',
             'warnings/bard-performance.yaml',
             'warnings/knowledge-skills.yaml',
-            'warnings/trick-magic-item.yaml'
             // Add more warning files here
         ];
 
@@ -94,6 +93,7 @@ async function loadTenuousTips() {
             'tenuous-tips/thievery-tools.yaml',
             'tenuous-tips/detect-magic.yaml',
             'tenuous-tips/dispel-magic.yaml',
+            'tenuous-tips/trick-magic-item.yaml'
             // Add more tip files here
         ];
 
