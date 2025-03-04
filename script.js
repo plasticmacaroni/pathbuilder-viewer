@@ -447,8 +447,13 @@ function addCharacterRow(character) {
                     if (column.displayType === 'proficiency-badge') {
                         const profLabel = getProficiencyLabel(profCode);
 
-                        // Show the actual skill value WITH the proficiency badge
-                        cell.innerHTML = `<span class="value">${skillValue !== undefined ? skillValue : '-'}</span>
+                        // Format the display value with a plus sign for positive numbers
+                        let displayValue = skillValue;
+                        if (typeof skillValue === 'number' && skillValue > 0) {
+                            displayValue = '+' + skillValue;
+                        }
+
+                        cell.innerHTML = `<span class="value">${displayValue !== undefined ? displayValue : '-'}</span>
                                         <span class="prof-badge prof-${profCode.toLowerCase()}" 
                                         title="${profLabel}">${profCode}</span>`;
                     } else if (column.displayType === 'proficiency-pill-list' && Array.isArray(skillValue)) {
