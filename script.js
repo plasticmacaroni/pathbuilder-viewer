@@ -94,6 +94,7 @@ async function loadTenuousTips() {
             'tenuous-tips/dispel-magic.yaml',
             'tenuous-tips/bard-performance.yaml',
             'tenuous-tips/trick-magic-item.yaml'
+            'tenuous-tips/sight.yaml'
             // Add more tip files here
         ];
 

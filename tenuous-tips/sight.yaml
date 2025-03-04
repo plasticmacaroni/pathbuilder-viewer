@@ -1,0 +1,77 @@
+title: Darkness Ahead
+description: Party may struggle with light sources in dark environments
+checkFunction: |
+  function() {
+    // If there are no characters, don't show a warning
+    if (characters.length === 0) return true;
+    
+    let hasLightSource = false;
+    let hasDarkvision = false;
+    
+    for (const character of characters) {
+      // Check for darkvision in character specials/abilities/heritage
+      if (character.build && character.build.specials) {
+        for (const special of character.build.specials) {
+          if (typeof special === 'string' && 
+              special.toLowerCase().includes('darkvision')) {
+            hasDarkvision = true;
+            break;
+          }
+        }
+      }
+      
+      // Check for familiars with darkvision
+      if (character.build && character.build.familiars) {
+        for (const familiar of character.build.familiars) {
+          if (familiar.abilities && familiar.abilities.includes('Darkvision')) {
+            hasDarkvision = true;
+            break;
+          }
+        }
+      }
+      
+      // Check for light spells
+      if (character.build && character.build.spellCasters) {
+        for (const caster of character.build.spellCasters) {
+          // Check cantrips/level 0 spells
+          if (caster.spells && Array.isArray(caster.spells)) {
+            for (const spellLevel of caster.spells) {
+              if (spellLevel.spellLevel === 0 && spellLevel.list) {
+                for (const spell of spellLevel.list) {
+                  if (typeof spell === 'string' && 
+                      (spell.toLowerCase() === 'light' || 
+                       spell.toLowerCase().includes('dancing lights'))) {
+                    hasLightSource = true;
+                    break;
+                  }
+                }
+              }
+            }
+          }
+          
+          // Also check prepared spells if available
+          if (caster.prepared && Array.isArray(caster.prepared)) {
+            for (const spellLevel of caster.prepared) {
+              if (spellLevel.spellLevel === 0 && spellLevel.list) {
+                for (const spell of spellLevel.list) {
+                  if (typeof spell === 'string' && 
+                      (spell.toLowerCase() === 'light' || 
+                       spell.toLowerCase().includes('dancing lights'))) {
+                    hasLightSource = true;
+                    break;
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+      
+      if (hasDarkvision && hasLightSource) break;
+    }
+    
+    // If party has neither darkvision nor light spells, issue warning
+    return hasDarkvision || hasLightSource;
+  }
+successMessage: Your party has access to darkvision or light-producing spells.
+failureMessage: No one in your party has darkvision or light-producing spells. Remember that using a torch or lantern requires a free hand, which may limit your combat options. Consider acquiring magical light sources or items that grant darkvision.
