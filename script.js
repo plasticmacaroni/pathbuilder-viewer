@@ -1330,6 +1330,9 @@ function preprocessCharacterData(data) {
         traditionProficiencies: traditionProficiencies
     };
 
+    // Add senses data to the extracted information
+    extracted.senses = extractVisionTypes(data);
+
     // Return the processed data
     return {
         ...data,
@@ -1403,4 +1406,44 @@ function updateTenuousTips() {
             console.error(`Error processing tip "${tip.title}":`, error);
         }
     });
+}
+
+// Extract vision information
+function extractVisionTypes(data) {
+    const senses = {
+        darkvision: false,
+        lowLightVision: false
+    };
+
+    // Check for vision types in specials/abilities
+    if (data.build && data.build.specials && Array.isArray(data.build.specials)) {
+        for (const special of data.build.specials) {
+            if (typeof special === 'string') {
+                if (special.toLowerCase().includes('darkvision')) {
+                    senses.darkvision = true;
+                }
+                if (special.toLowerCase().includes('low-light vision')) {
+                    senses.lowLightVision = true;
+                }
+            }
+        }
+    }
+
+    // Check for ancestry that might have darkvision inherently
+    const darkvisionAncestries = ['dwarf', 'gnome', 'half-orc', 'orc'];
+    if (data.build?.ancestry && darkvisionAncestries.includes(data.build.ancestry.toLowerCase())) {
+        senses.darkvision = true;
+    }
+
+    // Check for familiar vision that might extend to character
+    if (data.build?.familiars && Array.isArray(data.build.familiars)) {
+        for (const familiar of data.build.familiars) {
+            if (familiar.abilities && familiar.abilities.includes('Darkvision') &&
+                familiar.abilities.includes('Share Senses')) {
+                senses.darkvision = true;
+            }
+        }
+    }
+
+    return senses;
 }
