@@ -43,7 +43,6 @@ async function loadWarnings() {
             'warnings/battle-medicine.yaml',
             'warnings/skill-coverage.yaml',
             'warnings/level-consistency.yaml',
-            'warnings/bard-performance.yaml',
             'warnings/knowledge-skills.yaml',
             // Add more warning files here
         ];
@@ -93,6 +92,7 @@ async function loadTenuousTips() {
             'tenuous-tips/thievery-tools.yaml',
             'tenuous-tips/detect-magic.yaml',
             'tenuous-tips/dispel-magic.yaml',
+            'tenuous-tips/bard-performance.yaml',
             'tenuous-tips/trick-magic-item.yaml'
             // Add more tip files here
         ];
