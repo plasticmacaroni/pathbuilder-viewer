@@ -204,19 +204,21 @@ function extractSkills(data) {
         // Store proficiency letter
         skillProficiencies[skill] = getProficiencyLevel(profBonus);
 
-        // Add level to the calculation for all skills - in PF2e, you add level even if untrained
+        // Add level ONLY if trained (profBonus > 0)
         const itemBonus = data.build?.mods?.[capitalizeFirstLetter(skill)]?.["Item Bonus"] || 0;
 
-        // This is where the fix is: Always add level for all skills
-        skills[skill] = level + profBonus + abilityMod + itemBonus;
+        // Fix: Only add level if character has proficiency
+        skills[skill] = (profBonus > 0 ? level : 0) + profBonus + abilityMod + itemBonus;
     }
 
-    // Same fix needed for perception
+    // Same fix for perception
     const perceptionProf = getNumeric(data.build?.proficiencies?.perception);
     const wisScore = getNumeric(data.build?.abilities?.wis);
     const wisMod = Math.floor((wisScore - 10) / 2);
     const perceptionItemBonus = data.build?.mods?.Perception?.["Item Bonus"] || 0;
-    skills.perception = level + perceptionProf + wisMod + perceptionItemBonus;
+
+    // Fix: Only add level if character has perception proficiency
+    skills.perception = (perceptionProf > 0 ? level : 0) + perceptionProf + wisMod + perceptionItemBonus;
 
     return { skills, skillProficiencies };
 }
@@ -563,38 +565,20 @@ function buildSkillMap() {
     return skillMap;
 }
 
-// Function to update party composition warnings using the loaded YAML warnings
+// Function to update party warnings
 function updatePartyWarnings() {
-    // Create warnings container if it doesn't exist
-    let warningsContainer = document.getElementById('warningsContainer');
-    if (!warningsContainer) {
-        warningsContainer = document.createElement('div');
-        warningsContainer.id = 'warningsContainer';
-        warningsContainer.className = 'warnings-container';
-
-        const title = document.createElement('h2');
-        title.className = 'warnings-title';
-        title.textContent = 'Party Composition Warnings';
-        warningsContainer.appendChild(title);
-
-        const warningsGrid = document.createElement('div');
-        warningsGrid.id = 'warningsGrid';
-        warningsGrid.className = 'warnings-grid';
-        warningsContainer.appendChild(warningsGrid);
-
-        document.querySelector('.container').appendChild(warningsContainer);
-    }
-
     const warningsGrid = document.getElementById('warningsGrid');
     warningsGrid.innerHTML = ''; // Clear existing warnings
 
     // Don't show warnings if no characters
     if (characters.length === 0) {
-        warningsGrid.innerHTML = '<div class="warning-card">No characters imported yet</div>';
+        warningsGrid.innerHTML = '<div class="warning-card">No adventurers in your party yet. Import some brave souls!</div>';
+        // Also update tenuous tips when there are no characters
+        updateTenuousTips();
         return;
     }
 
-    // Process each warning from loaded YAML files
+    // Process each warning
     warnings.forEach(warning => {
         try {
             // Evaluate the check function
@@ -609,7 +593,7 @@ function updatePartyWarnings() {
             // Process message templates
             let message = isSuccess ? warning.successMessage : warning.failureMessage;
 
-            // Replace the unsafe eval in message template processing
+            // Replace template variables
             message = message.replace(/{{(.*?)}}/g, (match, expr) => {
                 try {
                     // Handle common window variables
@@ -638,7 +622,6 @@ function updatePartyWarnings() {
                 }
             });
 
-            // Add the warning card
             addWarning(
                 warningsGrid,
                 warning.title,
@@ -649,6 +632,9 @@ function updatePartyWarnings() {
             console.error(`Error processing warning "${warning.title}":`, error);
         }
     });
+
+    // ADDED: Always update tenuous tips when warnings are updated
+    updateTenuousTips();
 }
 
 // Helper function to add a warning card
