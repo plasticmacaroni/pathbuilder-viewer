@@ -1289,15 +1289,20 @@ function extractSpellTraditions(data) {
     if (hasSpellCasters) {
         // Check spellcasters array first for most reliable source
         for (const caster of data.build.spellCasters) {
-            if (caster.magicTradition) {
+            if (caster.magicTradition && caster.proficiency && caster.proficiency > 0) {
                 const tradition = caster.magicTradition.charAt(0).toUpperCase() + caster.magicTradition.slice(1);
                 if (!traditions.includes(tradition)) {
                     traditions.push(tradition);
 
-                    // Add proficiency if available
-                    if (caster.proficiency) {
-                        proficiencies[tradition.toLowerCase()] = caster.proficiency;
-                    }
+                    // Convert numeric proficiency to letter code
+                    let profLevel = "U";
+                    const profValue = parseInt(caster.proficiency);
+                    if (profValue === 2) profLevel = "T";
+                    else if (profValue === 4) profLevel = "E";
+                    else if (profValue === 6) profLevel = "M";
+                    else if (profValue === 8) profLevel = "L";
+
+                    proficiencies[tradition.toLowerCase()] = profLevel;
                 }
             }
         }
@@ -1309,19 +1314,56 @@ function extractSpellTraditions(data) {
             // Only add traditions not already found in spellCasters
             if (prof.castingArcane > 0 && !traditions.includes("Arcane")) {
                 traditions.push("Arcane");
-                proficiencies["arcane"] = prof.castingArcane;
+
+                // Convert numeric proficiency to letter code
+                let profLevel = "U";
+                const profValue = parseInt(prof.castingArcane);
+                if (profValue === 2) profLevel = "T";
+                else if (profValue === 4) profLevel = "E";
+                else if (profValue === 6) profLevel = "M";
+                else if (profValue === 8) profLevel = "L";
+
+                proficiencies["arcane"] = profLevel;
             }
+
+            // Repeat for other traditions
             if (prof.castingDivine > 0 && !traditions.includes("Divine")) {
                 traditions.push("Divine");
-                proficiencies["divine"] = prof.castingDivine;
+
+                let profLevel = "U";
+                const profValue = parseInt(prof.castingDivine);
+                if (profValue === 2) profLevel = "T";
+                else if (profValue === 4) profLevel = "E";
+                else if (profValue === 6) profLevel = "M";
+                else if (profValue === 8) profLevel = "L";
+
+                proficiencies["divine"] = profLevel;
             }
+
             if (prof.castingOccult > 0 && !traditions.includes("Occult")) {
                 traditions.push("Occult");
-                proficiencies["occult"] = prof.castingOccult;
+
+                let profLevel = "U";
+                const profValue = parseInt(prof.castingOccult);
+                if (profValue === 2) profLevel = "T";
+                else if (profValue === 4) profLevel = "E";
+                else if (profValue === 6) profLevel = "M";
+                else if (profValue === 8) profLevel = "L";
+
+                proficiencies["occult"] = profLevel;
             }
+
             if (prof.castingPrimal > 0 && !traditions.includes("Primal")) {
                 traditions.push("Primal");
-                proficiencies["primal"] = prof.castingPrimal;
+
+                let profLevel = "U";
+                const profValue = parseInt(prof.castingPrimal);
+                if (profValue === 2) profLevel = "T";
+                else if (profValue === 4) profLevel = "E";
+                else if (profValue === 6) profLevel = "M";
+                else if (profValue === 8) profLevel = "L";
+
+                proficiencies["primal"] = profLevel;
             }
         }
     }
@@ -1348,19 +1390,56 @@ function extractSpellTraditions(data) {
 
             if (prof.castingArcane > 0) {
                 traditions.push("Arcane");
-                proficiencies["arcane"] = prof.castingArcane;
+
+                // Convert to letter code
+                let profLevel = "U";
+                const profValue = parseInt(prof.castingArcane);
+                if (profValue === 2) profLevel = "T";
+                else if (profValue === 4) profLevel = "E";
+                else if (profValue === 6) profLevel = "M";
+                else if (profValue === 8) profLevel = "L";
+
+                proficiencies["arcane"] = profLevel;
             }
+
+            // Repeat for other traditions
             if (prof.castingDivine > 0) {
                 traditions.push("Divine");
-                proficiencies["divine"] = prof.castingDivine;
+
+                let profLevel = "U";
+                const profValue = parseInt(prof.castingDivine);
+                if (profValue === 2) profLevel = "T";
+                else if (profValue === 4) profLevel = "E";
+                else if (profValue === 6) profLevel = "M";
+                else if (profValue === 8) profLevel = "L";
+
+                proficiencies["divine"] = profLevel;
             }
+
             if (prof.castingOccult > 0) {
                 traditions.push("Occult");
-                proficiencies["occult"] = prof.castingOccult;
+
+                let profLevel = "U";
+                const profValue = parseInt(prof.castingOccult);
+                if (profValue === 2) profLevel = "T";
+                else if (profValue === 4) profLevel = "E";
+                else if (profValue === 6) profLevel = "M";
+                else if (profValue === 8) profLevel = "L";
+
+                proficiencies["occult"] = profLevel;
             }
+
             if (prof.castingPrimal > 0) {
                 traditions.push("Primal");
-                proficiencies["primal"] = prof.castingPrimal;
+
+                let profLevel = "U";
+                const profValue = parseInt(prof.castingPrimal);
+                if (profValue === 2) profLevel = "T";
+                else if (profValue === 4) profLevel = "E";
+                else if (profValue === 6) profLevel = "M";
+                else if (profValue === 8) profLevel = "L";
+
+                proficiencies["primal"] = profLevel;
             }
         }
     }
