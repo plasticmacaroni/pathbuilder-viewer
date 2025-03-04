@@ -1,0 +1,58 @@
+title: Limited Magic Access
+description: Party may struggle with magic items from other traditions
+checkFunction: |
+  function() {
+    // If there are no characters, don't show a warning
+    if (characters.length === 0) return true;
+    
+    // Check if any character has Trick Magic Item feat
+    let hasTrickMagicItem = false;
+    
+    for (const character of characters) {
+      // Check character feats
+      if (character.build && character.build.feats) {
+        for (const feat of character.build.feats) {
+          if (feat && feat[0] === "Trick Magic Item") {
+            hasTrickMagicItem = true;
+            break;
+          }
+        }
+      }
+      
+      if (hasTrickMagicItem) break;
+    }
+    
+    // If someone has Trick Magic Item, we're good
+    if (hasTrickMagicItem) return true;
+    
+    // Count how many magic traditions the party has access to
+    const coveredTraditions = new Set();
+    
+    for (const character of characters) {
+      if (character.extracted && character.extracted.magicTraditions) {
+        for (const tradition of character.extracted.magicTraditions) {
+          coveredTraditions.add(tradition.toLowerCase());
+        }
+      }
+    }
+    
+    // Store the number of traditions covered for the message
+    window.traditionsCount = coveredTraditions.size;
+    
+    // Check if only one or no traditions are covered
+    if (coveredTraditions.size <= 1) {
+      // Create a message about which traditions are missing
+      const allTraditions = ["Arcane", "Divine", "Occult", "Primal"];
+      const missingTraditions = allTraditions.filter(t => 
+        !coveredTraditions.has(t.toLowerCase())
+      );
+      
+      window.missingTraditions = missingTraditions;
+      
+      return false; // Show warning
+    }
+    
+    return true; // Adequate tradition coverage, no warning needed
+  }
+successMessage: Party has access to multiple magic traditions or Trick Magic Item.
+failureMessage: "Your party only has access to {{traditionsCount === 0 ? 'no' : 'one'}} magic tradition and no one has Trick Magic Item. Consider training someone in Trick Magic Item to use scrolls, wands, and other items from {{missingTraditions.join(', ')}} traditions."

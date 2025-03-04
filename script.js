@@ -45,6 +45,7 @@ async function loadWarnings() {
             'warnings/level-consistency.yaml',
             'warnings/bard-performance.yaml',
             'warnings/knowledge-skills.yaml',
+            'warnings/trick-magic-item.yaml'
             // Add more warning files here
         ];
 
