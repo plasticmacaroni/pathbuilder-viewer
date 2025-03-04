@@ -1443,20 +1443,32 @@ function extractVisionTypes(data) {
         senses.darkvision = "Darkvision";
     }
 
-    // Check for familiar vision that might extend to character
+    // Check for familiar senses
     if (data.build?.familiars && Array.isArray(data.build.familiars)) {
         for (const familiar of data.build.familiars) {
-            if (familiar.abilities && familiar.abilities.includes('Darkvision') &&
-                familiar.abilities.includes('Share Senses')) {
-                senses.darkvision = "Darkvision (Familiar)";
-            }
-            if (familiar.abilities && familiar.abilities.includes('Scent') &&
-                familiar.abilities.includes('Share Senses')) {
-                senses.scent = "Scent (Familiar)";
-            }
-            if (familiar.abilities && familiar.abilities.includes('Tremorsense') &&
-                familiar.abilities.includes('Share Senses')) {
-                senses.tremorsense = "Tremorsense (Familiar)";
+            if (familiar.abilities && Array.isArray(familiar.abilities)) {
+                // Check for familiars with special senses
+                // Note: We're no longer requiring "Share Senses" as it may be handled elsewhere
+                // or may be implied by the familiar rules in your game
+
+                if (familiar.abilities.includes('Darkvision')) {
+                    // Only set if not already set from character's own abilities
+                    if (!senses.darkvision) {
+                        senses.darkvision = "Darkvision (Familiar)";
+                    }
+                }
+
+                if (familiar.abilities.includes('Scent')) {
+                    if (!senses.scent) {
+                        senses.scent = "Scent (Familiar)";
+                    }
+                }
+
+                if (familiar.abilities.includes('Tremorsense')) {
+                    if (!senses.tremorsense) {
+                        senses.tremorsense = "Tremorsense (Familiar)";
+                    }
+                }
             }
         }
     }
