@@ -279,5 +279,5 @@ sections:
         icon: feather
         fullTitle: Character Lore Skills
         jsonPath: build.lores
-        displayType: lore-list
+        displayType: lore-proficiency-list
         highestValue: false

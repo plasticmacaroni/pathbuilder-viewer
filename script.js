@@ -483,6 +483,37 @@ function addCharacterRow(character) {
                 cell.innerHTML = value.map(item =>
                     `<span class="pill pill-${section.id}">${item}</span>`
                 ).join(' ');
+            } else if (column.displayType === 'lore-proficiency-list' && Array.isArray(value)) {
+                // Handle lore skills with proficiency badges
+                if (value.length > 0) {
+                    const items = value.map(lore => {
+                        if (Array.isArray(lore) && lore.length >= 2) {
+                            const loreName = lore[0];
+                            const loreValue = lore[1];
+
+                            // Convert numeric proficiency to letter code
+                            let profCode = "U"; // Default to untrained
+                            if (loreValue === 2) profCode = "T";
+                            else if (loreValue === 4) profCode = "E";
+                            else if (loreValue === 6) profCode = "M";
+                            else if (loreValue === 8) profCode = "L";
+
+                            const profLabel = getProficiencyLabel(profCode);
+
+                            // Use stronger styling for better visibility
+                            return `<span class="pill pill-${section.id}" style="font-weight: bold; color: #000;">
+                                ${loreName} <span class="prof-badge prof-${profCode.toLowerCase()}" 
+                                style="color: #fff; font-weight: bold;"
+                                title="${profLabel}">${profCode}</span>
+                            </span>`;
+                        }
+                        return '';
+                    }).filter(item => item); // Remove empty items
+
+                    cell.innerHTML = items.join(' ');
+                } else {
+                    cell.textContent = '-';
+                }
             } else {
                 // Default display
                 cell.textContent = value !== undefined ? value : '-';
