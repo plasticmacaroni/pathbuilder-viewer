@@ -269,3 +269,15 @@ sections:
         jsonPath: extracted.healingAbilities
         highestValue: false
         displayType: pill-list
+
+  - id: lores
+    title: Lore Skills
+    icon: scroll
+    columns:
+      - id: loreSkills
+        title: Lore Skills
+        icon: feather
+        fullTitle: Character Lore Skills
+        jsonPath: build.lores
+        displayType: lore-list
+        highestValue: false
