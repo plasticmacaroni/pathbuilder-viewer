@@ -58,12 +58,6 @@ checkFunction: |
       }
     }
     
-    // Only show a warning if there's a character with thievery proficiency but without tools
-    // If no one has thievery proficiency, don't show any warning
-    if (!anyCharacterWithThievery) {
-      return true;
-    }
-    
     return thieveryCharacterHasTools;
   }
 successMessage: Your party is well-equipped for locks and traps.
