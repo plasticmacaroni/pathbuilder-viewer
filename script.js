@@ -537,6 +537,9 @@ function addCharacterRow(character) {
                     // Simple plus sign for values without badges
                     cell.textContent = value >= 0 ? `+${value}` : value;
                 }
+            } else if (section.id === 'senses') {
+                cell.classList.add('senses-group');
+                // Apply the same styling/structure as skill groups
             } else {
                 // Default display
                 cell.textContent = value !== undefined ? value : '-';

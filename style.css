@@ -734,3 +734,17 @@ td .value {
 .delete-character-btn:hover {
     background-color: #ff0000;
 }
+
+.senses-group {
+    background-color: var(--skill-group-bg);
+    color: white;
+    border-right: 2px solid var(--border-color);
+}
+
+/* Make senses pills match the style of skill pills */
+.skill-group .pill,
+.senses-group .pill {
+    font-size: 0.7rem;
+    padding: 1px 5px;
+    margin: 1px;
+}

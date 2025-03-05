@@ -303,5 +303,5 @@ sections:
         icon: eye
         fullTitle: Special Senses
         jsonPath: extracted.senses.allSenses
-        displayType: pillList
+        displayType: pill-list
         highestValue: false
