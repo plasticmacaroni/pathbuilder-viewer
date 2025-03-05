@@ -748,3 +748,19 @@ td .value {
     padding: 1px 5px;
     margin: 1px;
 }
+
+.highest-value {
+    color: var(--highlight-color);
+    font-weight: bold;
+}
+
+tfoot td {
+    background-color: var(--table-footer);
+    color: white;
+    font-weight: bold;
+    text-align: center;
+}
+
+tfoot td.highest-value {
+    color: var(--highlight-color);
+}

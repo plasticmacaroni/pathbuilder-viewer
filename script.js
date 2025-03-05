@@ -125,9 +125,16 @@ function processJsonData(jsonString) {
         // Add this to your processJsonData function
         console.log("Processed character data:", characters[characters.length - 1]);
         console.log("Skills:", characters[characters.length - 1].extracted.skills);
+
+        // After adding character and rendering
+        renderCharacters();
+        updateHighestValues();
+
+        return true;
     } catch (error) {
         console.error('Error processing JSON data:', error);
         showStatusMessage('Error processing character data: ' + error.message, true);
+        return false;
     }
 }
 
@@ -564,45 +571,114 @@ function getProficiencyLabel(profCode) {
     }
 }
 
-// Update the highest values row based on YAML schema
+// Function to update the highest values row in the table footer
 function updateHighestValues() {
-    if (characters.length === 0) {
-        return;
-    }
+    if (characters.length === 0) return;
 
     const tableStructure = window.tableStructure;
-    const highestRow = document.getElementById('highestValues');
+    const footerRow = document.getElementById('highestValues');
 
-    // Skip the first cell (the "Highest Values" header)
-    let cellIndex = 1;
+    if (!footerRow) return;
 
-    // Process each section and column from YAML
-    tableStructure.sections.slice(1).forEach(section => {
+    let columnIndex = 0;
+
+    // Process each section and column
+    tableStructure.sections.forEach(section => {
         section.columns.forEach(column => {
-            if (cellIndex < highestRow.cells.length) {
-                const cell = highestRow.cells[cellIndex];
+            // Skip first column in actions section (it shows "Highest:")
+            if (section.id === 'actions' && section.columns.indexOf(column) === 0) {
+                columnIndex++;
+                return;
+            }
 
-                // Only update if this column should track highest value (from YAML)
-                if (column.highestValue) {
-                    // Calculate highest value using jsonPath from YAML
-                    const values = characters.map(character => {
-                        const value = getValueByPath(character, column.jsonPath);
-                        return typeof value === 'number' ? value : Number.MIN_SAFE_INTEGER;
-                    });
+            // Only process columns marked for highest value
+            if (column.highestValue && column.jsonPath) {
+                const cell = footerRow.children[columnIndex];
 
-                    const highestValue = Math.max(...values);
-                    cell.textContent = isNaN(highestValue) || highestValue === Number.MIN_SAFE_INTEGER ? '-' : highestValue;
-                } else {
-                    cell.textContent = '-';
+                // Find highest value across all characters
+                let highestValue = null;
+
+                for (const character of characters) {
+                    const value = getValueByPath(character, column.jsonPath);
+
+                    // Only compare numeric values
+                    if (typeof value === 'number') {
+                        if (highestValue === null || value > highestValue) {
+                            highestValue = value;
+                        }
+                    }
                 }
 
-                cellIndex++;
+                // Format and display the highest value
+                if (highestValue !== null) {
+                    // Format differently based on section type
+                    if (section.id === 'defense' || section.id === 'skills') {
+                        cell.textContent = highestValue >= 0 ? `+${highestValue}` : highestValue;
+                    } else if (section.id === 'ability') {
+                        // For ability scores, also show the modifier
+                        const modifier = Math.floor((highestValue - 10) / 2);
+                        const formattedMod = modifier >= 0 ? `+${modifier}` : modifier;
+                        cell.textContent = `${highestValue} (${formattedMod})`;
+                    } else {
+                        cell.textContent = highestValue;
+                    }
+
+                    // Add highlighting class
+                    cell.classList.add('highest-value');
+                }
             }
+
+            columnIndex++;
         });
     });
 
-    // Highlight highest values in the table
-    highlightHighestValues();
+    // After setting highest values, highlight matching cells in the table
+    highlightMatchingValues();
+}
+
+// Highlight cells in the table that match the highest values
+function highlightMatchingValues() {
+    const footerRow = document.getElementById('highestValues');
+    const tbody = document.getElementById('characterRows');
+
+    if (!footerRow || !tbody) return;
+
+    // For each column in the footer row
+    for (let i = 0; i < footerRow.children.length; i++) {
+        const footerCell = footerRow.children[i];
+
+        // Skip cells that don't have highest values
+        if (!footerCell.classList.contains('highest-value')) continue;
+
+        const highestValue = footerCell.textContent;
+
+        // Check each row in the body
+        Array.from(tbody.children).forEach(row => {
+            // Skip the "no characters" row
+            if (row.classList.contains('no-characters')) return;
+
+            const cell = row.children[i];
+            if (!cell) return;
+
+            // Compare based on cell content or value spans
+            let cellValue;
+
+            // For cells with proficiency badges, extract just the value part
+            const valueSpan = cell.querySelector('.value');
+            if (valueSpan) {
+                cellValue = valueSpan.textContent;
+            } else if (cell.textContent) {
+                cellValue = cell.textContent;
+            }
+
+            // Add or remove highlighting
+            if (cellValue === highestValue) {
+                cell.classList.add('highest-value');
+            } else {
+                cell.classList.remove('highest-value');
+            }
+        });
+    }
 }
 
 // Build skill map from YAML structure
@@ -729,47 +805,6 @@ function addWarning(container, title, description, isSuccess) {
     container.appendChild(card);
 }
 
-// Function to highlight the highest values in each column
-function highlightHighestValues() {
-    const tbody = document.getElementById('characterRows');
-    const highestRow = document.getElementById('highestValues');
-    const rows = tbody.rows;
-
-    if (rows.length === 0) return;
-
-    // For each character row
-    for (let rowIndex = 0; rowIndex < rows.length; rowIndex++) {
-        const cells = rows[rowIndex].cells;
-
-        // For each cell in the row
-        for (let cellIndex = 0; cellIndex < cells.length; cellIndex++) {
-            const cell = cells[cellIndex];
-
-            // Skip cells without jsonPath or not marked for highest value
-            if (!cell.dataset.jsonPath || cell.dataset.highestValue !== 'true') {
-                continue;
-            }
-
-            // Find matching column in highest row by columnId
-            const columnId = cell.dataset.columnId;
-            const highestCell = Array.from(highestRow.cells).find(
-                hc => hc.dataset.columnId === columnId
-            );
-
-            if (highestCell) {
-                const cellValue = parseInt(cell.textContent);
-                const highestValue = parseInt(highestCell.textContent);
-
-                if (!isNaN(cellValue) && !isNaN(highestValue) && cellValue === highestValue) {
-                    cell.classList.add('highest');
-                } else {
-                    cell.classList.remove('highest');
-                }
-            }
-        }
-    }
-}
-
 // Event Listener for Import Button (File)
 document.getElementById('importButton').addEventListener('click', function () {
     const fileInput = document.getElementById('jsonFileInput');
@@ -888,6 +923,9 @@ function renderCharacters() {
     // Update warnings
     updatePartyWarnings();
     // Note: We don't need to call updateTenuousTips() here as it's already called by updatePartyWarnings()
+
+    // Update highest values after rendering all characters
+    updateHighestValues();
 }
 
 // Initialize the application
@@ -1125,38 +1163,32 @@ function initializeTableStructure(tableStructure) {
     table.appendChild(tfoot);
 }
 
-// Generate the highest values row based on YAML structure
+// Generate the highest values row for the footer
 function generateHighestValuesRow(tableStructure) {
     const row = document.createElement('tr');
     row.id = 'highestValues';
 
-    // For each section
-    tableStructure.sections.forEach((section, sectionIndex) => {
-        if (sectionIndex === 0) {
-            // First section is usually a header like "Highest Values"
+    // For each section and column in the structure
+    tableStructure.sections.forEach(section => {
+        section.columns.forEach(column => {
             const cell = document.createElement('td');
-            cell.className = `${section.id}-group`;
+            cell.classList.add(`${section.id}-group`);
 
-            // Calculate the colspan based on number of columns in this section
-            cell.colSpan = section.columns.length;
-
-            cell.textContent = 'Highest Values';
-            row.appendChild(cell);
-        } else {
-            // For remaining sections, add individual column cells
-            section.columns.forEach(column => {
-                const cell = document.createElement('td');
-                cell.className = `${section.id}-group`;
+            // Add "Highest" text to the first column
+            if (section.id === 'actions' && section.columns.indexOf(column) === 0) {
+                cell.textContent = 'Highest:';
+                cell.style.textAlign = 'right';
+            } else {
                 cell.textContent = '-';
 
-                // Store column info as data attributes for later reference
-                cell.dataset.columnId = column.id;
-                cell.dataset.jsonPath = column.jsonPath || '';
-                cell.dataset.highestValue = column.highestValue.toString();
+                // Mark cells that should show highest values
+                if (column.highestValue) {
+                    cell.dataset.columnId = column.id;
+                }
+            }
 
-                row.appendChild(cell);
-            });
-        }
+            row.appendChild(cell);
+        });
     });
 
     return row;
