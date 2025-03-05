@@ -1,5 +1,17 @@
 # Table sections and columns
 sections:
+  - id: actions
+    title: "Actions"
+    icon: tools
+    columns:
+      - id: delete
+        title: ""
+        fullTitle: "Delete Character"
+        displayType: "action-buttons"
+        jsonPath: ""
+        showProficiency: false
+        highestValue: false
+
   - id: info
     title: Character Info
     icon: id-card

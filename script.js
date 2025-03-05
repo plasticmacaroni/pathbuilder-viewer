@@ -51,6 +51,15 @@ async function loadWarnings() {
         await loadYamlFiles(warningFiles, warnings, "warnings");
 
         // Load healing abilities from YAML
+        await loadHealingAbilities();
+    } catch (error) {
+        console.error('Error loading warnings or healing abilities:', error);
+    }
+}
+
+// Helper function to load healing abilities
+async function loadHealingAbilities() {
+    try {
         const healingResponse = await fetch('content/healing-abilities.yaml');
         if (healingResponse.ok) {
             const healingYaml = await healingResponse.text();
@@ -65,7 +74,7 @@ async function loadWarnings() {
             healingAbilities = ["Battle Medicine", "Healing Font", "Lay on Hands", "Shield Block"];
         }
     } catch (error) {
-        console.error('Error loading warnings or healing abilities:', error);
+        console.error('Error loading healing abilities:', error);
     }
 }
 
@@ -349,7 +358,7 @@ function getValueByPath(obj, path) {
     return current;
 }
 
-// Update the character row function to properly handle proficiency display
+// Update the character row function to properly handle proficiency display and action buttons
 function addCharacterRow(character) {
     const tbody = document.getElementById('characterRows');
     const tableStructure = window.tableStructure;
@@ -361,6 +370,9 @@ function addCharacterRow(character) {
 
     const row = document.createElement('tr');
 
+    // Find character index (needed for delete functionality)
+    const characterIndex = characters.indexOf(character);
+
     // For each section and column in the structure
     tableStructure.sections.forEach(section => {
         section.columns.forEach(column => {
@@ -371,8 +383,25 @@ function addCharacterRow(character) {
             // Add class based on section for styling
             cell.classList.add(`${section.id}-group`);
 
+            // Handle action buttons if specified in YAML
+            if (column.displayType === 'action-buttons') {
+                // Create delete button
+                const deleteBtn = document.createElement('button');
+                deleteBtn.className = 'delete-character-btn';
+                deleteBtn.innerHTML = '<i class="fas fa-trash"></i>';
+                deleteBtn.title = `Remove ${character.build?.name || 'Character'}`;
+
+                // Connect to existing removeCharacter function
+                deleteBtn.addEventListener('click', function () {
+                    if (confirm(`Are you sure you want to remove ${character.build?.name || 'this character'}?`)) {
+                        removeCharacter(characterIndex);
+                    }
+                });
+
+                cell.appendChild(deleteBtn);
+            }
             // Handle proficiency display if specified in YAML
-            if (column.showProficiency && column.proficiencyPath) {
+            else if (column.showProficiency && column.proficiencyPath) {
                 const proficiencyValue = getValueByPath(character, column.proficiencyPath);
                 const skillValue = getValueByPath(character, column.jsonPath);
 
@@ -495,7 +524,7 @@ function addCharacterRow(character) {
                 // For defenses and skills, add plus sign before positive and zero values
                 if (column.displayType === 'proficiency-badge') {
                     const profCode = column.proficiencyPath ?
-                        getProficiencyLevel(character, column.proficiencyPath) : "U";
+                        getProficiencyLevel(getValueByPath(character, column.proficiencyPath)) : "U";
                     const profLabel = getProficiencyLabel(profCode);
 
                     // Format with plus sign for positive and zero numbers
@@ -1147,6 +1176,17 @@ async function loadTableStructure() {
     }
 }
 
+// Helper function to add tradition if the character is proficient in it
+function addTraditionIfProficient(prof, traditionName, traditions, proficiencies) {
+    const traditionKey = traditionName.toLowerCase();
+    const profKey = `casting${traditionName}`;
+
+    if (prof[profKey] > 0 && !traditions.includes(traditionName)) {
+        traditions.push(traditionName);
+        proficiencies[traditionKey] = getProficiencyLevel(parseInt(prof[profKey]));
+    }
+}
+
 // Function to extract spell traditions from character data
 function extractSpellTraditions(data) {
     const traditions = [];
@@ -1163,16 +1203,7 @@ function extractSpellTraditions(data) {
                 const tradition = caster.magicTradition.charAt(0).toUpperCase() + caster.magicTradition.slice(1);
                 if (!traditions.includes(tradition)) {
                     traditions.push(tradition);
-
-                    // Convert numeric proficiency to letter code
-                    let profLevel = "U";
-                    const profValue = parseInt(caster.proficiency);
-                    if (profValue === 2) profLevel = "T";
-                    else if (profValue === 4) profLevel = "E";
-                    else if (profValue === 6) profLevel = "M";
-                    else if (profValue === 8) profLevel = "L";
-
-                    proficiencies[tradition.toLowerCase()] = profLevel;
+                    proficiencies[tradition.toLowerCase()] = getProficiencyLevel(parseInt(caster.proficiency));
                 }
             }
         }
@@ -1180,61 +1211,11 @@ function extractSpellTraditions(data) {
         // If we found actual spellcasters, also check proficiencies as backup
         if (data.build.proficiencies) {
             const prof = data.build.proficiencies;
-
-            // Only add traditions not already found in spellCasters
-            if (prof.castingArcane > 0 && !traditions.includes("Arcane")) {
-                traditions.push("Arcane");
-
-                // Convert numeric proficiency to letter code
-                let profLevel = "U";
-                const profValue = parseInt(prof.castingArcane);
-                if (profValue === 2) profLevel = "T";
-                else if (profValue === 4) profLevel = "E";
-                else if (profValue === 6) profLevel = "M";
-                else if (profValue === 8) profLevel = "L";
-
-                proficiencies["arcane"] = profLevel;
-            }
-
-            // Repeat for other traditions
-            if (prof.castingDivine > 0 && !traditions.includes("Divine")) {
-                traditions.push("Divine");
-
-                let profLevel = "U";
-                const profValue = parseInt(prof.castingDivine);
-                if (profValue === 2) profLevel = "T";
-                else if (profValue === 4) profLevel = "E";
-                else if (profValue === 6) profLevel = "M";
-                else if (profValue === 8) profLevel = "L";
-
-                proficiencies["divine"] = profLevel;
-            }
-
-            if (prof.castingOccult > 0 && !traditions.includes("Occult")) {
-                traditions.push("Occult");
-
-                let profLevel = "U";
-                const profValue = parseInt(prof.castingOccult);
-                if (profValue === 2) profLevel = "T";
-                else if (profValue === 4) profLevel = "E";
-                else if (profValue === 6) profLevel = "M";
-                else if (profValue === 8) profLevel = "L";
-
-                proficiencies["occult"] = profLevel;
-            }
-
-            if (prof.castingPrimal > 0 && !traditions.includes("Primal")) {
-                traditions.push("Primal");
-
-                let profLevel = "U";
-                const profValue = parseInt(prof.castingPrimal);
-                if (profValue === 2) profLevel = "T";
-                else if (profValue === 4) profLevel = "E";
-                else if (profValue === 6) profLevel = "M";
-                else if (profValue === 8) profLevel = "L";
-
-                proficiencies["primal"] = profLevel;
-            }
+            // Add traditions not already found in spellCasters
+            addTraditionIfProficient(prof, "Arcane", traditions, proficiencies);
+            addTraditionIfProficient(prof, "Divine", traditions, proficiencies);
+            addTraditionIfProficient(prof, "Occult", traditions, proficiencies);
+            addTraditionIfProficient(prof, "Primal", traditions, proficiencies);
         }
     }
 
@@ -1257,60 +1238,11 @@ function extractSpellTraditions(data) {
         // Only include focus traditions if they have a spellcasting feat
         if (hasCastingFeat && data.build.proficiencies) {
             const prof = data.build.proficiencies;
-
-            if (prof.castingArcane > 0) {
-                traditions.push("Arcane");
-
-                // Convert to letter code
-                let profLevel = "U";
-                const profValue = parseInt(prof.castingArcane);
-                if (profValue === 2) profLevel = "T";
-                else if (profValue === 4) profLevel = "E";
-                else if (profValue === 6) profLevel = "M";
-                else if (profValue === 8) profLevel = "L";
-
-                proficiencies["arcane"] = profLevel;
-            }
-
-            // Repeat for other traditions
-            if (prof.castingDivine > 0) {
-                traditions.push("Divine");
-
-                let profLevel = "U";
-                const profValue = parseInt(prof.castingDivine);
-                if (profValue === 2) profLevel = "T";
-                else if (profValue === 4) profLevel = "E";
-                else if (profValue === 6) profLevel = "M";
-                else if (profValue === 8) profLevel = "L";
-
-                proficiencies["divine"] = profLevel;
-            }
-
-            if (prof.castingOccult > 0) {
-                traditions.push("Occult");
-
-                let profLevel = "U";
-                const profValue = parseInt(prof.castingOccult);
-                if (profValue === 2) profLevel = "T";
-                else if (profValue === 4) profLevel = "E";
-                else if (profValue === 6) profLevel = "M";
-                else if (profValue === 8) profLevel = "L";
-
-                proficiencies["occult"] = profLevel;
-            }
-
-            if (prof.castingPrimal > 0) {
-                traditions.push("Primal");
-
-                let profLevel = "U";
-                const profValue = parseInt(prof.castingPrimal);
-                if (profValue === 2) profLevel = "T";
-                else if (profValue === 4) profLevel = "E";
-                else if (profValue === 6) profLevel = "M";
-                else if (profValue === 8) profLevel = "L";
-
-                proficiencies["primal"] = profLevel;
-            }
+            // Add all traditions the character is proficient in
+            addTraditionIfProficient(prof, "Arcane", traditions, proficiencies);
+            addTraditionIfProficient(prof, "Divine", traditions, proficiencies);
+            addTraditionIfProficient(prof, "Occult", traditions, proficiencies);
+            addTraditionIfProficient(prof, "Primal", traditions, proficiencies);
         }
     }
 
@@ -1572,27 +1504,22 @@ function renderSection(section, data) {
     return sectionElement;
 }
 
-// Update loadWarnings and loadTenuousTips functions to use a common helper function
+// Helper function to load YAML files
 async function loadYamlFiles(fileList, targetArray, description) {
-    try {
-        targetArray.length = 0; // Clear array
+    targetArray.length = 0; // Clear array
 
-        // Load each file
-        for (const file of fileList) {
-            const response = await fetch(file);
-            if (response.ok) {
-                const yamlText = await response.text();
-                const config = jsyaml.load(yamlText);
-                targetArray.push(config);
-            } else {
-                console.error(`Failed to load ${description} file: ${file}`);
-            }
+    // Load each file
+    for (const file of fileList) {
+        const response = await fetch(file);
+        if (response.ok) {
+            const yamlText = await response.text();
+            const config = jsyaml.load(yamlText);
+            targetArray.push(config);
+        } else {
+            console.error(`Failed to load ${description} file: ${file}`);
         }
-
-        console.log(`Loaded ${targetArray.length} ${description}`);
-        return true;
-    } catch (error) {
-        console.error(`Error loading ${description}:`, error);
-        return false;
     }
+
+    console.log(`Loaded ${targetArray.length} ${description}`);
+    return true;
 }

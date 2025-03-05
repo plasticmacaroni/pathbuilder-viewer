@@ -720,23 +720,17 @@ td .value {
     width: 100%;
 }
 
-.remove-character-btn {
-    background-color: transparent;
-    color: rgba(255, 255, 255, 0.7);
+.delete-character-btn {
+    background-color: #ff5252;
+    color: white;
     border: none;
-    border-radius: 50%;
-    width: 20px;
-    height: 20px;
-    font-size: 12px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
+    border-radius: 4px;
+    padding: 4px 8px;
     cursor: pointer;
-    transition: all 0.2s ease;
-    margin-left: 5px;
+    font-size: 14px;
+    transition: background-color 0.2s;
 }
 
-.remove-character-btn:hover {
-    background-color: rgba(220, 53, 69, 0.8);
-    color: white;
+.delete-character-btn:hover {
+    background-color: #ff0000;
 }
