@@ -61,4 +61,4 @@ checkFunction: |
     return thieveryCharacterHasTools;
   }
 successMessage: Your party is well-equipped for locks and traps.
-failureMessage: You have no characters with Thieveriy, or a character with Thievery proficiency needs thieves' tools! Without them, they have a -2 penalty on Pick Lock actions and some locks can't be attempted at all.
+failureMessage: You have no characters with Thievery, or a character with Thievery proficiency needs thieves' tools! Without them, they have a -2 penalty on Pick Lock actions and some locks can't be attempted at all.
