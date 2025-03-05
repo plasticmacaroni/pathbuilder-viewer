@@ -48,21 +48,7 @@ async function loadWarnings() {
             // Add more warning files here
         ];
 
-        warnings = [];
-
-        // Load each warning file
-        for (const file of warningFiles) {
-            const response = await fetch(file);
-            if (response.ok) {
-                const yamlText = await response.text();
-                const warningConfig = jsyaml.load(yamlText);
-                warnings.push(warningConfig);
-            } else {
-                console.error(`Failed to load warning file: ${file}`);
-            }
-        }
-
-        console.log(`Loaded ${warnings.length} warnings`);
+        await loadYamlFiles(warningFiles, warnings, "warnings");
 
         // Load healing abilities from YAML
         const healingResponse = await fetch('content/healing-abilities.yaml');
@@ -92,27 +78,12 @@ async function loadTenuousTips() {
             'tenuous-tips/thievery-tools.yaml',
             'tenuous-tips/detect-magic.yaml',
             'tenuous-tips/dispel-magic.yaml',
-            'tenuous-tips/bard-performance.yaml',
             'tenuous-tips/trick-magic-item.yaml',
             'tenuous-tips/sight.yaml',
             // Add more tip files here
         ];
 
-        tenuousTips = [];
-
-        // Load each tip file
-        for (const file of tipFiles) {
-            const response = await fetch(file);
-            if (response.ok) {
-                const yamlText = await response.text();
-                const tipConfig = jsyaml.load(yamlText);
-                tenuousTips.push(tipConfig);
-            } else {
-                console.error(`Failed to load tip file: ${file}`);
-            }
-        }
-
-        console.log(`Loaded ${tenuousTips.length} tenuous tips`);
+        await loadYamlFiles(tipFiles, tenuousTips, "tenuous tips");
     } catch (error) {
         console.error('Error loading tenuous tips:', error);
     }
@@ -151,27 +122,7 @@ function processJsonData(jsonString) {
     }
 }
 
-// Extract proficiency values generically based on a path
-function extractProficiencyValue(data, path) {
-    const value = getValueByPath(data, path);
-    if (value === undefined || value === null) return 'U'; // Default to Untrained
-
-    // Convert numeric proficiency to letter code
-    if (value === 0) return 'U'; // Untrained
-    if (value === 2) return 'T'; // Trained
-    if (value === 4) return 'E'; // Expert
-    if (value === 6) return 'M'; // Master
-    if (value === 8) return 'L'; // Legendary
-
-    // If it's already a letter, return it
-    if (typeof value === 'string' && ['U', 'T', 'E', 'M', 'L'].includes(value.toUpperCase())) {
-        return value.toUpperCase();
-    }
-
-    return 'U'; // Fallback to Untrained
-}
-
-// Extract skill values
+// Extract skill values - KEEP THIS VERSION as it handles level calculation correctly
 function extractSkills(data) {
     const skills = {};
     const skillProficiencies = {};
@@ -544,7 +495,7 @@ function addCharacterRow(character) {
                 // For defenses and skills, add plus sign before positive and zero values
                 if (column.displayType === 'proficiency-badge') {
                     const profCode = column.proficiencyPath ?
-                        extractProficiencyValue(character, column.proficiencyPath) : 'U';
+                        getProficiencyLevel(character, column.proficiencyPath) : "U";
                     const profLabel = getProficiencyLabel(profCode);
 
                     // Format with plus sign for positive and zero numbers
@@ -884,7 +835,7 @@ function clearCharacterCache() {
     }
 }
 
-// New function to render all characters from the characters array
+// Function to render characters - ensures table is properly updated
 function renderCharacters() {
     // Clear the table first
     const tbody = document.getElementById('characterRows');
@@ -892,7 +843,8 @@ function renderCharacters() {
 
     // If there are no characters, show the "No characters" message
     if (characters.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="31" class="no-characters">No characters imported yet</td></tr>';
+        const totalColumns = calculateTotalColumns(window.tableStructure);
+        tbody.innerHTML = `<tr><td colspan="${totalColumns}" class="no-characters">No characters imported yet</td></tr>`;
         return;
     }
 
@@ -903,9 +855,7 @@ function renderCharacters() {
 
     // Update warnings
     updatePartyWarnings();
-
-    // Update tenuous tips
-    updateTenuousTips();
+    // Note: We don't need to call updateTenuousTips() here as it's already called by updatePartyWarnings()
 }
 
 // Initialize the application
@@ -949,38 +899,6 @@ async function init() {
     } catch (error) {
         console.error('Error loading table structure:', error);
         showStatusMessage('Error initializing application. Please check console for details.', 'error');
-    }
-}
-
-// Load characters from localStorage
-function loadCharactersFromCache() {
-    try {
-        const cachedCharacters = localStorage.getItem('pf2e-characters');
-        if (cachedCharacters) {
-            characters = JSON.parse(cachedCharacters);
-            console.log('Loaded characters from cache:', characters.length);
-        }
-    } catch (error) {
-        console.error('Error loading characters from cache:', error);
-        showStatusMessage('Error loading saved characters.', true);
-    }
-}
-
-// Save characters to localStorage
-function saveCharactersToCache() {
-    try {
-        localStorage.setItem('pf2e-characters', JSON.stringify(characters));
-    } catch (error) {
-        console.error('Error saving characters to cache:', error);
-    }
-}
-
-// Clear character cache
-function clearCharacterCache() {
-    try {
-        localStorage.removeItem('pf2e-characters');
-    } catch (error) {
-        console.error('Error clearing character cache:', error);
     }
 }
 
@@ -1039,7 +957,7 @@ async function importPartyFromClipboard() {
                 characters = partyData.characters;
                 renderCharacters();
                 showStatusMessage(`Imported party with ${partyData.characters.length} characters!`);
-                saveCharactersToCache();
+                saveCharactersToCache(characters);
             } else {
                 showStatusMessage('No characters found in the party data', true);
             }
@@ -1227,51 +1145,6 @@ async function loadTableStructure() {
         console.error('Error loading table structure:', error);
         return null;
     }
-}
-
-// Extract skill proficiency levels
-function extractSkillProficiencies(data) {
-    const proficiencies = {};
-    const skillMap = {
-        'acrobatics': 'Acrobatics',
-        'arcana': 'Arcana',
-        'athletics': 'Athletics',
-        'crafting': 'Crafting',
-        'deception': 'Deception',
-        'diplomacy': 'Diplomacy',
-        'intimidation': 'Intimidation',
-        'medicine': 'Medicine',
-        'nature': 'Nature',
-        'occultism': 'Occultism',
-        'performance': 'Performance',
-        'religion': 'Religion',
-        'society': 'Society',
-        'stealth': 'Stealth',
-        'survival': 'Survival',
-        'thievery': 'Thievery'
-    };
-
-    // Convert skill proficiencies to letter codes (U/T/E/M/L)
-    for (const skill in skillMap) {
-        const profValue = getNumeric(data.build?.proficiencies?.[skill]);
-        let profLevel = "U";
-        if (profValue === 2) profLevel = "T";
-        else if (profValue === 4) profLevel = "E";
-        else if (profValue === 6) profLevel = "M";
-        else if (profValue === 8) profLevel = "L";
-        proficiencies[skill] = profLevel;
-    }
-
-    // Handle perception separately
-    const perceptionValue = getNumeric(data.build?.proficiencies?.perception);
-    let perceptionLevel = "U";
-    if (perceptionValue === 2) perceptionLevel = "T";
-    else if (perceptionValue === 4) perceptionLevel = "E";
-    else if (perceptionValue === 6) perceptionLevel = "M";
-    else if (perceptionValue === 8) perceptionLevel = "L";
-    proficiencies.perception = perceptionLevel;
-
-    return proficiencies;
 }
 
 // Function to extract spell traditions from character data
@@ -1615,7 +1488,7 @@ function extractVisionTypes(data) {
     };
 }
 
-// Add a function to remove a character by index
+// Fix the removeCharacter function to call renderCharacters instead of undefined buildTable
 function removeCharacter(index) {
     if (index >= 0 && index < characters.length) {
         // Remove from array
@@ -1625,7 +1498,7 @@ function removeCharacter(index) {
         saveCharactersToCache(characters);
 
         // Rebuild the entire table with updated characters list
-        buildTable();
+        renderCharacters();
 
         // Update warnings and tips
         updatePartyWarnings();
@@ -1697,4 +1570,29 @@ function renderSection(section, data) {
     // ... rest of the rendering logic ...
 
     return sectionElement;
+}
+
+// Update loadWarnings and loadTenuousTips functions to use a common helper function
+async function loadYamlFiles(fileList, targetArray, description) {
+    try {
+        targetArray.length = 0; // Clear array
+
+        // Load each file
+        for (const file of fileList) {
+            const response = await fetch(file);
+            if (response.ok) {
+                const yamlText = await response.text();
+                const config = jsyaml.load(yamlText);
+                targetArray.push(config);
+            } else {
+                console.error(`Failed to load ${description} file: ${file}`);
+            }
+        }
+
+        console.log(`Loaded ${targetArray.length} ${description}`);
+        return true;
+    } catch (error) {
+        console.error(`Error loading ${description}:`, error);
+        return false;
+    }
 }
