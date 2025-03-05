@@ -89,6 +89,7 @@ async function loadTenuousTips() {
             'tenuous-tips/dispel-magic.yaml',
             'tenuous-tips/trick-magic-item.yaml',
             'tenuous-tips/sight.yaml',
+            'tenuous-tips/intimidating-glare.yaml',
             // Add more tip files here
         ];
 
