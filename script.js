@@ -1176,7 +1176,7 @@ function generateHighestValuesRow(tableStructure) {
 
             // Add "Highest" text to the first column
             if (section.id === 'actions' && section.columns.indexOf(column) === 0) {
-                cell.textContent = 'Highest:';
+                cell.textContent = 'Highest Values';
                 cell.style.textAlign = 'right';
             } else {
                 cell.textContent = '-';
