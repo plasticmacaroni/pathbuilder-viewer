@@ -1,4 +1,353 @@
-# Table sections and columns
+# Table structure configuration for character comparison
+# Enhanced configuration using the new configuration-driven approach
+
+# Global definitions
+globals:
+  # Proficiency system configuration
+  proficiencies:
+    levels:
+      0: { code: "U", label: "Untrained" }
+      2: { code: "T", label: "Trained" }
+      4: { code: "E", label: "Expert" }
+      6: { code: "M", label: "Master" }
+      8: { code: "L", label: "Legendary" }
+
+  # Skill to ability mapping
+  skillAbilityMap:
+    acrobatics: "dex"
+    arcana: "int"
+    athletics: "str"
+    crafting: "int"
+    deception: "cha"
+    diplomacy: "cha"
+    intimidation: "cha"
+    medicine: "wis"
+    nature: "wis"
+    occultism: "int"
+    performance: "cha"
+    religion: "wis"
+    society: "int"
+    stealth: "dex"
+    survival: "wis"
+    thievery: "dex"
+
+  # Vision types detection configuration
+  visionTypes:
+    - name: "Darkvision"
+      keywords: ["darkvision"]
+    - name: "Low-Light Vision"
+      keywords: ["low-light", "lowlight", "low light"]
+    - name: "Scent"
+      keywords: ["scent"]
+    - name: "Tremorsense"
+      keywords: ["tremorsense"]
+
+  # Ancestries with inherent darkvision
+  darkvisionAncestries:
+    - dwarf
+    - gnome
+    - half-orc
+    - orc
+    - strix
+    - fetchling
+
+# Preprocessing rules define how to extract and transform data from the source
+preprocessing:
+  # Define extractors that can be reused across multiple fields
+  extractors:
+    # Basic ability score modifier calculation
+    abilityModifier:
+      formula: "Math.floor((value - 10) / 2)"
+      description: "Calculates the ability modifier from a score"
+
+    # Defense value calculation
+    saveBonus:
+      formula: "10 + profValue"
+      description: "Calculates save DC from proficiency"
+
+    # Skill extraction with proper level scaling
+    skillCalculation:
+      formula: "(profValue > 0 ? level : 0) + profValue + abilityMod + itemBonus"
+      description: "Calculates skill bonus with level scaling"
+
+  # Extracted fields that will be available for jsonPath references
+  extractedFields:
+    # Skills extraction
+    skills:
+      type: "object"
+      description: "Character skill values"
+      fields:
+        acrobatics:
+          formula: "skillCalculation"
+          params:
+            profValue: "build.proficiencies.acrobatics || 0"
+            abilityMod: "abilityModifier(build.abilities.dex || 10)"
+            level: "build.level || 0"
+            itemBonus: "build.mods.Acrobatics?.['Item Bonus'] || 0"
+        arcana:
+          formula: "skillCalculation"
+          params:
+            profValue: "build.proficiencies.arcana || 0"
+            abilityMod: "abilityModifier(build.abilities.int || 10)"
+            level: "build.level || 0"
+            itemBonus: "build.mods.Arcana?.['Item Bonus'] || 0"
+        athletics:
+          formula: "skillCalculation"
+          params:
+            profValue: "build.proficiencies.athletics || 0"
+            abilityMod: "abilityModifier(build.abilities.str || 10)"
+            level: "build.level || 0"
+            itemBonus: "build.mods.Athletics?.['Item Bonus'] || 0"
+        crafting:
+          formula: "skillCalculation"
+          params:
+            profValue: "build.proficiencies.crafting || 0"
+            abilityMod: "abilityModifier(build.abilities.int || 10)"
+            level: "build.level || 0"
+            itemBonus: "build.mods.Crafting?.['Item Bonus'] || 0"
+        deception:
+          formula: "skillCalculation"
+          params:
+            profValue: "build.proficiencies.deception || 0"
+            abilityMod: "abilityModifier(build.abilities.cha || 10)"
+            level: "build.level || 0"
+            itemBonus: "build.mods.Deception?.['Item Bonus'] || 0"
+        diplomacy:
+          formula: "skillCalculation"
+          params:
+            profValue: "build.proficiencies.diplomacy || 0"
+            abilityMod: "abilityModifier(build.abilities.cha || 10)"
+            level: "build.level || 0"
+            itemBonus: "build.mods.Diplomacy?.['Item Bonus'] || 0"
+        intimidation:
+          formula: "skillCalculation"
+          params:
+            profValue: "build.proficiencies.intimidation || 0"
+            abilityMod: "abilityModifier(build.abilities.cha || 10)"
+            level: "build.level || 0"
+            itemBonus: "build.mods.Intimidation?.['Item Bonus'] || 0"
+        medicine:
+          formula: "skillCalculation"
+          params:
+            profValue: "build.proficiencies.medicine || 0"
+            abilityMod: "abilityModifier(build.abilities.wis || 10)"
+            level: "build.level || 0"
+            itemBonus: "build.mods.Medicine?.['Item Bonus'] || 0"
+        nature:
+          formula: "skillCalculation"
+          params:
+            profValue: "build.proficiencies.nature || 0"
+            abilityMod: "abilityModifier(build.abilities.wis || 10)"
+            level: "build.level || 0"
+            itemBonus: "build.mods.Nature?.['Item Bonus'] || 0"
+        occultism:
+          formula: "skillCalculation"
+          params:
+            profValue: "build.proficiencies.occultism || 0"
+            abilityMod: "abilityModifier(build.abilities.int || 10)"
+            level: "build.level || 0"
+            itemBonus: "build.mods.Occultism?.['Item Bonus'] || 0"
+        performance:
+          formula: "skillCalculation"
+          params:
+            profValue: "build.proficiencies.performance || 0"
+            abilityMod: "abilityModifier(build.abilities.cha || 10)"
+            level: "build.level || 0"
+            itemBonus: "build.mods.Performance?.['Item Bonus'] || 0"
+        religion:
+          formula: "skillCalculation"
+          params:
+            profValue: "build.proficiencies.religion || 0"
+            abilityMod: "abilityModifier(build.abilities.wis || 10)"
+            level: "build.level || 0"
+            itemBonus: "build.mods.Religion?.['Item Bonus'] || 0"
+        society:
+          formula: "skillCalculation"
+          params:
+            profValue: "build.proficiencies.society || 0"
+            abilityMod: "abilityModifier(build.abilities.int || 10)"
+            level: "build.level || 0"
+            itemBonus: "build.mods.Society?.['Item Bonus'] || 0"
+        stealth:
+          formula: "skillCalculation"
+          params:
+            profValue: "build.proficiencies.stealth || 0"
+            abilityMod: "abilityModifier(build.abilities.dex || 10)"
+            level: "build.level || 0"
+            itemBonus: "build.mods.Stealth?.['Item Bonus'] || 0"
+        survival:
+          formula: "skillCalculation"
+          params:
+            profValue: "build.proficiencies.survival || 0"
+            abilityMod: "abilityModifier(build.abilities.wis || 10)"
+            level: "build.level || 0"
+            itemBonus: "build.mods.Survival?.['Item Bonus'] || 0"
+        thievery:
+          formula: "skillCalculation"
+          params:
+            profValue: "build.proficiencies.thievery || 0"
+            abilityMod: "abilityModifier(build.abilities.dex || 10)"
+            level: "build.level || 0"
+            itemBonus: "build.mods.Thievery?.['Item Bonus'] || 0"
+        perception:
+          formula: "skillCalculation"
+          params:
+            profValue: "build.proficiencies.perception || 0"
+            abilityMod: "abilityModifier(build.abilities.wis || 10)"
+            level: "build.level || 0"
+            itemBonus: "build.mods.Perception?.['Item Bonus'] || 0"
+
+    # Also extract skill proficiency codes for display
+    skillProficiencies:
+      type: "object"
+      description: "Character skill proficiency levels"
+      fields:
+        acrobatics:
+          formula: "getProficiencyLevel(value)"
+          params:
+            value: "build.proficiencies.acrobatics || 0"
+        arcana:
+          formula: "getProficiencyLevel(value)"
+          params:
+            value: "build.proficiencies.arcana || 0"
+        athletics:
+          formula: "getProficiencyLevel(value)"
+          params:
+            value: "build.proficiencies.athletics || 0"
+        crafting:
+          formula: "getProficiencyLevel(value)"
+          params:
+            value: "build.proficiencies.crafting || 0"
+        deception:
+          formula: "getProficiencyLevel(value)"
+          params:
+            value: "build.proficiencies.deception || 0"
+        diplomacy:
+          formula: "getProficiencyLevel(value)"
+          params:
+            value: "build.proficiencies.diplomacy || 0"
+        intimidation:
+          formula: "getProficiencyLevel(value)"
+          params:
+            value: "build.proficiencies.intimidation || 0"
+        medicine:
+          formula: "getProficiencyLevel(value)"
+          params:
+            value: "build.proficiencies.medicine || 0"
+        nature:
+          formula: "getProficiencyLevel(value)"
+          params:
+            value: "build.proficiencies.nature || 0"
+        occultism:
+          formula: "getProficiencyLevel(value)"
+          params:
+            value: "build.proficiencies.occultism || 0"
+        performance:
+          formula: "getProficiencyLevel(value)"
+          params:
+            value: "build.proficiencies.performance || 0"
+        religion:
+          formula: "getProficiencyLevel(value)"
+          params:
+            value: "build.proficiencies.religion || 0"
+        society:
+          formula: "getProficiencyLevel(value)"
+          params:
+            value: "build.proficiencies.society || 0"
+        stealth:
+          formula: "getProficiencyLevel(value)"
+          params:
+            value: "build.proficiencies.stealth || 0"
+        survival:
+          formula: "getProficiencyLevel(value)"
+          params:
+            value: "build.proficiencies.survival || 0"
+        thievery:
+          formula: "getProficiencyLevel(value)"
+          params:
+            value: "build.proficiencies.thievery || 0"
+        perception:
+          formula: "getProficiencyLevel(value)"
+          params:
+            value: "build.proficiencies.perception || 0"
+
+    # Defense calculations
+    defenses:
+      type: "object"
+      description: "Character defense values"
+      fields:
+        ac:
+          formula: "getNumeric(value)"
+          params:
+            value: "build.acTotal.acTotal || 0"
+        fort:
+          formula: "saveBonus"
+          params:
+            profValue: "build.proficiencies.fortitude || 0"
+        ref:
+          formula: "saveBonus"
+          params:
+            profValue: "build.proficiencies.reflex || 0"
+        will:
+          formula: "saveBonus"
+          params:
+            profValue: "build.proficiencies.will || 0"
+
+    # Speed calculation
+    speed:
+      type: "value"
+      description: "Character movement speed"
+      formula: "calculateSpeed"
+      params:
+        character: "this"
+
+    # Character class features
+    archetypes:
+      type: "array"
+      description: "Character archetypes (from dedication feats)"
+      formula: "extractArchetypes"
+      params:
+        feats: "build.feats || []"
+
+    # Extract spell tradition information
+    magicTraditions:
+      type: "array"
+      description: "Character spell traditions"
+      formula: "extractTraditions"
+      params:
+        spellCasters: "build.spellCasters || []"
+        proficiencies: "build.proficiencies || {}"
+
+    # Proficiency levels for traditions
+    traditionProficiencies:
+      type: "object"
+      description: "Character tradition proficiency levels"
+      formula: "extractTraditionProficiencies"
+      params:
+        spellCasters: "build.spellCasters || []"
+        proficiencies: "build.proficiencies || {}"
+
+    # Healing abilities extraction
+    healingAbilities:
+      type: "array"
+      description: "Character healing abilities"
+      formula: "extractHealingAbilities"
+      params:
+        feats: "build.feats || []"
+        spellsKnown: "build.spellsKnown || {}"
+        focus: "build.focus || {}"
+
+    # Extract senses information
+    senses:
+      type: "object"
+      description: "Character special senses"
+      formula: "extractVisionTypes"
+      params:
+        specials: "build.specials || []"
+        ancestry: "build.ancestry || ''"
+        familiars: "build.familiars || []"
+
+# Main table structure definition
 sections:
   - id: actions
     title: "Actions"
@@ -48,12 +397,8 @@ sections:
         title: Speed
         icon: person-running
         fullTitle: Movement Speed
-        computedValue:
-          formula: "sum"
-          paths:
-            - build.speed
-            - build.speedBonus
-          template: "{sum} ft"
+        jsonPath: extracted.speed
+        template: "{value|units=ft}"
         highestValue: true
       - id: spellTraditions
         title: Magic
@@ -73,61 +418,43 @@ sections:
         title: STR
         icon: dumbbell
         fullTitle: Strength
-        computedValue:
-          formula: "combine"
-          paths:
-            - build.abilities.str
-          template: "{0} ({0|prefix=+|modifier})"
+        jsonPath: build.abilities.str
+        template: "{value} ({abilityModifier(value)|modifier})"
         highestValue: true
       - id: dex
         title: DEX
         icon: person-running
         fullTitle: Dexterity
-        computedValue:
-          formula: "combine"
-          paths:
-            - build.abilities.dex
-          template: "{0} ({0|prefix=+|modifier})"
+        jsonPath: build.abilities.dex
+        template: "{value} ({abilityModifier(value)|modifier})"
         highestValue: true
       - id: con
         title: CON
         icon: heart
         fullTitle: Constitution
-        computedValue:
-          formula: "combine"
-          paths:
-            - build.abilities.con
-          template: "{0} ({0|prefix=+|modifier})"
+        jsonPath: build.abilities.con
+        template: "{value} ({abilityModifier(value)|modifier})"
         highestValue: true
       - id: int
         title: INT
         icon: brain
         fullTitle: Intelligence
-        computedValue:
-          formula: "combine"
-          paths:
-            - build.abilities.int
-          template: "{0} ({0|prefix=+|modifier})"
+        jsonPath: build.abilities.int
+        template: "{value} ({abilityModifier(value)|modifier})"
         highestValue: true
       - id: wis
         title: WIS
         icon: eye
         fullTitle: Wisdom
-        computedValue:
-          formula: "combine"
-          paths:
-            - build.abilities.wis
-          template: "{0} ({0|prefix=+|modifier})"
+        jsonPath: build.abilities.wis
+        template: "{value} ({abilityModifier(value)|modifier})"
         highestValue: true
       - id: cha
         title: CHA
         icon: comment
         fullTitle: Charisma
-        computedValue:
-          formula: "combine"
-          paths:
-            - build.abilities.cha
-          template: "{0} ({0|prefix=+|modifier})"
+        jsonPath: build.abilities.cha
+        template: "{value} ({abilityModifier(value)|modifier})"
         highestValue: true
 
   - id: defense
@@ -139,7 +466,7 @@ sections:
         icon: eye
         fullTitle: Perception
         jsonPath: extracted.skills.perception
-        proficiencyPath: build.proficiencies.perception
+        proficiencyPath: extracted.skillProficiencies.perception
         showProficiency: true
         displayType: proficiency-badge
         highestValue: true
@@ -147,7 +474,7 @@ sections:
         title: AC
         icon: shield
         fullTitle: Armor Class
-        jsonPath: build.acTotal.acTotal
+        jsonPath: extracted.defenses.ac
         highestValue: true
       - id: fort
         title: Fort

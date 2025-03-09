@@ -41,12 +41,7 @@ body {
 .parchment {
     background-color: var(--parchment-color);
     background-image:
-        linear-gradient(rgba(245, 231, 203, 0.6), rgba(232, 213, 170, 0.8)),
-        repeating-linear-gradient(45deg,
-            rgba(222, 184, 135, 0.1),
-            rgba(222, 184, 135, 0.1) 2px,
-            transparent 2px,
-            transparent 4px);
+        linear-gradient(rgba(245, 231, 203, 0.6), rgba(232, 213, 170, 0.8));
     box-shadow: 0 0 15px rgba(0, 0, 0, 0.8);
     position: relative;
     margin: 20px;
@@ -244,7 +239,7 @@ input[type="file"] {
     overflow: hidden;
 }
 
-/* Add decorative pattern to frame border */
+/* Remove the background pattern from scroll-frame::before */
 .scroll-frame::before {
     content: '';
     position: absolute;
@@ -254,56 +249,34 @@ input[type="file"] {
     bottom: 0;
     pointer-events: none;
     border: 4px solid rgba(255, 255, 255, 0.1);
-    background-image:
-        linear-gradient(45deg, transparent 65%, var(--accent-secondary) 65%, var(--accent-secondary) 70%, transparent 70%),
-        linear-gradient(-45deg, transparent 65%, var(--accent-secondary) 65%, var(--accent-secondary) 70%, transparent 70%);
-    background-size: 20px 20px;
-    background-position: 0 0, 10px 10px;
+    /* Removed the linear-gradient background-image pattern */
     opacity: 0.3;
     z-index: 10;
 }
 
 .table-container {
+    width: 100%;
+    overflow-x: auto;
+    overflow-y: auto;
+    max-height: 70vh;
     position: relative;
-    border-radius: 10px;
-    padding: 8px;
-    background: linear-gradient(45deg,
-            var(--border-color) 0%,
-            var(--accent-tertiary) 30%,
-            var(--accent-secondary) 70%,
-            var(--border-color) 100%);
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
-    overflow: hidden;
-    margin-bottom: 20px;
+    background-image: none !important;
 }
 
-.table-container::before {
-    content: '';
-    position: absolute;
-    top: 4px;
-    left: 4px;
-    right: 4px;
-    bottom: 4px;
-    background:
-        repeating-linear-gradient(45deg,
-            var(--border-color) 0px,
-            var(--border-color) 2px,
-            transparent 2px,
-            transparent 8px);
-    opacity: 0.2;
-    pointer-events: none;
+.scroll-frame {
+    margin-bottom: 20px;
+    border-radius: 8px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
 }
 
 table {
-    width: 100%;
-    table-layout: auto;
+    width: max-content;
+    /* Allow table to expand beyond container */
+    min-width: 100%;
+    /* Ensure it takes at least full width */
     border-collapse: collapse;
-    background-color: rgba(245, 231, 203, 0.9);
-    border: 2px solid var(--border-color);
-    border-radius: 4px;
-    overflow: hidden;
-    position: relative;
-    z-index: 1;
+    border-spacing: 0;
+    background-image: none !important;
 }
 
 th,
@@ -345,7 +318,7 @@ tr:nth-child(even) {
 
 tfoot tr {
     background-color: var(--table-footer);
-    color: white;
+    color: #331800;
     font-weight: bold;
     position: sticky;
     bottom: 0;
@@ -557,25 +530,15 @@ td .highest {
 
 /* Warning Section Styling */
 .warnings-container {
-    margin-top: 30px;
-    border-radius: 8px;
-    background-color: rgba(245, 231, 203, 0.7);
-    padding: 20px;
-    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
-    border: 1px solid var(--border-color);
+    margin-bottom: 20px;
+    padding: 0 0 10px 0;
 }
 
 .warnings-title {
-    font-size: 1.6rem;
-    color: var(--accent-primary);
-    margin-bottom: 20px;
-    border-bottom: 2px solid var(--border-color);
-    padding-bottom: 10px;
-    text-align: center;
-}
-
-.warnings-title i {
-    margin-right: 10px;
+    margin-bottom: 15px;
+    color: var(--accent-secondary);
+    padding-bottom: 5px;
+    border-bottom: 1px solid var(--border-color);
 }
 
 .warnings-grid {
@@ -585,43 +548,33 @@ td .highest {
 }
 
 .warning-card {
+    background-color: var(--parchment-dark);
+    border-radius: 5px;
     padding: 15px;
-    border-radius: 8px;
-    display: flex;
-    align-items: center;
-    transition: all 0.3s ease;
-    box-shadow: 0 3px 5px rgba(0, 0, 0, 0.1);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    border-left: 4px solid #999;
+    position: relative;
 }
 
 .warning-card.success {
-    background-color: rgba(58, 90, 64, 0.15);
-    border: 1px solid var(--success-color);
+    border-left: 4px solid #2ecc71;
+    background-color: rgba(46, 204, 113, 0.1);
 }
 
-.warning-card.error {
-    background-color: rgba(165, 42, 42, 0.15);
-    border: 1px solid var(--warning-color);
-}
-
-.warning-icon {
-    font-size: 1.5rem;
-    margin-right: 15px;
-    flex-shrink: 0;
-}
-
-.warning-content {
-    flex-grow: 1;
+.warning-card.failure {
+    border-left: 4px solid #e74c3c;
+    background-color: rgba(231, 76, 60, 0.1);
 }
 
 .warning-title {
-    font-family: 'Cinzel', serif;
     font-weight: bold;
-    margin-bottom: 5px;
+    margin-bottom: 8px;
+    font-family: 'Cinzel', serif;
     color: var(--accent-primary);
 }
 
-.warning-description {
-    font-size: 0.9rem;
+.warning-message {
+    font-size: 0.95rem;
 }
 
 /* Footer */
@@ -690,4 +643,124 @@ footer a:hover {
     .parchment {
         margin: 10px;
     }
+}
+
+.perception-group {
+    background-color: var(--defense-group-bg);
+    color: white;
+    border-right: 2px solid var(--border-color);
+}
+
+/* Proficiency badge styling */
+.prof-badge {
+    display: inline-block;
+    font-size: 0.7em;
+    width: 1.2em;
+    height: 1.2em;
+    line-height: 1.2em;
+    text-align: center;
+    border-radius: 50%;
+    margin-left: 4px;
+    font-weight: bold;
+    vertical-align: super;
+}
+
+.prof-u {
+    background-color: #888;
+    color: #eee;
+}
+
+.prof-t {
+    background-color: #4a94cd;
+    color: white;
+}
+
+.prof-e {
+    background-color: #3a75bd;
+    color: white;
+}
+
+.prof-m {
+    background-color: #9b59b6;
+    color: white;
+}
+
+.prof-l {
+    background-color: #f39c12;
+    color: white;
+}
+
+td .value {
+    display: inline-block;
+}
+
+/* Make warning title colors match their status */
+.warning-card.success .warning-title {
+    color: #27ae60;
+}
+
+.warning-card.failure .warning-title {
+    color: #c0392b;
+}
+
+/* Make icons match their status */
+.warning-card.success .warning-title i {
+    color: #27ae60;
+}
+
+.warning-card.failure .warning-title i {
+    color: #c0392b;
+}
+
+/* Character Header with Remove Button */
+.character-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    width: 100%;
+}
+
+.delete-character-btn {
+    background-color: #ff5252;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    padding: 4px 8px;
+    cursor: pointer;
+    font-size: 14px;
+    transition: background-color 0.2s;
+}
+
+.delete-character-btn:hover {
+    background-color: #ff0000;
+}
+
+.senses-group {
+    background-color: var(--skill-group-bg);
+    color: white;
+    border-right: 2px solid var(--border-color);
+}
+
+/* Make senses pills match the style of skill pills */
+.skill-group .pill,
+.senses-group .pill {
+    font-size: 0.7rem;
+    padding: 1px 5px;
+    margin: 1px;
+}
+
+.highest-value {
+    color: var(--highlight-color);
+    font-weight: bold;
+}
+
+tfoot td {
+    background-color: var(--table-footer);
+    color: white;
+    font-weight: bold;
+    text-align: center;
+}
+
+tfoot td.highest-value {
+    color: var(--highlight-color);
 }

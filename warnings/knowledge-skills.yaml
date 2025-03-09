@@ -1,0 +1,59 @@
+title: Dumb AND Hot!
+description: Party lacks knowledge skill proficiencies
+checkFunction: |
+  function() {
+    // If there are no characters, don't show a warning
+    if (characters.length === 0) return true;
+    
+    // Define knowledge skills to check
+    const knowledgeSkills = {
+      'arcana': 'Arcana',
+      'occultism': 'Occultism',
+      'religion': 'Religion',
+      'nature': 'Nature',
+      'society': 'Society',
+      'crafting': 'Crafting'
+    };
+    
+    // Track which skills have proficiency
+    const missingSkills = [];
+    
+    for (const [skillKey, skillName] of Object.entries(knowledgeSkills)) {
+      // Check if any character has training in this skill
+      let hasTraining = false;
+      
+      for (const character of characters) {
+        // Check if proficiency exists (trained or higher)
+        if (character.extracted && 
+            character.extracted.skillProficiencies && 
+            character.extracted.skillProficiencies[skillKey] && 
+            character.extracted.skillProficiencies[skillKey] !== 'U') {
+          hasTraining = true;
+          break;
+        }
+      }
+      
+      if (!hasTraining) {
+        missingSkills.push(skillName);
+      }
+    }
+    
+    // Store the missing skills list for use in the message
+    window.missingKnowledgeSkills = missingSkills;
+    
+    // Calculate what percentage of knowledge skills are covered
+    const coveredSkillsCount = Object.keys(knowledgeSkills).length - missingSkills.length;
+    const coveragePercent = Math.round((coveredSkillsCount / Object.keys(knowledgeSkills).length) * 100);
+    
+    // Store the coverage percentage for the message
+    window.knowledgeCoveragePercent = coveragePercent;
+    
+    // Return true if at least 4 knowledge skills are covered (≥66%)
+    return coveragePercent >= 66;
+  }
+successMessage: |
+  Your party has good knowledge skill coverage ({{knowledgeCoveragePercent}}%).
+  {{window.missingKnowledgeSkills.length > 0 ? "Still missing: " + window.missingKnowledgeSkills.join(', ') : "All knowledge skills are covered!"}}
+failureMessage: |
+  Your party lacks proficiency in crucial knowledge skills: {{missingKnowledgeSkills.join(', ')}}. 
+  Consider training in these skills to help identify monsters, recall lore, and craft items.

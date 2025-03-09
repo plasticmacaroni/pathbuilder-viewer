@@ -1,217 +1,293 @@
-# PF2e Character Comparison Tool
+# Pathbuilder Viewer
 
-https://plasticmacaroni.github.io/pathbuilder-viewer/
+A configuration-driven character viewer for Pathfinder 2e characters created with Pathbuilder.
 
-A browser-based tool for comparing Pathfinder 2e character statistics, highlighting highest values, and providing party composition warnings.
+## Overview
 
-## Setup
-
-1. Download all files to maintain the following folder structure:
-
-   ```
-   pf2e-character-comparison/
-   ├── index.html        # Main HTML file
-   ├── style.css         # Styles
-   ├── script.js         # Main JavaScript
-   └── warnings/         # Warning YAML files
-       ├── battle-medicine.yaml
-       ├── skill-coverage.yaml
-   ```
-
-2. Open `index.html` in a modern web browser
-3. No server required - works completely in the browser
+This application allows you to import and compare Pathfinder 2e characters exported from Pathbuilder. It uses a fully configuration-driven approach where nearly all logic is defined in YAML configuration files rather than hardcoded JavaScript.
 
 ## Features
 
-- **Character Import**: Load character data from JSON files or clipboard
-- **Stat Comparison**: View character stats side by side
-- **Visual Highlighting**: Golden text for highest values in each category
-- **Party Composition Warnings**: Automatic detection of potential party composition issues
-- **Responsive Design**: Dark mode interface that works on various devices
-- **Healing Detection**: Comprehensive tracking of healing-related abilities
-- **Modular Warnings**: YAML-based configuration for easy extensibility
+- Import characters from JSON files or clipboard
+- Compare characters side-by-side with their key attributes
+- Highlight highest values among party members
+- Show party composition warnings and suggestions
+- Display "tenuous tips" for party abilities
+- Fully configurable display through YAML configuration
 
-## How to Use
+## Configuration-Driven Architecture
 
-### Importing Characters
+The application uses a configuration-driven architecture where:
 
-1. **From File**: Click "Import from File" and select a PF2e character JSON file
-2. **From Clipboard**: Copy JSON data from the options hamburger menu on Pathbuilder to clipboard and click "Import from Clipboard"
-3. **Clear All**: Remove all characters with the "Clear All" button
+1. Data structure and extraction rules are defined in YAML
+2. UI layout and display options are defined in YAML
+3. Formulas and calculations are defined in YAML
+4. JavaScript only provides the core engine that processes the configuration
 
-### Reading the Table
+### Key Components
 
-- **Character Info**: Name, class (as pill), archetypes (as pills), and level
-- **Healing and Sustain**: Displays healing abilities as color-coded pills
-- **Ability Scores**: STR, DEX, CON, INT, WIS, CHA values
-- **Defenses**: AC, Fortitude, Reflex, Will
-- **Skills**: Abbreviated skill bonuses
-- **Highest Values**: Bottom row shows the highest value for each column
-- **Highlighting**: Values in gold match the highest in their column
+- **Table Structure**: Defines sections, columns, and their display properties
+- **Preprocessing Rules**: Define how to extract and compute values from character data
+- **Template System**: Defines how to display and format values
+- **Extractor Functions**: Define reusable calculations for character attributes
 
-### Party Composition Warnings
+## Configuration File Structure
 
-Warnings appear at the bottom of the page and are automatically updated when characters are added or removed:
-
-- **Green (✅)**: Indicates a successful check (party meets this requirement)
-- **Red (⚠️)**: Indicates a warning (party may have an issue)
-
-## Adding New Warnings
-
-The warning system is designed to be completely modular using YAML files. Each warning is defined in its own file and contains all the logic needed to perform its check.
-
-### Warning File Structure
-
-Each warning file follows this structure:
+The main configuration file is `config/table-structure.yaml`, which has the following structure:
 
 ```yaml
-title: Battle Medicine
-description: Emergency healing option
-checkFunction: |
-  function() {
-    // Check if any character has Battle Medicine
-    for (const character of characters) {
-      if (character.healingAbilities) {
-        for (const ability of character.healingAbilities) {
-          if (ability === "Battle Medicine") {
-            return true;
-          }
-        }
-      }
-    }
-    return false;
-  }
-successMessage: At least one character has Battle Medicine for emergency healing
-failureMessage: No character has Battle Medicine for emergency healing
+# Global definitions
+globals:
+  # Common configurations used across the system
+
+# Preprocessing rules
+preprocessing:
+  # Extractors define reusable functions
+  extractors:
+    # ...
+
+  # Extracted fields define what data to extract from characters
+  extractedFields:
+    # ...
+
+# Table structure
+sections:
+  # UI sections definition
+  - id: section_id
+    title: "Section Title"
+    icon: section_icon
+    columns:
+      # Column definitions
+      - id: column_id
+        title: "Column Title"
+        # ...
 ```
 
-- **title**: The title of the warning shown in the card
-- **description**: Brief description of what this warning checks for
-- **checkFunction**: JavaScript function that returns true (success) or false (warning)
-  - This must be completely self-contained and only reference the global `characters` array
-  - Can access any property of characters defined in the data extraction logic
-- **successMessage**: Message displayed when the check passes
-- **failureMessage**: Message displayed when the check fails
+## Available Calculation Types
 
-### How to Add a New Warning
+The system supports several types of calculations that can be defined in the configuration:
 
-1. **Create a new YAML file** in the `warnings/` directory
-2. **Write your warning configuration** following the structure above
-3. **Add your warning to the list** in the `loadWarnings()` function in `script.js`:
+### 1. Direct JSON Path
 
-```javascript
-const warningFiles = [
-  "warnings/battle-medicine.yaml",
-  "warnings/skill-coverage.yaml",
-  "warnings/frontline.yaml",
-  "warnings/magic-user.yaml",
-  "warnings/your-new-warning.yaml", // Add your file here
-];
-```
-
-### Template Variables in Messages
-
-You can use template variables in your success and failure messages by using double curly braces:
+Access values directly from the character data:
 
 ```yaml
-failureMessage: "No character has training in: {{zeroSkillsList.join(', ')}}"
+jsonPath: build.abilities.str
 ```
 
-Inside the template, you can use any JavaScript expression. To make data available to templates:
+### 2. Computed Values
 
-1. Store data in a global variable within your `checkFunction`
-2. Reference that variable in your template
-
-### Examples
-
-#### Simple Check: Frontline Character
+Calculate values with a formula:
 
 ```yaml
-title: Frontline Character
-description: Tank or frontline combat role
-checkFunction: |
-  function() {
-    for (const character of characters) {
-      if (character.abilities && character.defenses) {
-        if (character.abilities.str >= 16 && character.defenses.ac >= 18) {
-          return true;
-        }
-      }
-    }
-    return false;
-  }
-successMessage: Party has at least one character with good Strength and AC for frontline combat
-failureMessage: Consider adding a character with high Strength and AC to tank damage in combat
+formula: "sum"
+params:
+  values: ["build.attributes.speed", "build.attributes.speedBonus"]
 ```
 
-#### Complex Check with Template Variables: Skill Coverage
+### 3. Templated Values
+
+Apply formatting to values using templates:
 
 ```yaml
-title: Skill Coverage
-description: Party skill proficiency distribution
-checkFunction: |
-  function() {
-    // If there are no characters, don't show a warning
-    if (characters.length === 0) return true;
-    
-    // Define all skills to check
-    const allSkills = {
-      'acrobatics': 'Acrobatics',
-      'arcana': 'Arcana',
-      // ... more skills ...
-    };
-    
-    // Find skills with no training
-    const zeroSkills = [];
-    
-    for (const [skillKey, skillName] of Object.entries(allSkills)) {
-      // Check if any character has a non-zero value for this skill
-      let hasTraining = false;
-      
-      for (const character of characters) {
-        if (character.skills && character.skills[skillKey] > 0) {
-          hasTraining = true;
-          break;
-        }
-      }
-      
-      if (!hasTraining) {
-        zeroSkills.push(skillName);
-      }
-    }
-    
-    // Store for use in the message template
-    window.zeroSkillsList = zeroSkills;
-    
-    return zeroSkills.length === 0;
-  }
-successMessage: Full skill coverage achieved. At least one character has training in every skill.
-failureMessage: "No character has training in: {{zeroSkillsList.join(', ')}}"
+template: "{value} ({abilityModifier(value)|modifier})"
 ```
 
-## Character Data Structure
+### 4. Extraction Functions
 
-When writing warning checks, you can access the following properties of each character:
+Extract and transform complex data structures:
 
-- `name` - Character name
-- `class` - Character class
-- `archetypes` - Array of archetype names
-- `level` - Character level
-- `healingAbilities` - Array of healing-related abilities
-- `abilities` - Object with `str`, `dex`, `con`, `int`, `wis`, `cha` values
-- `defenses` - Object with `ac`, `fort`, `ref`, `will` values
-- `skills` - Object with skill values mapped to skill keys from `skillMap`
+```yaml
+formula: "extractArchetypes"
+params:
+  feats: "build.feats"
+```
 
-## Customizing the Tool
+## Template System
 
-### Adding More Healing Abilities
+The template system allows you to format values with a powerful syntax:
 
-To detect more healing-related abilities, add them to the `healingFeats` array in the `extractCharacterData()` function.
+### Basic Template Syntax
 
-### Changing Appearance
+```
+{variableName|transform1|transform2=param1,param2}
+```
 
-Modify the `style.css` file to adjust colors, spacing, and layout.
+- `variableName`: The variable to display (e.g., `value`)
+- `transform`: Optional transform to apply (can chain multiple)
+- `param1,param2`: Optional parameters for the transform
 
-### Adding Character Properties
+### Available Template Functions
 
-If you need to extract additional properties from character data for warnings, add them to the `characterData` object in the `extractCharacterData()` function.
+These functions can be called within templates:
+
+| Function          | Description                            | Example                       |
+| ----------------- | -------------------------------------- | ----------------------------- |
+| `abilityModifier` | Calculates ability modifier from score | `{abilityModifier(value)}`    |
+| `formatModifier`  | Formats a number as a modifier (+/-)   | `{value\|modifier}`           |
+| `calculateSpeed`  | Calculates total speed                 | `{calculateSpeed(character)}` |
+
+### Available Template Transforms
+
+These transforms can be applied to values:
+
+| Transform     | Description                         | Example                       |
+| ------------- | ----------------------------------- | ----------------------------- |
+| `prefix`      | Adds a prefix to a value            | `{value\|prefix=+}`           |
+| `modifier`    | Formats as +/- modifier             | `{value\|modifier}`           |
+| `units`       | Adds units to a value               | `{value\|units=ft}`           |
+| `format`      | Applies a format string             | `{value\|format=%s ft}`       |
+| `conditional` | Shows different text based on value | `{value\|conditional=Yes,No}` |
+
+## Formula Types
+
+These formula types can be used in extractors and computed values:
+
+### 1. Sum Formula
+
+Adds multiple values together:
+
+```yaml
+formula: "sum"
+params:
+  values: ["path.to.value1", "path.to.value2"]
+```
+
+### 2. Skill Calculation
+
+Calculates skill bonuses with level scaling:
+
+```yaml
+formula: "skillCalculation"
+params:
+  profValue: "build.proficiencies.acrobatics"
+  abilityMod: "abilityModifier(build.abilities.dex)"
+  level: "build.level"
+  itemBonus: "build.mods.Acrobatics['Item Bonus']"
+```
+
+### 3. Custom JavaScript Formula
+
+Define a custom JavaScript formula:
+
+```yaml
+formula: "Math.floor((value - 10) / 2)"
+```
+
+## Display Types
+
+The system supports various display types for columns:
+
+| Display Type            | Description                            |
+| ----------------------- | -------------------------------------- |
+| `pill`                  | Displays value in a colored pill       |
+| `pill-list`             | Displays array values as colored pills |
+| `proficiency-badge`     | Shows value with proficiency badge     |
+| `proficiency-pill-list` | Shows list with proficiency badges     |
+| `lore-proficiency-list` | Special display for lore skills        |
+| `action-buttons`        | Shows action buttons (e.g., delete)    |
+
+## Adding New Features
+
+### Adding a New Column
+
+1. Add a new column definition to the appropriate section in `config/table-structure.yaml`:
+
+```yaml
+- id: new_column
+  title: "New Column"
+  icon: icon-name
+  jsonPath: path.to.value
+  highestValue: true
+```
+
+### Adding a New Calculation
+
+1. Add a new extractor in the preprocessing section:
+
+```yaml
+extractors:
+  newCalculation:
+    formula: "your calculation logic"
+    description: "What this calculation does"
+```
+
+2. Add a new extracted field that uses this extractor:
+
+```yaml
+extractedFields:
+  newField:
+    type: "value"
+    formula: "newCalculation"
+    params:
+      param1: "value1"
+```
+
+### Adding a New Display Type
+
+1. Create a new helper function in script.js
+2. Add the display type to your column configuration
+
+## Examples
+
+### Basic Stat Display
+
+```yaml
+- id: str
+  title: STR
+  icon: dumbbell
+  jsonPath: build.abilities.str
+  template: "{value} ({abilityModifier(value)|modifier})"
+  highestValue: true
+```
+
+### Computed Speed Display
+
+```yaml
+- id: speed
+  title: Speed
+  icon: person-running
+  jsonPath: extracted.speed
+  template: "{value|units=ft}"
+  highestValue: true
+```
+
+### Complex Skill Display
+
+```yaml
+- id: acrobatics
+  title: Acro
+  icon: person-falling
+  jsonPath: extracted.skills.acrobatics
+  proficiencyPath: extracted.skillProficiencies.acrobatics
+  showProficiency: true
+  displayType: proficiency-badge
+  highestValue: true
+```
+
+## Extending the System
+
+You can extend the system by:
+
+1. Adding new global configurations
+2. Creating new extraction methods in JavaScript
+3. Registering new template functions
+4. Adding new transform types
+
+Follow the existing patterns in the code to ensure compatibility.
+
+## Advanced Tips
+
+1. Use fallback values in paths: `build.abilities.str || 10`
+2. Combine multiple transforms: `{value|modifier|prefix=}`
+3. Use conditional displays: `{value|conditional=Has darkvision,No darkvision}`
+4. Format complex data: `{value|format=%s feet}`
+
+## Troubleshooting
+
+If values aren't displaying correctly:
+
+1. Check console for debugging information
+2. Verify your JSON paths against the actual character data
+3. Make sure extractors and parameters are correctly defined
+4. Try adding fallback values to prevent "undefined" issues

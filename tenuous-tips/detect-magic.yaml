@@ -1,0 +1,92 @@
+title: Not All Magic Shows Up On Your Radar
+description: Checks if at least one character has the Detect Magic cantrip
+checkFunction: |
+  function() {
+    // If there are no characters, don't show a warning
+    if (characters.length === 0) return true;
+    
+    // Check if any character has the Detect Magic cantrip
+    for (const character of characters) {
+      // Skip if missing required data
+      if (!character.build) continue;
+      
+      // 1. Check standard spell structure if it exists
+      if (character.build.spells) {
+        // Check cantrips array specifically
+        if (character.build.spells.cantrips && Array.isArray(character.build.spells.cantrips)) {
+          for (const spell of character.build.spells.cantrips) {
+            // Handle different possible formats
+            const spellName = typeof spell === 'string' ? spell : (spell.name || spell[0] || '');
+            if (spellName.toLowerCase().includes('detect magic')) {
+              return true;
+            }
+          }
+        }
+        
+        // Also check all other spell levels in case it's not stored as a cantrip
+        for (const level in character.build.spells) {
+          if (level === 'cantrips') continue; // Already checked above
+          
+          const spells = character.build.spells[level];
+          if (Array.isArray(spells)) {
+            for (const spell of spells) {
+              const spellName = typeof spell === 'string' ? spell : (spell.name || spell[0] || '');
+              if (spellName.toLowerCase().includes('detect magic')) {
+                return true;
+              }
+            }
+          }
+        }
+      }
+      
+      // 2. Check spellCasters array structure (PF2e format)
+      if (character.build.spellCasters && Array.isArray(character.build.spellCasters)) {
+        for (const caster of character.build.spellCasters) {
+          // Debug logging for development
+          console.log("Checking caster:", caster.name);
+          
+          // Check spells array - THIS IS THE IMPORTANT PART
+          if (caster.spells && Array.isArray(caster.spells)) {
+            for (const spellLevel of caster.spells) {
+              if (spellLevel.list && Array.isArray(spellLevel.list)) {
+                for (const spell of spellLevel.list) {
+                  const spellName = typeof spell === 'string' ? spell : (spell.name || spell[0] || '');
+                  if (spellName.toLowerCase().includes('detect magic')) {
+                    return true;
+                  }
+                }
+              }
+            }
+          }
+          
+          // Check prepared spells array
+          if (caster.prepared && Array.isArray(caster.prepared)) {
+            for (const spellLevel of caster.prepared) {
+              if (spellLevel.list && Array.isArray(spellLevel.list)) {
+                for (const spell of spellLevel.list) {
+                  const spellName = typeof spell === 'string' ? spell : (spell.name || spell[0] || '');
+                  if (spellName.toLowerCase().includes('detect magic')) {
+                    return true;
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+      
+      // 3. Check for class features or special abilities that might grant Detect Magic
+      if (character.build.specials && Array.isArray(character.build.specials)) {
+        for (const special of character.build.specials) {
+          if (typeof special === 'string' && special.toLowerCase().includes('arcane sense')) {
+            return true;
+          }
+        }
+      }
+    }
+    
+    // No character with Detect Magic found
+    return false;
+  }
+successMessage: Your party has at least one character who can cast Detect Magic.
+failureMessage: No character in your party can cast Detect Magic. This cantrip is invaluable for identifying magic items, detecting illusions, and investigating magical phenomena.

@@ -5,8 +5,8 @@ checkFunction: |
     // Check if any character has Battle Medicine
     for (const character of characters) {
       // Look through the character's feats for Battle Medicine
-      if (character.healingAbilities) {
-        for (const ability of character.healingAbilities) {
+      if (character.extracted && character.extracted.healingAbilities) {
+        for (const ability of character.extracted.healingAbilities) {
           if (ability === "Battle Medicine") {
             return true;
           }
