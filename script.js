@@ -2,6 +2,7 @@
 let characters = [];
 let warnings = [];
 let healingAbilities = []; // New variable to store healing abilities
+let dataProcessingConfig = null;
 const skillMap = {
     'acrobatics': 'Acro',
     'arcana': 'Arca',
@@ -32,6 +33,29 @@ function showStatusMessage(message, isError = false) {
     setTimeout(() => {
         statusDiv.style.display = 'none';
     }, 3000);
+}
+
+// Function to load configuration files
+async function loadConfiguration() {
+    try {
+        // Load data processing configuration
+        const processingResponse = await fetch('config/data-processing.yaml');
+        if (processingResponse.ok) {
+            const processingYaml = await processingResponse.text();
+            dataProcessingConfig = jsyaml.load(processingYaml);
+            console.log("Loaded data processing configuration");
+        } else {
+            console.error('Failed to load data processing configuration');
+        }
+
+        // Load warnings and healing abilities
+        await loadWarnings();
+
+        // Load tenuous tips
+        await loadTenuousTips();
+    } catch (error) {
+        console.error('Error loading configuration:', error);
+    }
 }
 
 // Function to load warnings and healing abilities from YAML files
@@ -150,7 +174,7 @@ function extractCharacterData(data) {
             if (feat && feat.length >= 1) {
                 // Check against our loaded healing abilities list
                 if (healingAbilities.includes(feat[0])) {
-                    characterHealingAbilities.push(feat[0]);
+                    result.push(feat[0]);
                 }
 
                 // Special check for Assurance (Medicine)

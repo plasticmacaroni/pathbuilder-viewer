@@ -1,0 +1,54 @@
+title: Lost in Translation
+description: Check if highest Intimidation character has Intimidating Glare
+checkFunction: |
+  function() {
+    // If there are no characters, don't show the tip
+    if (characters.length === 0) return true;
+    
+    // Find character with highest Intimidation
+    let highestChar = null;
+    let highestValue = -1;
+    let highestProficiency = 'U';
+    
+    for (const character of characters) {
+      if (character.extracted && character.extracted.skills && character.extracted.skillProficiencies) {
+        const intimidationValue = character.extracted.skills.intimidation || 0;
+        const intimidationProf = character.extracted.skillProficiencies.intimidation || 'U';
+        
+        // Prioritize by proficiency level first, then by actual value
+        const profRank = { 'U': 0, 'T': 1, 'E': 2, 'M': 3, 'L': 4 }[intimidationProf] || 0;
+        const currentRank = { 'U': 0, 'T': 1, 'E': 2, 'M': 3, 'L': 4 }[highestProficiency] || 0;
+        
+        if (profRank > currentRank || (profRank === currentRank && intimidationValue > highestValue)) {
+          highestValue = intimidationValue;
+          highestProficiency = intimidationProf;
+          highestChar = character;
+        }
+      }
+    }
+    
+    // No character with Intimidation or only untrained characters
+    if (!highestChar || highestProficiency === 'U') {
+      // Set a message specifically for the case where no one is trained
+      failureText = "No one in your party is trained in Intimidation. Consider training someone in this valuable social skill first, then picking up Intimidating Glare.";
+      return false; // Show warning if no one is trained
+    }
+    
+    // This is a global variable, must not use "window." prefix for templating to work
+    intimidationCharName = highestChar.build?.name || "Your highest Intimidation character";
+    
+    // Prepare the specific failure message for when there is a trained character
+    failureText = "Consider taking the Intimidating Glare skill feat for " + intimidationCharName + " to make Intimidation checks without speaking (works against nonverbal creatures).";
+    
+    // Check if they have Intimidating Glare
+    const hasGlare = highestChar.build?.feats && 
+                      highestChar.build.feats.some(feat => 
+                        Array.isArray(feat) && 
+                        typeof feat[0] === 'string' && 
+                        feat[0].includes('Intimidating Glare'));
+    
+    // Return true if they have the feat (tip not needed)
+    return hasGlare;
+  }
+successMessage: "{{intimidationCharName}} is trained in intimidation and already has Intimidating Glare. Good job!"
+failureMessage: "{{failureText}}"

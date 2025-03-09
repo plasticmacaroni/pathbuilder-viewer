@@ -1,0 +1,362 @@
+# Table sections and columns
+sections:
+  - id: actions
+    title: "Actions"
+    icon: tools
+    columns:
+      - id: delete
+        title: ""
+        fullTitle: "Delete Character"
+        displayType: "action-buttons"
+        jsonPath: ""
+        showProficiency: false
+        highestValue: false
+
+  - id: info
+    title: Character Info
+    icon: id-card
+    columns:
+      - id: name
+        title: Name
+        icon: signature
+        jsonPath: build.name
+        highestValue: false
+      - id: class
+        title: Class
+        icon: hat-wizard
+        jsonPath: build.class
+        highestValue: false
+        displayType: pill
+      - id: archetypes
+        title: Archetypes
+        icon: mortar-pestle
+        jsonPath: extracted.archetypes
+        highestValue: false
+        displayType: pill-list
+      - id: level
+        title: Level
+        icon: award
+        jsonPath: build.level
+        highestValue: true
+      - id: keyAttribute
+        title: Key Attr
+        icon: key
+        jsonPath: build.keyability
+        highestValue: false
+        displayType: pill
+      - id: speed
+        title: Speed
+        icon: person-running
+        fullTitle: Movement Speed
+        computedValue:
+          formula: "sum"
+          paths:
+            - build.speed
+            - build.speedBonus
+          template: "{sum} ft"
+        highestValue: true
+      - id: spellTraditions
+        title: Magic
+        icon: book-sparkles
+        fullTitle: Spell Traditions
+        jsonPath: extracted.magicTraditions
+        proficiencyPath: extracted.traditionProficiencies
+        showProficiency: true
+        displayType: proficiency-pill-list
+        highestValue: false
+
+  - id: ability
+    title: Ability Scores
+    icon: dumbbell
+    columns:
+      - id: str
+        title: STR
+        icon: dumbbell
+        fullTitle: Strength
+        computedValue:
+          formula: "combine"
+          paths:
+            - build.abilities.str
+          template: "{0} ({0|prefix=+|modifier})"
+        highestValue: true
+      - id: dex
+        title: DEX
+        icon: person-running
+        fullTitle: Dexterity
+        computedValue:
+          formula: "combine"
+          paths:
+            - build.abilities.dex
+          template: "{0} ({0|prefix=+|modifier})"
+        highestValue: true
+      - id: con
+        title: CON
+        icon: heart
+        fullTitle: Constitution
+        computedValue:
+          formula: "combine"
+          paths:
+            - build.abilities.con
+          template: "{0} ({0|prefix=+|modifier})"
+        highestValue: true
+      - id: int
+        title: INT
+        icon: brain
+        fullTitle: Intelligence
+        computedValue:
+          formula: "combine"
+          paths:
+            - build.abilities.int
+          template: "{0} ({0|prefix=+|modifier})"
+        highestValue: true
+      - id: wis
+        title: WIS
+        icon: eye
+        fullTitle: Wisdom
+        computedValue:
+          formula: "combine"
+          paths:
+            - build.abilities.wis
+          template: "{0} ({0|prefix=+|modifier})"
+        highestValue: true
+      - id: cha
+        title: CHA
+        icon: comment
+        fullTitle: Charisma
+        computedValue:
+          formula: "combine"
+          paths:
+            - build.abilities.cha
+          template: "{0} ({0|prefix=+|modifier})"
+        highestValue: true
+
+  - id: defense
+    title: Defenses
+    icon: shield-halved
+    columns:
+      - id: perception
+        title: Perc
+        icon: eye
+        fullTitle: Perception
+        jsonPath: extracted.skills.perception
+        proficiencyPath: build.proficiencies.perception
+        showProficiency: true
+        displayType: proficiency-badge
+        highestValue: true
+      - id: ac
+        title: AC
+        icon: shield
+        fullTitle: Armor Class
+        jsonPath: build.acTotal.acTotal
+        highestValue: true
+      - id: fort
+        title: Fort
+        icon: hand-fist
+        fullTitle: Fortitude
+        jsonPath: extracted.defenses.fort
+        proficiencyPath: build.proficiencies.fortitude
+        showProficiency: true
+        displayType: proficiency-badge
+        highestValue: true
+      - id: ref
+        title: Ref
+        icon: person-running
+        fullTitle: Reflex
+        jsonPath: extracted.defenses.ref
+        proficiencyPath: build.proficiencies.reflex
+        showProficiency: true
+        displayType: proficiency-badge
+        highestValue: true
+      - id: will
+        title: Will
+        icon: brain
+        fullTitle: Will
+        jsonPath: extracted.defenses.will
+        proficiencyPath: build.proficiencies.will
+        showProficiency: true
+        displayType: proficiency-badge
+        highestValue: true
+
+  - id: skills
+    title: Skills
+    icon: book-open-reader
+    columns:
+      - id: acrobatics
+        title: Acro
+        icon: person-falling
+        fullTitle: Acrobatics
+        jsonPath: extracted.skills.acrobatics
+        proficiencyPath: extracted.skillProficiencies.acrobatics
+        showProficiency: true
+        displayType: proficiency-badge
+        highestValue: true
+      - id: arcana
+        title: Arca
+        icon: wand-sparkles
+        fullTitle: Arcana
+        jsonPath: extracted.skills.arcana
+        proficiencyPath: extracted.skillProficiencies.arcana
+        showProficiency: true
+        displayType: proficiency-badge
+        highestValue: true
+      - id: athletics
+        title: Athl
+        icon: person-running
+        fullTitle: Athletics
+        jsonPath: extracted.skills.athletics
+        proficiencyPath: extracted.skillProficiencies.athletics
+        showProficiency: true
+        displayType: proficiency-badge
+        highestValue: true
+      - id: crafting
+        title: Craf
+        icon: hammer
+        fullTitle: Crafting
+        jsonPath: extracted.skills.crafting
+        proficiencyPath: extracted.skillProficiencies.crafting
+        showProficiency: true
+        displayType: proficiency-badge
+        highestValue: true
+      - id: deception
+        title: Dece
+        icon: mask
+        fullTitle: Deception
+        jsonPath: extracted.skills.deception
+        proficiencyPath: extracted.skillProficiencies.deception
+        showProficiency: true
+        displayType: proficiency-badge
+        highestValue: true
+      - id: diplomacy
+        title: Dipl
+        icon: handshake
+        fullTitle: Diplomacy
+        jsonPath: extracted.skills.diplomacy
+        proficiencyPath: extracted.skillProficiencies.diplomacy
+        showProficiency: true
+        displayType: proficiency-badge
+        highestValue: true
+      - id: intimidation
+        title: Inti
+        icon: face-angry
+        fullTitle: Intimidation
+        jsonPath: extracted.skills.intimidation
+        proficiencyPath: extracted.skillProficiencies.intimidation
+        showProficiency: true
+        displayType: proficiency-badge
+        highestValue: true
+      - id: medicine
+        title: Medi
+        icon: stethoscope
+        fullTitle: Medicine
+        jsonPath: extracted.skills.medicine
+        proficiencyPath: extracted.skillProficiencies.medicine
+        showProficiency: true
+        displayType: proficiency-badge
+        highestValue: true
+      - id: nature
+        title: Natu
+        icon: leaf
+        fullTitle: Nature
+        jsonPath: extracted.skills.nature
+        proficiencyPath: extracted.skillProficiencies.nature
+        showProficiency: true
+        displayType: proficiency-badge
+        highestValue: true
+      - id: occultism
+        title: Occu
+        icon: eye
+        fullTitle: Occultism
+        jsonPath: extracted.skills.occultism
+        proficiencyPath: extracted.skillProficiencies.occultism
+        showProficiency: true
+        displayType: proficiency-badge
+        highestValue: true
+      - id: performance
+        title: Perf
+        icon: masks-theater
+        fullTitle: Performance
+        jsonPath: extracted.skills.performance
+        proficiencyPath: extracted.skillProficiencies.performance
+        showProficiency: true
+        displayType: proficiency-badge
+        highestValue: true
+      - id: religion
+        title: Reli
+        icon: pray
+        fullTitle: Religion
+        jsonPath: extracted.skills.religion
+        proficiencyPath: extracted.skillProficiencies.religion
+        showProficiency: true
+        displayType: proficiency-badge
+        highestValue: true
+      - id: society
+        title: Soci
+        icon: landmark
+        fullTitle: Society
+        jsonPath: extracted.skills.society
+        proficiencyPath: extracted.skillProficiencies.society
+        showProficiency: true
+        displayType: proficiency-badge
+        highestValue: true
+      - id: stealth
+        title: Stea
+        icon: user-ninja
+        fullTitle: Stealth
+        jsonPath: extracted.skills.stealth
+        proficiencyPath: extracted.skillProficiencies.stealth
+        showProficiency: true
+        displayType: proficiency-badge
+        highestValue: true
+      - id: survival
+        title: Surv
+        icon: campground
+        fullTitle: Survival
+        jsonPath: extracted.skills.survival
+        proficiencyPath: extracted.skillProficiencies.survival
+        showProficiency: true
+        displayType: proficiency-badge
+        highestValue: true
+      - id: thievery
+        title: Thie
+        icon: lock-open
+        fullTitle: Thievery
+        jsonPath: extracted.skills.thievery
+        proficiencyPath: extracted.skillProficiencies.thievery
+        showProficiency: true
+        displayType: proficiency-badge
+        highestValue: true
+
+  - id: healing
+    title: Healing & Sustain
+    icon: heart-pulse
+    columns:
+      - id: healingAbilities
+        title: Abilities
+        icon: kit-medical
+        jsonPath: extracted.healingAbilities
+        highestValue: false
+        displayType: pill-list
+
+  - id: lores
+    title: Lore Skills
+    icon: scroll
+    columns:
+      - id: loreSkills
+        title: Lore Skills
+        icon: feather
+        fullTitle: Character Lore Skills
+        jsonPath: build.lores
+        displayType: lore-proficiency-list
+        highestValue: false
+
+  - id: senses
+    title: Senses
+    icon: eye
+    columns:
+      - id: allSenses
+        title: Senses
+        icon: eye
+        fullTitle: Special Senses
+        jsonPath: extracted.senses.allSenses
+        displayType: pill-list
+        highestValue: false
