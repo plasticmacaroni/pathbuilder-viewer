@@ -626,11 +626,41 @@ function extractHealingAbilities(data) {
 
 // Extract defense values
 function extractDefenseValues(data) {
+    const level = getNumeric(getPathValue(data, 'build.level'));
+
+    // Fortitude Save
+    const fortProf = getNumeric(getPathValue(data, 'build.proficiencies.fortitude'));
+    const conScore = getNumeric(getPathValue(data, 'build.abilities.con'));
+    const conMod = TEMPLATE_FUNCTIONS.abilityModifier(conScore);
+    // Attempt to get item bonus, defaulting to 0 if not found or path is invalid
+    // Note: Pathbuilder JSON might structure mods differently, this attempts a common pattern.
+    const fortItemBonus = getNumeric(getPathValue(data, "build.mods.Fortitude.Item Bonus", { defaultValue: 0 })) ||
+        getNumeric(getPathValue(data, "build.mods.Fortitude Save.Item Bonus", { defaultValue: 0 })); // Adding fallback path
+    const fortValue = (fortProf > 0 ? level : 0) + fortProf + conMod + fortItemBonus;
+
+    // Reflex Save
+    const refProf = getNumeric(getPathValue(data, 'build.proficiencies.reflex'));
+    const dexScore = getNumeric(getPathValue(data, 'build.abilities.dex'));
+    const dexMod = TEMPLATE_FUNCTIONS.abilityModifier(dexScore);
+    // Attempt to get item bonus, defaulting to 0
+    const refItemBonus = getNumeric(getPathValue(data, "build.mods.Reflex.Item Bonus", { defaultValue: 0 })) ||
+        getNumeric(getPathValue(data, "build.mods.Reflex Save.Item Bonus", { defaultValue: 0 })); // Adding fallback path
+    const refValue = (refProf > 0 ? level : 0) + refProf + dexMod + refItemBonus;
+
+    // Will Save
+    const willProf = getNumeric(getPathValue(data, 'build.proficiencies.will'));
+    const wisScore = getNumeric(getPathValue(data, 'build.abilities.wis'));
+    const wisMod = TEMPLATE_FUNCTIONS.abilityModifier(wisScore);
+    // Attempt to get item bonus, defaulting to 0
+    const willItemBonus = getNumeric(getPathValue(data, "build.mods.Will.Item Bonus", { defaultValue: 0 })) ||
+        getNumeric(getPathValue(data, "build.mods.Will Save.Item Bonus", { defaultValue: 0 })); // Adding fallback path
+    const willValue = (willProf > 0 ? level : 0) + willProf + wisMod + willItemBonus;
+
     return {
-        ac: getNumeric(data.build?.acTotal?.acTotal),
-        fort: 10 + getNumeric(data.build?.proficiencies?.fortitude),
-        ref: 10 + getNumeric(data.build?.proficiencies?.reflex),
-        will: 10 + getNumeric(data.build?.proficiencies?.will)
+        ac: getNumeric(getPathValue(data, 'build.acTotal.acTotal')), // AC calculation remains the same
+        fort: fortValue,
+        ref: refValue,
+        will: willValue
     };
 }
 
@@ -1911,15 +1941,18 @@ function createExtractorFunction(formulaStr) {
                             }
                         });
                     case 'skillCalculation':
-                        // Calculate skill value with proper level scaling
-                        const profValue = evaluatePath(params.profValue);
-                        const abilityMod = evaluatePath(params.abilityMod);
-                        const level = evaluatePath(params.level);
-                        const itemBonus = evaluatePath(params.itemBonus);
+                        // Use the values directly from the params object
+                        // Ensure they are numeric, defaulting to 0 if not
+                        const profValue = getNumeric(params.profValue);
+                        const abilityMod = getNumeric(params.abilityMod);
+                        const level = getNumeric(params.level);
+                        const itemBonus = getNumeric(params.itemBonus);
+                        // Perform the calculation
                         return (profValue > 0 ? level : 0) + profValue + abilityMod + itemBonus;
                     case 'saveBonus':
                         // Calculate save bonus (10 + proficiency)
-                        const saveProf = evaluatePath(params.profValue);
+                        // This case might be obsolete now but leaving it harmlessly
+                        const saveProf = getNumeric(params.profValue); // Use getNumeric here too for safety
                         return 10 + saveProf;
                     default:
                         console.warn(`Unknown formula: ${formulaStr}`);

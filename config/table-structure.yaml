@@ -60,14 +60,9 @@ preprocessing:
       formula: "Math.floor((value - 10) / 2)"
       description: "Calculates the ability modifier from a score"
 
-    # Defense value calculation
-    saveBonus:
-      formula: "10 + profValue"
-      description: "Calculates save DC from proficiency"
-
     # Skill extraction with proper level scaling
     skillCalculation:
-      formula: "(profValue > 0 ? level : 0) + profValue + abilityMod + itemBonus"
+      formula: "skillCalculation"
       description: "Calculates skill bonus with level scaling"
 
   # Extracted fields that will be available for jsonPath references
@@ -281,17 +276,17 @@ preprocessing:
           params:
             value: "build.acTotal.acTotal || 0"
         fort:
-          formula: "saveBonus"
+          formula: "getNumeric(value)"
           params:
-            profValue: "build.proficiencies.fortitude || 0"
+            value: "build.proficiencies.fortitude || 0"
         ref:
-          formula: "saveBonus"
+          formula: "getNumeric(value)"
           params:
-            profValue: "build.proficiencies.reflex || 0"
+            value: "build.proficiencies.reflex || 0"
         will:
-          formula: "saveBonus"
+          formula: "getNumeric(value)"
           params:
-            profValue: "build.proficiencies.will || 0"
+            value: "build.proficiencies.will || 0"
 
     # Speed calculation
     speed:
