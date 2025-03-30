@@ -3,6 +3,62 @@ let characters = [];
 let warnings = [];
 let healingAbilities = []; // New variable to store healing abilities
 let tenuousTips = []; // New array to store tenuous tips
+
+// Configuration constants
+// Proficiency system configuration
+const PROFICIENCY_CONFIG = {
+    levels: {
+        0: { code: 'U', label: 'Untrained' },
+        2: { code: 'T', label: 'Trained' },
+        4: { code: 'E', label: 'Expert' },
+        6: { code: 'M', label: 'Master' },
+        8: { code: 'L', label: 'Legendary' }
+    },
+    // Map proficiency codes back to values (for reverse lookups)
+    values: {
+        'U': 0,
+        'T': 2,
+        'E': 4,
+        'M': 6,
+        'L': 8
+    },
+    getCode: function (value) {
+        return this.levels[value]?.code || 'U';
+    },
+    getLabel: function (code) {
+        for (const [value, data] of Object.entries(this.levels)) {
+            if (data.code === code) return data.label;
+        }
+        return 'Unknown';
+    },
+    getValue: function (code) {
+        return this.values[code] || 0;
+    }
+};
+
+// Template function registry - for configuration-driven function calls in templates
+const TEMPLATE_FUNCTIONS = {
+    // Common template functions
+    abilityModifier: function (score) {
+        if (typeof score !== 'number') return 0;
+        return Math.floor((score - 10) / 2);
+    },
+    formatModifier: function (value) {
+        if (typeof value !== 'number') return value;
+        return value >= 0 ? `+${value}` : `${value}`;
+    },
+    calculateSpeed: function (character) {
+        const baseSpeed = character.build?.attributes?.speed || 0;
+        const speedBonus = character.build?.attributes?.speedBonus || 0;
+        return baseSpeed + speedBonus;
+    }
+};
+
+// Make functions available globally for backward compatibility
+Object.entries(TEMPLATE_FUNCTIONS).forEach(([name, fn]) => {
+    window[name] = fn;
+});
+
 const skillMap = {
     'acrobatics': 'Acro',
     'arcana': 'Arca',
@@ -139,14 +195,179 @@ function processJsonData(jsonString) {
     }
 }
 
-// Extract skill values - KEEP THIS VERSION as it handles level calculation correctly
+// Preprocess character data to extract all needed values
+function preprocessCharacterData(data) {
+    // Get success flag from the data
+    const success = data.success === true;
+
+    // If not successful, return the data as is
+    if (!success) return data;
+
+    // Create extracted data container
+    const extracted = {};
+
+    // Get the preprocessing rules from the table structure configuration
+    const preprocessingRules = window.tableStructure?.preprocessing;
+
+    if (preprocessingRules) {
+        // Process all fields defined in the preprocessingRules
+        processExtractedFields(data, extracted, preprocessingRules);
+    } else {
+        // Fallback to legacy extraction if no preprocessing rules defined
+        console.warn("No preprocessing rules found in configuration. Using legacy extraction.");
+        return legacyPreprocessCharacterData(data);
+    }
+
+    // Return the processed data
+    return {
+        ...data,
+        extracted
+    };
+}
+
+// New function to process extracted fields based on YAML configuration
+function processExtractedFields(data, extractedData, preprocessingRules) {
+    const extractors = preprocessingRules.extractors || {};
+    const extractedFields = preprocessingRules.extractedFields || {};
+
+    // Process each extractor
+    const evaluatedExtractors = {};
+    for (const [name, extractor] of Object.entries(extractors)) {
+        evaluatedExtractors[name] = createExtractorFunction(extractor.formula);
+    }
+
+    // Process each extracted field
+    for (const [fieldName, fieldConfig] of Object.entries(extractedFields)) {
+        extractedData[fieldName] = extractField(data, fieldConfig, evaluatedExtractors);
+    }
+}
+
+// Helper to evaluate a path or value
+function evaluatePath(pathOrValue, context = {}) {
+    // Add debugging for speed calculations
+    if (pathOrValue && typeof pathOrValue === 'string' && pathOrValue.includes('speed')) {
+        console.log(`Evaluating path: ${pathOrValue}`);
+    }
+
+    if (typeof pathOrValue === 'string' && pathOrValue.includes('(')) {
+        // Handle function calls like abilityModifier(build.abilities.str)
+        const funcMatch = pathOrValue.match(/(\w+)\((.*)\)/);
+        if (funcMatch) {
+            const [, funcName, argStr] = funcMatch;
+            const arg = evaluatePath(argStr, context);
+            const func = context[funcName] || window[funcName];
+            if (typeof func === 'function') {
+                return func(arg);
+            }
+        }
+    } else if (typeof pathOrValue === 'string' && pathOrValue.includes('.')) {
+        // Handle object paths
+        const data = context.data || window.currentProcessingCharacter;
+        const result = getValueByPath(data, pathOrValue);
+
+        // Add debugging for speed-related paths
+        if (pathOrValue && pathOrValue.includes('speed')) {
+            console.log(`Path: ${pathOrValue}, Value:`, result);
+        }
+
+        // If the path contains "|| 0", split it and return the default if the value is undefined
+        if (pathOrValue.includes('||')) {
+            const [actualPath, defaultValue] = pathOrValue.split('||').map(p => p.trim());
+            const value = getValueByPath(data, actualPath);
+
+            if (value === undefined || value === null) {
+                return defaultValue === '0' ? 0 : defaultValue;
+            }
+            return value;
+        }
+
+        return result;
+    }
+
+    // Direct value
+    return pathOrValue;
+}
+
+// Extract a field based on its configuration
+function extractField(data, fieldConfig, extractors) {
+    // Store the data in a thread-local variable for path evaluation
+    window.currentProcessingCharacter = data;
+
+    try {
+        const { type, formula, params } = fieldConfig;
+
+        if (type === 'object' && fieldConfig.fields) {
+            // Process an object with multiple fields
+            const result = {};
+            for (const [subFieldName, subFieldConfig] of Object.entries(fieldConfig.fields)) {
+                result[subFieldName] = extractField(data, subFieldConfig, extractors);
+            }
+            return result;
+        } else if (formula) {
+            // Use a predefined extractor or evaluate the formula
+            const extractor = typeof formula === 'string' && extractors[formula]
+                ? extractors[formula]
+                : createExtractorFunction(formula);
+
+            // Extract using the evaluated parameters
+            const evaluatedParams = {};
+            if (params) {
+                for (const [paramName, paramValue] of Object.entries(params)) {
+                    evaluatedParams[paramName] = evaluatePath(paramValue, {
+                        data,
+                        ...extractors
+                    });
+                }
+            }
+
+            return extractor(evaluatedParams);
+        }
+
+        // Default - return empty based on type
+        return type === 'array' ? [] : (type === 'object' ? {} : null);
+    } finally {
+        // Clear the thread-local variable
+        delete window.currentProcessingCharacter;
+    }
+}
+
+// Legacy preprocessing function as fallback
+function legacyPreprocessCharacterData(data) {
+    // Extract skills and proficiencies
+    const { skills, skillProficiencies } = extractSkills(data);
+
+    // Extract spell traditions
+    const { traditions, proficiencies: traditionProficiencies } = extractSpellTraditions(data);
+
+    // Create the extracted data object
+    const extracted = {
+        archetypes: extractArchetypes(data),
+        healingAbilities: extractHealingAbilities(data),
+        skills: skills,
+        skillProficiencies: skillProficiencies,
+        defenses: extractDefenseValues(data),
+        magicTraditions: traditions,
+        traditionProficiencies: traditionProficiencies
+    };
+
+    // Add senses data to the extracted information
+    extracted.senses = extractVisionTypes(data);
+
+    // Return the processed data
+    return {
+        ...data,
+        extracted
+    };
+}
+
+// Extract skill values using the configuration-driven proficiency system
 function extractSkills(data) {
     const skills = {};
     const skillProficiencies = {};
-    const level = data.build?.level || 0; // Get character level
+    const level = getPathValue(data, 'build.level', { defaultValue: 0 });
 
-    // Map skills to abilities
-    const skillMap = {
+    // Define skill to ability mapping (should be in configuration)
+    const skillAbilityMap = {
         'acrobatics': 'dex',
         'arcana': 'int',
         'athletics': 'str',
@@ -165,49 +386,118 @@ function extractSkills(data) {
         'thievery': 'dex'
     };
 
-    for (const skill in skillMap) {
-        const abilityKey = skillMap[skill];
-        const profBonus = getNumeric(data.build?.proficiencies?.[skill]);
-        const abilityScore = getNumeric(data.build?.abilities?.[abilityKey]);
-        const abilityMod = Math.floor((abilityScore - 10) / 2);
+    // Calculate each skill
+    for (const [skill, abilityKey] of Object.entries(skillAbilityMap)) {
+        const profBonus = getNumeric(getPathValue(data, `build.proficiencies.${skill}`));
+        const abilityScore = getNumeric(getPathValue(data, `build.abilities.${abilityKey}`));
+        const abilityMod = characterAttributes.getAbilityModifier(abilityScore);
 
-        // Store proficiency letter
-        skillProficiencies[skill] = getProficiencyLevel(profBonus);
+        // Store proficiency code using the configuration
+        skillProficiencies[skill] = PROFICIENCY_CONFIG.getCode(profBonus);
 
-        // Add level ONLY if trained (profBonus > 0)
-        const itemBonus = data.build?.mods?.[capitalizeFirstLetter(skill)]?.["Item Bonus"] || 0;
+        // Calculate skill value with item bonus
+        const itemBonus = getPathValue(
+            data,
+            `build.mods.${capitalizeFirstLetter(skill)}.["Item Bonus"]`,
+            { defaultValue: 0 }
+        );
 
-        // Fix: Only add level if character has proficiency
+        // Add level only if trained (profBonus > 0)
         skills[skill] = (profBonus > 0 ? level : 0) + profBonus + abilityMod + itemBonus;
     }
 
-    // Same fix for perception
-    const perceptionProf = getNumeric(data.build?.proficiencies?.perception);
-    const wisScore = getNumeric(data.build?.abilities?.wis);
-    const wisMod = Math.floor((wisScore - 10) / 2);
-    const perceptionItemBonus = data.build?.mods?.Perception?.["Item Bonus"] || 0;
+    // Handle perception separately
+    const perceptionProf = getNumeric(getPathValue(data, 'build.proficiencies.perception'));
+    const wisScore = getNumeric(getPathValue(data, 'build.abilities.wis'));
+    const wisMod = characterAttributes.getAbilityModifier(wisScore);
+    const perceptionItemBonus = getPathValue(data, 'build.mods.Perception.["Item Bonus"]', { defaultValue: 0 });
 
-    // Fix: Only add level if character has perception proficiency
+    // Calculate perception (add level only if trained)
     skills.perception = (perceptionProf > 0 ? level : 0) + perceptionProf + wisMod + perceptionItemBonus;
+    skillProficiencies.perception = PROFICIENCY_CONFIG.getCode(perceptionProf);
 
     return { skills, skillProficiencies };
 }
 
-// Helper to get proficiency level from numeric value
+// Helper function that uses the configuration system for getting proficiency level
 function getProficiencyLevel(numericValue) {
-    switch (numericValue) {
-        case 0: return "U"; // Untrained
-        case 2: return "T"; // Trained
-        case 4: return "E"; // Expert
-        case 6: return "M"; // Master
-        case 8: return "L"; // Legendary
-        default: return "U"; // Default to Untrained
-    }
+    return PROFICIENCY_CONFIG.getCode(numericValue);
 }
 
-// Helper to capitalize first letter for mod matching
-function capitalizeFirstLetter(string) {
-    return string.charAt(0).toUpperCase() + string.slice(1);
+// Helper function to get the full proficiency label using the configuration
+function getProficiencyLabel(profCode) {
+    return PROFICIENCY_CONFIG.getLabel(profCode);
+}
+
+// Extract vision information using a more configuration-driven approach
+function extractVisionTypes(data) {
+    // This should ideally come from configuration
+    const VISION_TYPES = [
+        { name: "Darkvision", keywords: ["darkvision"] },
+        { name: "Low-Light Vision", keywords: ["low-light", "lowlight", "low light"] },
+        { name: "Scent", keywords: ["scent"] },
+        { name: "Tremorsense", keywords: ["tremorsense"] }
+    ];
+
+    const DARKVISION_ANCESTRIES = ['dwarf', 'gnome', 'half-orc', 'orc'];
+
+    const allSenses = [];
+
+    // Check for vision types in specials/abilities
+    const specials = getPathValue(data, 'build.specials', { defaultValue: [] });
+    if (Array.isArray(specials)) {
+        for (const special of specials) {
+            if (typeof special !== 'string') continue;
+
+            // Check against configured vision types
+            for (const visionType of VISION_TYPES) {
+                if (visionType.keywords.some(keyword => special.toLowerCase().includes(keyword)) &&
+                    !allSenses.includes(visionType.name)) {
+                    allSenses.push(visionType.name);
+                }
+            }
+        }
+    }
+
+    // Check for ancestry that might have darkvision inherently
+    const ancestry = getPathValue(data, 'build.ancestry', { defaultValue: '' }).toLowerCase();
+    if (ancestry && DARKVISION_ANCESTRIES.includes(ancestry) && !allSenses.includes("Darkvision")) {
+        allSenses.push("Darkvision");
+    }
+
+    // Check for familiar senses
+    const familiars = getPathValue(data, 'build.familiars', { defaultValue: [] });
+    if (Array.isArray(familiars)) {
+        for (const familiar of familiars) {
+            const abilities = getPathValue(familiar, 'abilities', { defaultValue: [] });
+            if (!Array.isArray(abilities)) continue;
+
+            // Define all possible familiar senses (should be in configuration)
+            const FAMILIAR_SENSES = [
+                'Darkvision',
+                'Low-Light Vision',
+                'Scent',
+                'Tremorsense',
+                'Echolocation',
+                'Greater Darkvision',
+                'See Invisibility',
+                'Wavesense'
+            ];
+
+            // Check each sense
+            for (const sense of FAMILIAR_SENSES) {
+                if (abilities.includes(sense) &&
+                    !allSenses.includes(sense) &&
+                    !allSenses.includes(`${sense} (Familiar)`)) {
+                    allSenses.push(`${sense} (Familiar)`);
+                }
+            }
+        }
+    }
+
+    return {
+        allSenses: allSenses
+    };
 }
 
 // Extract archetypes from feats
@@ -336,11 +626,41 @@ function extractHealingAbilities(data) {
 
 // Extract defense values
 function extractDefenseValues(data) {
+    const level = getNumeric(getPathValue(data, 'build.level'));
+
+    // Fortitude Save
+    const fortProf = getNumeric(getPathValue(data, 'build.proficiencies.fortitude'));
+    const conScore = getNumeric(getPathValue(data, 'build.abilities.con'));
+    const conMod = TEMPLATE_FUNCTIONS.abilityModifier(conScore);
+    // Attempt to get item bonus, defaulting to 0 if not found or path is invalid
+    // Note: Pathbuilder JSON might structure mods differently, this attempts a common pattern.
+    const fortItemBonus = getNumeric(getPathValue(data, "build.mods.Fortitude.Item Bonus", { defaultValue: 0 })) ||
+        getNumeric(getPathValue(data, "build.mods.Fortitude Save.Item Bonus", { defaultValue: 0 })); // Adding fallback path
+    const fortValue = (fortProf > 0 ? level : 0) + fortProf + conMod + fortItemBonus;
+
+    // Reflex Save
+    const refProf = getNumeric(getPathValue(data, 'build.proficiencies.reflex'));
+    const dexScore = getNumeric(getPathValue(data, 'build.abilities.dex'));
+    const dexMod = TEMPLATE_FUNCTIONS.abilityModifier(dexScore);
+    // Attempt to get item bonus, defaulting to 0
+    const refItemBonus = getNumeric(getPathValue(data, "build.mods.Reflex.Item Bonus", { defaultValue: 0 })) ||
+        getNumeric(getPathValue(data, "build.mods.Reflex Save.Item Bonus", { defaultValue: 0 })); // Adding fallback path
+    const refValue = (refProf > 0 ? level : 0) + refProf + dexMod + refItemBonus;
+
+    // Will Save
+    const willProf = getNumeric(getPathValue(data, 'build.proficiencies.will'));
+    const wisScore = getNumeric(getPathValue(data, 'build.abilities.wis'));
+    const wisMod = TEMPLATE_FUNCTIONS.abilityModifier(wisScore);
+    // Attempt to get item bonus, defaulting to 0
+    const willItemBonus = getNumeric(getPathValue(data, "build.mods.Will.Item Bonus", { defaultValue: 0 })) ||
+        getNumeric(getPathValue(data, "build.mods.Will Save.Item Bonus", { defaultValue: 0 })); // Adding fallback path
+    const willValue = (willProf > 0 ? level : 0) + willProf + wisMod + willItemBonus;
+
     return {
-        ac: getNumeric(data.build?.acTotal?.acTotal),
-        fort: 10 + getNumeric(data.build?.proficiencies?.fortitude),
-        ref: 10 + getNumeric(data.build?.proficiencies?.reflex),
-        will: 10 + getNumeric(data.build?.proficiencies?.will)
+        ac: getNumeric(getPathValue(data, 'build.acTotal.acTotal')), // AC calculation remains the same
+        fort: fortValue,
+        ref: refValue,
+        will: willValue
     };
 }
 
@@ -353,20 +673,325 @@ function getNumeric(value, defaultValue = 0) {
 function getValueByPath(obj, path) {
     if (!path || !obj) return undefined;
 
+    // Debug logging for speed-related paths
+    if (path && typeof path === 'string' && path.includes('speed')) {
+        console.log(`Looking up path: ${path}`);
+    }
+
+    // Handle fallback notation (path || defaultValue)
+    if (typeof path === 'string' && path.includes('||')) {
+        const [actualPath, defaultValue] = path.split('||').map(p => p.trim());
+        const value = getValueByPath(obj, actualPath);
+
+        if (path.includes('speed')) {
+            console.log(`Path with fallback: ${actualPath}, Value:`, value,
+                `Default:`, defaultValue,
+                `Using:`, (value !== undefined && value !== null) ? value : defaultValue);
+        }
+
+        if (value === undefined || value === null) {
+            return defaultValue === '0' ? 0 : defaultValue;
+        }
+        return value;
+    }
+
+    // Handle nested properties via dot notation
     const parts = path.split('.');
     let current = obj;
 
     for (const part of parts) {
         if (current === null || current === undefined) {
+            if (path.includes('speed')) {
+                console.log(`Path ${path} resolved to undefined at part: ${part}`);
+            }
             return undefined;
         }
         current = current[part];
+
+        // Debug for speed
+        if (path.includes('speed')) {
+            console.log(`Path ${path} -> ${part} = `, current);
+        }
     }
 
     return current;
 }
 
-// Update the character row function to properly handle proficiency display and action buttons
+// New function to handle computed values based on YAML configuration
+function getComputedValue(character, computedConfig) {
+    if (!computedConfig || !computedConfig.formula) return undefined;
+
+    // Handle different formula types
+    switch (computedConfig.formula) {
+        case 'combine':
+            if (!computedConfig.paths || !Array.isArray(computedConfig.paths)) return undefined;
+
+            // Get all values from specified paths
+            const values = computedConfig.paths.map(path => {
+                const val = getValueByPath(character, path);
+                console.log(`Path: ${path}, Value:`, val);
+                return val;
+            });
+
+            // If a template is provided, use it to format the values
+            if (computedConfig.template) {
+                const result = formatWithTemplate(values, computedConfig.template);
+                console.log(`Template: ${computedConfig.template}, Result: ${result}`);
+
+                // Don't return empty templates with just placeholder text
+                if (result === 'ft' || result === ' ft') return '';
+
+                return result;
+            }
+
+            // Default: Just join non-null values
+            return values.filter(v => v !== null && v !== undefined).join(' ');
+
+        case 'sum':
+            if (!computedConfig.paths || !Array.isArray(computedConfig.paths)) return undefined;
+
+            // Get all values from specified paths
+            const numValues = computedConfig.paths.map(path => {
+                // Add more debug info for speed calculations
+                let val;
+                if (path.includes('speed')) {
+                    console.log(`Computing value from path: ${path}`);
+                    val = getValueByPath(character, path);
+                    console.log(`  Found value: ${val} (type: ${typeof val})`);
+                } else {
+                    val = getValueByPath(character, path);
+                }
+
+                // Special handling for paths with fallback values like "path || 0"
+                if (typeof path === 'string' && path.includes('||')) {
+                    const [actualPath, defaultValue] = path.split('||').map(p => p.trim());
+                    val = getValueByPath(character, actualPath);
+                    if (val === undefined || val === null) {
+                        val = defaultValue === '0' ? 0 : defaultValue;
+                    }
+                    console.log(`  Path with fallback: ${actualPath}, Value: ${val}`);
+                }
+
+                // Convert to number or use 0 if undefined/null
+                return val !== undefined && val !== null ? Number(val) : 0;
+            });
+
+            // Sum the values
+            const sum = numValues.reduce((total, val) => {
+                console.log(`  Adding: ${val} to running total: ${total}`);
+                return total + val;
+            }, 0);
+            console.log(`Final sum: ${sum}`);
+
+            // If template provided, use it
+            if (computedConfig.template) {
+                // Replace {sum} with the calculated sum
+                return computedConfig.template.replace('{sum}', sum);
+            }
+
+            return sum;
+
+        // Add other formula types as needed (multiply, etc.)
+        default:
+            return undefined;
+    }
+}
+
+// Helper to format values using a template string with placeholders
+function formatWithTemplate(values, template) {
+    return template.replace(/\{(\d+)(?:\|([^}]+))?\}/g, (match, index, options) => {
+        const value = values[parseInt(index)];
+
+        // If value is undefined/null, return empty string
+        if (value === undefined || value === null) return '';
+
+        // Process options if specified
+        if (options) {
+            const optionParts = options.split('|').map(p => p.trim());
+
+            for (const option of optionParts) {
+                // Process prefix option
+                if (option.startsWith('prefix=')) {
+                    const prefix = option.substring(7).replace(/[" ]/g, '');
+                    // Only add prefix if value exists
+                    if (value) return prefix + value;
+                }
+
+                // Process ability score modifier
+                if (option === 'modifier') {
+                    // Calculate ability modifier: (score - 10) / 2, rounded down
+                    const abilityMod = Math.floor((value - 10) / 2);
+                    // Format with + for positive and 0 values
+                    return abilityMod >= 0 ? `+${abilityMod}` : `${abilityMod}`;
+                }
+            }
+        }
+
+        return value;
+    });
+}
+
+// Helper function to create cell content based on column type and character data
+function createCellContent(character, column, section) {
+    try {
+        // Get value based on either jsonPath or computedValue
+        let value;
+
+        // Special handling for speed column - use our unified calculator
+        if (column.id === 'speed') {
+            value = characterAttributes.calculateSpeed(character);
+        } else if (column.computedValue) {
+            value = getComputedValue(character, column.computedValue);
+        } else {
+            value = getPathValue(character, column.jsonPath);
+        }
+
+        // Get display value based on template if provided
+        let displayValue = value;
+        if (column.template) {
+            displayValue = renderTemplate(column.template, { value });
+        } else if (column.id === 'speed' && typeof value === 'number') {
+            // Special handling for speed display
+            displayValue = `${value} ft`;
+        }
+
+        // Handle different display types
+        if (column.displayType === 'action-buttons') {
+            // Return a button element for actions
+            return createActionButtons(character, column);
+        } else if (column.showProficiency && column.proficiencyPath) {
+            // Handle proficiency displays
+            return createProficiencyDisplay(character, column, section, value, displayValue);
+        } else if (column.displayType === 'pill' && value) {
+            // Handle pill display
+            return `<span class="pill pill-${section.id}">${displayValue}</span>`;
+        } else if (column.displayType === 'pill-list' && Array.isArray(value) && value.length > 0) {
+            // Handle pill list
+            return value.map(item =>
+                `<span class="pill pill-${section.id}">${item}</span>`
+            ).join(' ');
+        } else if (column.displayType === 'lore-proficiency-list' && Array.isArray(value)) {
+            // Handle lore skills
+            return createLoreProficiencyList(value, section);
+        } else if ((section.id === 'defense' || section.id === 'skills') && typeof value === 'number') {
+            // Format numbers for defense and skills
+            return value >= 0 ? `+${value}` : value.toString();
+        } else {
+            // Default display
+            return displayValue !== undefined ? displayValue : '-';
+        }
+    } catch (error) {
+        console.error(`Error creating cell content for ${column.id}:`, error);
+        return '-';
+    }
+}
+
+// Helper to create action buttons
+function createActionButtons(character, column) {
+    const characterIndex = characters.indexOf(character);
+
+    // Create delete button
+    const deleteBtn = document.createElement('button');
+    deleteBtn.className = 'delete-character-btn';
+    deleteBtn.innerHTML = '<i class="fas fa-trash"></i>';
+    deleteBtn.title = `Remove ${character.build?.name || 'Character'}`;
+
+    // Connect to existing removeCharacter function
+    deleteBtn.addEventListener('click', function () {
+        if (confirm(`Are you sure you want to remove ${character.build?.name || 'this character'}?`)) {
+            removeCharacter(characterIndex);
+        }
+    });
+
+    const container = document.createElement('div');
+    container.appendChild(deleteBtn);
+    return container;
+}
+
+// Helper to create proficiency display
+function createProficiencyDisplay(character, column, section, value, displayValue) {
+    const proficiencyValue = getPathValue(character, column.proficiencyPath);
+
+    if (proficiencyValue === undefined) {
+        return displayValue !== undefined ? displayValue : '-';
+    }
+
+    // Convert to proficiency code using our configuration system
+    let profCode;
+    if (typeof proficiencyValue === 'number') {
+        profCode = PROFICIENCY_CONFIG.getCode(proficiencyValue);
+    } else {
+        profCode = proficiencyValue;
+    }
+
+    // Get label from configuration
+    const profLabel = PROFICIENCY_CONFIG.getLabel(profCode);
+
+    // Different displays based on display type
+    if (column.displayType === 'proficiency-badge') {
+        // Format numeric values with plus sign
+        let formattedValue = value;
+        if (typeof value === 'number' && value >= 0) {
+            formattedValue = '+' + value;
+        }
+
+        return `<span class="value">${formattedValue !== undefined ? formattedValue : '-'}</span>
+                <span class="prof-badge prof-${profCode.toLowerCase()}" 
+                title="${profLabel}">${profCode}</span>`;
+    } else if (column.displayType === 'proficiency-pill-list' && Array.isArray(value)) {
+        // Handle traditions
+        if (value.length === 0) return '-';
+
+        const items = value.map(item => {
+            const itemKey = item.toLowerCase();
+            const itemProf = proficiencyValue[itemKey] || 'U';
+            const itemProfLabel = PROFICIENCY_CONFIG.getLabel(itemProf);
+
+            return `<span class="pill pill-${section.id}">
+                ${item} <span class="prof-badge prof-${itemProf.toLowerCase()}" 
+                title="${itemProfLabel}">${itemProf}</span>
+            </span>`;
+        });
+
+        return items.join(' ');
+    } else {
+        // Default to just showing the value
+        return displayValue !== undefined ? displayValue : '-';
+    }
+}
+
+// Helper to create lore proficiency list
+function createLoreProficiencyList(value, section) {
+    if (!Array.isArray(value) || value.length === 0) return '-';
+
+    const items = value.map(lore => {
+        if (!Array.isArray(lore) || lore.length < 2) return '';
+
+        const loreName = lore[0];
+        const loreValue = lore[1];
+
+        // Skip untrained lore skills
+        if (loreValue === 0) return '';
+
+        // Get proficiency code from configuration
+        const profCode = PROFICIENCY_CONFIG.getCode(loreValue);
+
+        // Skip untrained lore skills
+        if (profCode === "U") return '';
+
+        const profLabel = PROFICIENCY_CONFIG.getLabel(profCode);
+
+        return `<span class="pill pill-${section.id}" style="font-weight: bold; color: #000;">
+            ${loreName} <span class="prof-badge prof-${profCode.toLowerCase()}" 
+            style="color: #fff; font-weight: bold;"
+            title="${profLabel}">${profCode}</span>
+        </span>`;
+    }).filter(item => item); // Remove empty items
+
+    return items.length > 0 ? items.join(' ') : '-';
+}
+
+// Update the character row function to use our modular helpers
 function addCharacterRow(character) {
     const tbody = document.getElementById('characterRows');
     const tableStructure = window.tableStructure;
@@ -378,179 +1003,38 @@ function addCharacterRow(character) {
 
     const row = document.createElement('tr');
 
-    // Find character index (needed for delete functionality)
-    const characterIndex = characters.indexOf(character);
-
     // For each section and column in the structure
     tableStructure.sections.forEach(section => {
         section.columns.forEach(column => {
             const cell = document.createElement('td');
-            // Get the actual value based on YAML jsonPath
-            const value = getValueByPath(character, column.jsonPath);
 
             // Add class based on section for styling
             cell.classList.add(`${section.id}-group`);
 
-            // Handle action buttons if specified in YAML
-            if (column.displayType === 'action-buttons') {
-                // Create delete button
-                const deleteBtn = document.createElement('button');
-                deleteBtn.className = 'delete-character-btn';
-                deleteBtn.innerHTML = '<i class="fas fa-trash"></i>';
-                deleteBtn.title = `Remove ${character.build?.name || 'Character'}`;
-
-                // Connect to existing removeCharacter function
-                deleteBtn.addEventListener('click', function () {
-                    if (confirm(`Are you sure you want to remove ${character.build?.name || 'this character'}?`)) {
-                        removeCharacter(characterIndex);
-                    }
-                });
-
-                cell.appendChild(deleteBtn);
+            // Add column-specific class if needed
+            if (column.id) {
+                cell.classList.add(`column-${column.id}`);
             }
-            // Handle proficiency display if specified in YAML
-            else if (column.showProficiency && column.proficiencyPath) {
-                const proficiencyValue = getValueByPath(character, column.proficiencyPath);
-                const skillValue = getValueByPath(character, column.jsonPath);
 
-                if (proficiencyValue !== undefined) {
-                    // Convert numeric proficiency to string code if needed
-                    let profCode;
-                    if (typeof proficiencyValue === 'number') {
-                        // Convert numerical proficiency to letter code
-                        if (proficiencyValue === 0) profCode = 'U'; // Untrained
-                        else if (proficiencyValue === 2) profCode = 'T'; // Trained
-                        else if (proficiencyValue === 4) profCode = 'E'; // Expert
-                        else if (proficiencyValue === 6) profCode = 'M'; // Master
-                        else if (proficiencyValue === 8) profCode = 'L'; // Legendary
-                        else profCode = 'U'; // Default
-                    } else {
-                        // If it's already a string code, use it as is
-                        profCode = proficiencyValue;
-                    }
-
-                    // Set proficiency as a data attribute for styling
+            // Add proficiency data attribute if applicable
+            if (column.proficiencyPath) {
+                const profValue = getPathValue(character, column.proficiencyPath);
+                if (profValue !== undefined) {
+                    const profCode = typeof profValue === 'number'
+                        ? PROFICIENCY_CONFIG.getCode(profValue)
+                        : profValue;
                     cell.dataset.proficiency = profCode;
-
-                    // Display based on the YAML-specified display type
-                    if (column.displayType === 'proficiency-badge') {
-                        const profLabel = getProficiencyLabel(profCode);
-
-                        // Format the display value with a plus sign for positive AND zero numbers
-                        let displayValue = skillValue;
-                        if (typeof skillValue === 'number' && skillValue >= 0) {
-                            displayValue = '+' + skillValue;
-                        }
-
-                        cell.innerHTML = `<span class="value">${displayValue !== undefined ? displayValue : '-'}</span>
-                                        <span class="prof-badge prof-${profCode.toLowerCase()}" 
-                                        title="${profLabel}">${profCode}</span>`;
-                    } else if (column.displayType === 'proficiency-pill-list' && Array.isArray(skillValue)) {
-                        // For traditions, display pills with proficiency badges
-                        if (skillValue.length > 0) {
-                            const items = skillValue.map(item => {
-                                const itemKey = item.toLowerCase();
-                                const itemProf = proficiencyValue[itemKey] || 'U';
-                                const profLabel = getProficiencyLabel(itemProf);
-
-                                return `<span class="pill pill-${section.id}">
-                                    ${item} <span class="prof-badge prof-${itemProf.toLowerCase()}" 
-                                    title="${profLabel}">${itemProf}</span>
-                                </span>`;
-                            });
-                            cell.innerHTML = items.join(' ');
-                        } else {
-                            cell.textContent = '-';
-                        }
-                    } else {
-                        // Default to just showing the value
-                        cell.textContent = skillValue !== undefined ? skillValue : '-';
-                    }
-                } else {
-                    cell.textContent = skillValue !== undefined ? skillValue : '-';
                 }
             }
-            // Handle other display types from YAML
-            else if (column.displayType === 'pill' && value) {
-                cell.innerHTML = `<span class="pill pill-${section.id}">${value}</span>`;
-            } else if (column.displayType === 'pill-list' && Array.isArray(value) && value.length > 0) {
-                cell.innerHTML = value.map(item =>
-                    `<span class="pill pill-${section.id}">${item}</span>`
-                ).join(' ');
-            } else if (column.displayType === 'lore-proficiency-list' && Array.isArray(value)) {
-                // Handle lore skills with proficiency badges
-                if (value.length > 0) {
-                    const items = value.map(lore => {
-                        if (Array.isArray(lore) && lore.length >= 2) {
-                            const loreName = lore[0];
-                            const loreValue = lore[1];
 
-                            // Skip untrained lore skills
-                            if (loreValue === 0) return '';
+            // Create cell content
+            const content = createCellContent(character, column, section);
 
-                            // Convert numeric proficiency to letter code
-                            let profCode = "U"; // Default to untrained
-                            if (loreValue === 2) profCode = "T";
-                            else if (loreValue === 4) profCode = "E";
-                            else if (loreValue === 6) profCode = "M";
-                            else if (loreValue === 8) profCode = "L";
-
-                            // Skip untrained lore skills
-                            if (profCode === "U") return '';
-
-                            const profLabel = getProficiencyLabel(profCode);
-
-                            // Use stronger styling for better visibility
-                            return `<span class="pill pill-${section.id}" style="font-weight: bold; color: #000;">
-                                ${loreName} <span class="prof-badge prof-${profCode.toLowerCase()}" 
-                                style="color: #fff; font-weight: bold;"
-                                title="${profLabel}">${profCode}</span>
-                            </span>`;
-                        }
-                        return '';
-                    }).filter(item => item); // Remove empty items
-
-                    cell.innerHTML = items.length > 0 ? items.join(' ') : '-';
-                } else {
-                    cell.textContent = '-';
-                }
-            } else if (section.id === 'ability') {
-                // For ability scores, add the modifier in parentheses
-                if (typeof value === 'number') {
-                    // Calculate the ability modifier
-                    const modifier = Math.floor((value - 10) / 2);
-
-                    // Format the modifier with + sign for positive and 0 values
-                    const formattedModifier = modifier >= 0 ? `+${modifier}` : `${modifier}`;
-
-                    // Display both the raw score and the modifier
-                    cell.textContent = `${value} (${formattedModifier})`;
-                } else {
-                    cell.textContent = value !== undefined ? value : '-';
-                }
-            } else if ((section.id === 'defense' || section.id === 'skills') && typeof value === 'number') {
-                // For defenses and skills, add plus sign before positive and zero values
-                if (column.displayType === 'proficiency-badge') {
-                    const profCode = column.proficiencyPath ?
-                        getProficiencyLevel(getValueByPath(character, column.proficiencyPath)) : "U";
-                    const profLabel = getProficiencyLabel(profCode);
-
-                    // Format with plus sign for positive and zero numbers
-                    const displayValue = value >= 0 ? `+${value}` : value;
-
-                    cell.innerHTML = `<span class="value">${displayValue}</span>
-                                    <span class="prof-badge prof-${profCode.toLowerCase()}" 
-                                    title="${profLabel}">${profCode}</span>`;
-                } else {
-                    // Simple plus sign for values without badges
-                    cell.textContent = value >= 0 ? `+${value}` : value;
-                }
-            } else if (section.id === 'senses') {
-                cell.classList.add('senses-group');
-                // Apply the same styling/structure as skill groups
+            // Set content based on type
+            if (content instanceof HTMLElement) {
+                cell.appendChild(content);
             } else {
-                // Default display
-                cell.textContent = value !== undefined ? value : '-';
+                cell.innerHTML = content;
             }
 
             row.appendChild(cell);
@@ -560,15 +1044,73 @@ function addCharacterRow(character) {
     tbody.appendChild(row);
 }
 
-// Helper function to get the full proficiency label
-function getProficiencyLabel(profCode) {
-    switch (profCode) {
-        case 'U': return 'Untrained';
-        case 'T': return 'Trained';
-        case 'E': return 'Expert';
-        case 'M': return 'Master';
-        case 'L': return 'Legendary';
-        default: return 'Unknown';
+// Function to calculate the highest value for a specific column across all characters
+function calculateHighestValue(column, characters) {
+    let highestValue = null;
+    let highestFormatted = null;
+    let highestCharacter = null;
+
+    for (const character of characters) {
+        let value, formattedValue;
+
+        // Special handling for specific column types
+        if (column.id === 'speed') {
+            // Use our unified speed calculator
+            value = characterAttributes.calculateSpeed(character);
+            formattedValue = characterAttributes.calculateSpeed(character, { formatted: true });
+
+            // Debug logging
+            console.log(`Character ${character.build?.name} speed: ${value} ft`);
+        } else if (column.computedValue) {
+            // Handle computed values
+            formattedValue = getComputedValue(character, column.computedValue);
+
+            // Extract numeric value for comparison
+            if (formattedValue) {
+                // For values like "25 ft (+5)" extract just the base number
+                const numericMatch = formattedValue.match(/^(\d+)/);
+                if (numericMatch) {
+                    value = parseInt(numericMatch[1]);
+                }
+            }
+        } else if (column.jsonPath) {
+            // Handle direct JSON paths
+            value = getPathValue(character, column.jsonPath);
+        }
+
+        // Only compare numeric values
+        if (typeof value === 'number') {
+            if (highestValue === null || value > highestValue) {
+                highestValue = value;
+                highestFormatted = formattedValue; // Store formatted value for display
+                highestCharacter = character;
+            }
+        }
+    }
+
+    return { value: highestValue, formatted: highestFormatted, character: highestCharacter };
+}
+
+// Format a highest value for display based on column type
+function formatHighestValue(highestData, column, section) {
+    const { value, formatted, character } = highestData;
+
+    if (value === null) return null;
+
+    // Format based on column and section type
+    if (column.id === 'speed') {
+        return `${value} ft`;
+    } else if (column.computedValue && formatted) {
+        return formatted;
+    } else if (section.id === 'defense' || section.id === 'skills') {
+        return value >= 0 ? `+${value}` : value.toString();
+    } else if (section.id === 'ability') {
+        // For ability scores, also show the modifier
+        const modifier = characterAttributes.getAbilityModifier(value);
+        const formattedMod = modifier >= 0 ? `+${modifier}` : modifier.toString();
+        return `${value} (${formattedMod})`;
+    } else {
+        return value.toString();
     }
 }
 
@@ -593,39 +1135,34 @@ function updateHighestValues() {
             }
 
             // Only process columns marked for highest value
-            if (column.highestValue && column.jsonPath) {
+            if (column.highestValue && (column.jsonPath || column.computedValue)) {
                 const cell = footerRow.children[columnIndex];
 
-                // Find highest value across all characters
-                let highestValue = null;
-
-                for (const character of characters) {
-                    const value = getValueByPath(character, column.jsonPath);
-
-                    // Only compare numeric values
-                    if (typeof value === 'number') {
-                        if (highestValue === null || value > highestValue) {
-                            highestValue = value;
-                        }
-                    }
-                }
+                // Calculate highest value
+                const highestData = calculateHighestValue(column, characters);
 
                 // Format and display the highest value
-                if (highestValue !== null) {
-                    // Format differently based on section type
-                    if (section.id === 'defense' || section.id === 'skills') {
-                        cell.textContent = highestValue >= 0 ? `+${highestValue}` : highestValue;
-                    } else if (section.id === 'ability') {
-                        // For ability scores, also show the modifier
-                        const modifier = Math.floor((highestValue - 10) / 2);
-                        const formattedMod = modifier >= 0 ? `+${modifier}` : modifier;
-                        cell.textContent = `${highestValue} (${formattedMod})`;
-                    } else {
-                        cell.textContent = highestValue;
-                    }
+                if (highestData.value !== null) {
+                    const formattedValue = formatHighestValue(highestData, column, section);
+
+                    // Set the cell content
+                    cell.textContent = formattedValue;
 
                     // Add highlighting class
                     cell.classList.add('highest-value');
+
+                    // Add data attribute to track which character has this highest value
+                    if (highestData.character) {
+                        const characterIndex = characters.indexOf(highestData.character);
+                        if (characterIndex >= 0) {
+                            cell.dataset.characterIndex = characterIndex;
+                        }
+                    }
+                } else {
+                    // No valid highest value
+                    cell.textContent = '-';
+                    cell.classList.remove('highest-value');
+                    delete cell.dataset.characterIndex;
                 }
             }
 
@@ -672,11 +1209,25 @@ function highlightMatchingValues() {
                 cellValue = cell.textContent;
             }
 
-            // Add or remove highlighting
-            if (cellValue === highestValue) {
-                cell.classList.add('highest-value');
+            // Special handling for speed values (ignore spaces in comparison)
+            const isSpeedColumn = highestValue.includes('ft');
+            if (isSpeedColumn) {
+                // Normalize both values to remove spaces
+                const normalizedHighest = highestValue.replace(/\s+/g, '');
+                const normalizedCell = cellValue.replace(/\s+/g, '');
+
+                if (normalizedCell === normalizedHighest) {
+                    cell.classList.add('highest-value');
+                } else {
+                    cell.classList.remove('highest-value');
+                }
             } else {
-                cell.classList.remove('highest-value');
+                // Regular comparison for other values
+                if (cellValue === highestValue) {
+                    cell.classList.add('highest-value');
+                } else {
+                    cell.classList.remove('highest-value');
+                }
             }
         });
     }
@@ -939,6 +1490,11 @@ async function init() {
 
         // Store the table structure globally for later use
         window.tableStructure = tableStructure;
+
+        // Register any global extractor functions that may be referenced in YAML
+        window.abilityModifier = abilityModifier;
+
+        console.log("Loaded table structure with preprocessing:", tableStructure);
 
         // Initialize the table with the loaded structure
         initializeTableStructure(tableStructure);
@@ -1296,6 +1852,214 @@ function preprocessCharacterData(data) {
     // If not successful, return the data as is
     if (!success) return data;
 
+    // Create extracted data container
+    const extracted = {};
+
+    // Get the preprocessing rules from the table structure configuration
+    const preprocessingRules = window.tableStructure?.preprocessing;
+
+    if (preprocessingRules) {
+        // Process all fields defined in the preprocessingRules
+        processExtractedFields(data, extracted, preprocessingRules);
+    } else {
+        // Fallback to legacy extraction if no preprocessing rules defined
+        console.warn("No preprocessing rules found in configuration. Using legacy extraction.");
+        return legacyPreprocessCharacterData(data);
+    }
+
+    // Return the processed data
+    return {
+        ...data,
+        extracted
+    };
+}
+
+// New function to process extracted fields based on YAML configuration
+function processExtractedFields(data, extractedData, preprocessingRules) {
+    const extractors = preprocessingRules.extractors || {};
+    const extractedFields = preprocessingRules.extractedFields || {};
+
+    // Process each extractor
+    const evaluatedExtractors = {};
+    for (const [name, extractor] of Object.entries(extractors)) {
+        evaluatedExtractors[name] = createExtractorFunction(extractor.formula);
+    }
+
+    // Process each extracted field
+    for (const [fieldName, fieldConfig] of Object.entries(extractedFields)) {
+        extractedData[fieldName] = extractField(data, fieldConfig, evaluatedExtractors);
+    }
+}
+
+// Create an extractor function from a formula string
+function createExtractorFunction(formulaStr) {
+    try {
+        // For predefined formulas like "sum", "extractArchetypes", etc.
+        if (typeof formulaStr === 'string' && !formulaStr.includes('(') && !formulaStr.includes('+')) {
+            return (params) => {
+                switch (formulaStr) {
+                    case 'sum':
+                        // Improved sum formula with better debugging
+                        console.log('Sum parameters:', params);
+                        const total = params.values.reduce((total, path) => {
+                            const value = evaluatePath(path);
+                            console.log(`  Path: ${path}, Value: ${value}, Running total: ${total + (typeof value === 'number' ? value : 0)}`);
+                            return total + (typeof value === 'number' ? value : 0);
+                        }, 0);
+                        console.log(`Final sum: ${total}`);
+                        return total;
+                    case 'extractArchetypes':
+                        return extractArchetypes({ build: { feats: params.feats } });
+                    case 'extractTraditions':
+                        return extractSpellTraditions({
+                            build: {
+                                spellCasters: params.spellCasters,
+                                proficiencies: params.proficiencies
+                            }
+                        }).traditions;
+                    case 'extractTraditionProficiencies':
+                        return extractSpellTraditions({
+                            build: {
+                                spellCasters: params.spellCasters,
+                                proficiencies: params.proficiencies
+                            }
+                        }).proficiencies;
+                    case 'extractHealingAbilities':
+                        return extractHealingAbilities({
+                            build: {
+                                feats: params.feats,
+                                spellsKnown: params.spellsKnown,
+                                focus: params.focus
+                            }
+                        });
+                    case 'extractVisionTypes':
+                        return extractVisionTypes({
+                            build: {
+                                specials: params.specials,
+                                ancestry: params.ancestry,
+                                familiars: params.familiars
+                            }
+                        });
+                    case 'skillCalculation':
+                        // Use the values directly from the params object
+                        // Ensure they are numeric, defaulting to 0 if not
+                        const profValue = getNumeric(params.profValue);
+                        const abilityMod = getNumeric(params.abilityMod);
+                        const level = getNumeric(params.level);
+                        const itemBonus = getNumeric(params.itemBonus);
+                        // Perform the calculation
+                        return (profValue > 0 ? level : 0) + profValue + abilityMod + itemBonus;
+                    case 'saveBonus':
+                        // Calculate save bonus (10 + proficiency)
+                        // This case might be obsolete now but leaving it harmlessly
+                        const saveProf = getNumeric(params.profValue); // Use getNumeric here too for safety
+                        return 10 + saveProf;
+                    default:
+                        console.warn(`Unknown formula: ${formulaStr}`);
+                        return 0;
+                }
+            };
+        }
+
+        // For simple math formulas, create a function that evaluates the formula
+        return new Function('value', `return ${formulaStr}`);
+    } catch (error) {
+        console.error(`Error creating extractor function from formula "${formulaStr}":`, error);
+        return () => 0; // Return default function
+    }
+}
+
+// Helper to evaluate a path or value
+function evaluatePath(pathOrValue, context = {}) {
+    // Add debugging for speed calculations
+    if (pathOrValue && typeof pathOrValue === 'string' && pathOrValue.includes('speed')) {
+        console.log(`Evaluating path: ${pathOrValue}`);
+    }
+
+    if (typeof pathOrValue === 'string' && pathOrValue.includes('(')) {
+        // Handle function calls like abilityModifier(build.abilities.str)
+        const funcMatch = pathOrValue.match(/(\w+)\((.*)\)/);
+        if (funcMatch) {
+            const [, funcName, argStr] = funcMatch;
+            const arg = evaluatePath(argStr, context);
+            const func = context[funcName] || window[funcName];
+            if (typeof func === 'function') {
+                return func(arg);
+            }
+        }
+    } else if (typeof pathOrValue === 'string' && pathOrValue.includes('.')) {
+        // Handle object paths
+        const data = context.data || window.currentProcessingCharacter;
+        const result = getValueByPath(data, pathOrValue);
+
+        // Add debugging for speed-related paths
+        if (pathOrValue && pathOrValue.includes('speed')) {
+            console.log(`Path: ${pathOrValue}, Value:`, result);
+        }
+
+        // If the path contains "|| 0", split it and return the default if the value is undefined
+        if (pathOrValue.includes('||')) {
+            const [actualPath, defaultValue] = pathOrValue.split('||').map(p => p.trim());
+            const value = getValueByPath(data, actualPath);
+
+            if (value === undefined || value === null) {
+                return defaultValue === '0' ? 0 : defaultValue;
+            }
+            return value;
+        }
+
+        return result;
+    }
+
+    // Direct value
+    return pathOrValue;
+}
+
+// Extract a field based on its configuration
+function extractField(data, fieldConfig, extractors) {
+    // Store the data in a thread-local variable for path evaluation
+    window.currentProcessingCharacter = data;
+
+    try {
+        const { type, formula, params } = fieldConfig;
+
+        if (type === 'object' && fieldConfig.fields) {
+            // Process an object with multiple fields
+            const result = {};
+            for (const [subFieldName, subFieldConfig] of Object.entries(fieldConfig.fields)) {
+                result[subFieldName] = extractField(data, subFieldConfig, extractors);
+            }
+            return result;
+        } else if (formula) {
+            // Use a predefined extractor or evaluate the formula
+            const extractor = typeof formula === 'string' && extractors[formula]
+                ? extractors[formula]
+                : createExtractorFunction(formula);
+
+            // Extract using the evaluated parameters
+            const evaluatedParams = {};
+            if (params) {
+                for (const [paramName, paramValue] of Object.entries(params)) {
+                    evaluatedParams[paramName] = evaluatePath(paramValue, {
+                        data,
+                        ...extractors
+                    });
+                }
+            }
+
+            return extractor(evaluatedParams);
+        }
+
+        // Default - return empty based on type
+        return type === 'array' ? [] : (type === 'object' ? {} : null);
+    } finally {
+        // Clear the thread-local variable
+        delete window.currentProcessingCharacter;
+    }
+}
+
+// Legacy preprocessing function as fallback
+function legacyPreprocessCharacterData(data) {
     // Extract skills and proficiencies
     const { skills, skillProficiencies } = extractSkills(data);
 
@@ -1389,71 +2153,6 @@ function updateTenuousTips() {
             console.error(`Error processing tip "${tip.title}":`, error);
         }
     });
-}
-
-// Extract vision information
-function extractVisionTypes(data) {
-    const allSenses = [];
-
-    // Check for vision types in specials/abilities
-    if (data.build && data.build.specials && Array.isArray(data.build.specials)) {
-        for (const special of data.build.specials) {
-            if (typeof special === 'string') {
-                if (special.toLowerCase().includes('darkvision')) {
-                    allSenses.push("Darkvision");
-                }
-                if (special.toLowerCase().includes('low-light vision')) {
-                    allSenses.push("Low-Light Vision");
-                }
-                if (special.toLowerCase().includes('scent')) {
-                    allSenses.push("Scent");
-                }
-                if (special.toLowerCase().includes('tremorsense')) {
-                    allSenses.push("Tremorsense");
-                }
-            }
-        }
-    }
-
-    // Check for ancestry that might have darkvision inherently
-    const darkvisionAncestries = ['dwarf', 'gnome', 'half-orc', 'orc'];
-    if (data.build?.ancestry &&
-        darkvisionAncestries.includes(data.build.ancestry.toLowerCase()) &&
-        !allSenses.includes("Darkvision")) {
-        allSenses.push("Darkvision");
-    }
-
-    // Check for familiar senses
-    if (data.build?.familiars && Array.isArray(data.build.familiars)) {
-        for (const familiar of data.build.familiars) {
-            if (familiar.abilities && Array.isArray(familiar.abilities)) {
-                // Define all possible familiar senses
-                const sensesToCheck = [
-                    'Darkvision',
-                    'Low-Light Vision',
-                    'Scent',
-                    'Tremorsense',
-                    'Echolocation',
-                    'Greater Darkvision',
-                    'See Invisibility',
-                    'Wavesense'
-                ];
-
-                // Check each sense
-                for (const sense of sensesToCheck) {
-                    if (familiar.abilities.includes(sense) &&
-                        !allSenses.includes(sense) &&
-                        !allSenses.includes(`${sense} (Familiar)`)) {
-                        allSenses.push(`${sense} (Familiar)`);
-                    }
-                }
-            }
-        }
-    }
-
-    return {
-        allSenses: allSenses
-    };
 }
 
 // Fix the removeCharacter function to call renderCharacters instead of undefined buildTable
@@ -1559,3 +2258,304 @@ async function loadYamlFiles(fileList, targetArray, description) {
     console.log(`Loaded ${targetArray.length} ${description}`);
     return true;
 }
+
+// Template transform configuration - defines transforms that can be applied in templates
+const TEMPLATE_TRANSFORMS = {
+    // Add a prefix to a value
+    prefix: function (value, prefix = '') {
+        if (value === undefined || value === null || value === '') return '';
+
+        // For numeric values, special handling
+        if (typeof value === 'number') {
+            return value >= 0 ? prefix + value : value.toString();
+        }
+
+        return prefix + value;
+    },
+
+    // Format as a modifier (adds + for positive numbers)
+    modifier: function (value) {
+        if (typeof value !== 'number') return value;
+        return value >= 0 ? `+${value}` : `${value}`;
+    },
+
+    // Format with units
+    units: function (value, unit = '') {
+        if (value === undefined || value === null) return '';
+        return `${value} ${unit}`;
+    },
+
+    // Apply a format string (like sprintf)
+    format: function (value, format = '%s') {
+        if (value === undefined || value === null) return '';
+        return format.replace(/%[sd]/, value.toString());
+    },
+
+    // Conditional display
+    conditional: function (value, trueText = '', falseText = '') {
+        return value ? trueText : falseText;
+    }
+};
+
+// Enhanced template rendering function
+function renderTemplate(template, context, options = {}) {
+    if (!template) return context.value;
+
+    const defaults = {
+        debug: false,
+        functions: TEMPLATE_FUNCTIONS,
+        transforms: TEMPLATE_TRANSFORMS
+    };
+
+    const settings = { ...defaults, ...options };
+
+    try {
+        return template.replace(/\{([^}]+)\}/g, (match, expr) => {
+            // Split by pipe to get variable name and transforms
+            const parts = expr.split('|').map(p => p.trim());
+            const varName = parts[0];
+
+            // Get the base value
+            let value;
+
+            // Extract the value from context
+            if (varName === 'value') {
+                value = context.value;
+            } else if (varName.includes('(')) {
+                // Handle function calls like abilityModifier(value)
+                const funcMatch = varName.match(/(\w+)\((.*)\)/);
+                if (funcMatch) {
+                    const [, funcName, argName] = funcMatch;
+                    const argValue = argName === 'value' ? context.value : context[argName];
+
+                    // Find the function
+                    const func = settings.functions[funcName];
+                    if (typeof func === 'function') {
+                        value = func(argValue);
+                    } else {
+                        console.warn(`Unknown function in template: ${funcName}`);
+                        value = '';
+                    }
+                }
+            } else {
+                value = context[varName];
+            }
+
+            // Apply transforms in sequence
+            if (parts.length > 1) {
+                for (let i = 1; i < parts.length; i++) {
+                    const transformExpr = parts[i];
+
+                    // Extract transform name and arguments
+                    const transformMatch = transformExpr.match(/([^=]+)(?:=(.+))?/);
+                    if (transformMatch) {
+                        const [, transformName, argsStr] = transformMatch;
+
+                        // Find the transform function
+                        const transform = settings.transforms[transformName];
+                        if (typeof transform === 'function') {
+                            // Parse arguments if provided
+                            const args = argsStr ? argsStr.split(',').map(a => {
+                                // Remove quotes from string arguments
+                                return a.trim().replace(/^["']|["']$/g, '');
+                            }) : [];
+
+                            // Apply the transform
+                            value = transform(value, ...args);
+                        }
+                    }
+                }
+            }
+
+            return value !== undefined && value !== null ? value.toString() : '';
+        });
+    } catch (error) {
+        console.error(`Error rendering template "${template}":`, error);
+        return template;
+    }
+}
+
+// Enhanced path evaluation function that consolidates getValueByPath, evaluatePath, and extractValueByPath
+function getPathValue(obj, path, options = {}) {
+    // Default options
+    const defaults = {
+        defaultValue: undefined,
+        debug: false,
+        context: null
+    };
+    const settings = { ...defaults, ...options };
+
+    // Handle empty paths
+    if (!path) return settings.defaultValue;
+
+    // For debugging specific paths
+    if (settings.debug || (typeof path === 'string' && path.includes('speed'))) {
+        console.log(`Looking up path: ${path}`);
+    }
+
+    try {
+        // Special case - handle function calls like abilityModifier(build.abilities.str)
+        if (typeof path === 'string' && path.includes('(')) {
+            const funcMatch = path.match(/(\w+)\((.*)\)/);
+            if (funcMatch) {
+                const [, funcName, argStr] = funcMatch;
+                const arg = getPathValue(obj, argStr, options);
+
+                // Look for function in registry first, then fall back to window
+                const func = TEMPLATE_FUNCTIONS[funcName] || window[funcName];
+                if (typeof func === 'function') {
+                    return func(arg);
+                }
+                return settings.defaultValue;
+            }
+        }
+
+        // Handle fallback notation (path || defaultValue)
+        if (typeof path === 'string' && path.includes('||')) {
+            const [actualPath, fallbackValue] = path.split('||').map(p => p.trim());
+            const value = getPathValue(obj, actualPath, { ...options, defaultValue: undefined });
+
+            if (settings.debug || (typeof path === 'string' && path.includes('speed'))) {
+                console.log(`Path with fallback: ${actualPath}, Value:`, value,
+                    `Fallback:`, fallbackValue,
+                    `Using:`, (value !== undefined && value !== null) ? value : fallbackValue);
+            }
+
+            if (value === undefined || value === null) {
+                // Convert string fallback to appropriate type if needed
+                if (fallbackValue === '0') return 0;
+                if (fallbackValue === 'true') return true;
+                if (fallbackValue === 'false') return false;
+                return fallbackValue;
+            }
+
+            return value;
+        }
+
+        // Handle regular dot notation path
+        if (typeof path === 'string' && path.includes('.')) {
+            const parts = path.split('.');
+            let current = settings.context || obj;
+
+            for (const part of parts) {
+                if (current === null || current === undefined) {
+                    if (settings.debug) {
+                        console.log(`Path ${path} resolved to undefined at part: ${part}`);
+                    }
+                    return settings.defaultValue;
+                }
+
+                current = current[part];
+
+                if (settings.debug) {
+                    console.log(`Path ${path} -> ${part} = `, current);
+                }
+            }
+
+            // Return default if the final value is undefined or null
+            if (current === undefined || current === null) {
+                return settings.defaultValue;
+            }
+
+            return current;
+        }
+
+        // Direct value
+        return path;
+    } catch (error) {
+        console.error(`Error evaluating path "${path}":`, error);
+        return settings.defaultValue;
+    }
+}
+
+// Character attribute calculation module - handles consistent calculation of character attributes
+const characterAttributes = {
+    // Calculate speed consistently across the application
+    calculateSpeed: function (character, options = {}) {
+        const defaults = {
+            formatted: false,
+            debug: false
+        };
+        const settings = { ...defaults, ...options };
+
+        try {
+            // Extract base speed and bonus
+            const baseSpeed = getPathValue(character, 'build.attributes.speed', { defaultValue: 0 });
+            const speedBonus = getPathValue(character, 'build.attributes.speedBonus', { defaultValue: 0 });
+
+            // Calculate total
+            const totalSpeed = baseSpeed + speedBonus;
+
+            if (settings.debug) {
+                console.log(`Speed calculation for ${character.build?.name || 'character'}:`,
+                    `Base: ${baseSpeed}, Bonus: ${speedBonus}, Total: ${totalSpeed}`);
+            }
+
+            // Return formatted or numeric value based on options
+            return settings.formatted ? `${totalSpeed} ft` : totalSpeed;
+        } catch (error) {
+            console.error('Error calculating speed:', error);
+            return settings.formatted ? '0 ft' : 0;
+        }
+    },
+
+    // Calculate ability modifier
+    getAbilityModifier: function (score) {
+        if (typeof score !== 'number') return 0;
+        return Math.floor((score - 10) / 2);
+    },
+
+    // Calculate skill value
+    calculateSkill: function (character, skillName, options = {}) {
+        const defaults = {
+            formatted: false
+        };
+        const settings = { ...defaults, ...options };
+
+        try {
+            const skillMap = {
+                'acrobatics': 'dex',
+                'arcana': 'int',
+                'athletics': 'str',
+                'crafting': 'int',
+                'deception': 'cha',
+                'diplomacy': 'cha',
+                'intimidation': 'cha',
+                'medicine': 'wis',
+                'nature': 'wis',
+                'occultism': 'int',
+                'performance': 'cha',
+                'religion': 'wis',
+                'society': 'int',
+                'stealth': 'dex',
+                'survival': 'wis',
+                'thievery': 'dex'
+            };
+
+            const abilityKey = skillMap[skillName];
+            if (!abilityKey) return settings.formatted ? '-' : 0;
+
+            const level = getPathValue(character, 'build.level', { defaultValue: 0 });
+            const profBonus = getPathValue(character, `build.proficiencies.${skillName}`, { defaultValue: 0 });
+            const abilityScore = getPathValue(character, `build.abilities.${abilityKey}`, { defaultValue: 10 });
+            const abilityMod = this.getAbilityModifier(abilityScore);
+            const itemBonus = getPathValue(character,
+                `build.mods.${skillName.charAt(0).toUpperCase() + skillName.slice(1)}.["Item Bonus"]`,
+                { defaultValue: 0 });
+
+            // Calculate skill value (add level only if trained)
+            const skillValue = (profBonus > 0 ? level : 0) + profBonus + abilityMod + itemBonus;
+
+            // Return formatted or numeric value
+            return settings.formatted ? (skillValue >= 0 ? `+${skillValue}` : skillValue.toString()) : skillValue;
+        } catch (error) {
+            console.error(`Error calculating skill ${skillName}:`, error);
+            return settings.formatted ? '-' : 0;
+        }
+    }
+};
+
+// Register with template functions
+TEMPLATE_FUNCTIONS.calculateSpeed = characterAttributes.calculateSpeed;
+TEMPLATE_FUNCTIONS.getAbilityModifier = characterAttributes.getAbilityModifier;
+TEMPLATE_FUNCTIONS.calculateSkill = characterAttributes.calculateSkill;
