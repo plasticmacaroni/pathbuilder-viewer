@@ -65,6 +65,11 @@ preprocessing:
       formula: "skillCalculation"
       description: "Calculates skill bonus with level scaling"
 
+    # Add a new extractor to trigger the JS function
+    calculateAllDefenses:
+      formula: "calculateAllDefenses"
+      description: "Calculates AC, Fort, Ref, and Will saves using JS logic"
+
   # Extracted fields that will be available for jsonPath references
   extractedFields:
     # Skills extraction
@@ -269,24 +274,8 @@ preprocessing:
     # Defense calculations
     defenses:
       type: "object"
-      description: "Character defense values"
-      fields:
-        ac:
-          formula: "getNumeric(value)"
-          params:
-            value: "build.acTotal.acTotal || 0"
-        fort:
-          formula: "getNumeric(value)"
-          params:
-            value: "build.proficiencies.fortitude || 0"
-        ref:
-          formula: "getNumeric(value)"
-          params:
-            value: "build.proficiencies.reflex || 0"
-        will:
-          formula: "getNumeric(value)"
-          params:
-            value: "build.proficiencies.will || 0"
+      description: "Character defense values (AC, Fort, Ref, Will)"
+      formula: "calculateAllDefenses"
 
     # Speed calculation
     speed:

@@ -296,6 +296,11 @@ function extractField(data, fieldConfig, extractors) {
     try {
         const { type, formula, params } = fieldConfig;
 
+        // SPECIAL CASE: Handle defense calculations using the dedicated JS function
+        if (formula === "calculateAllDefenses") {
+            return extractDefenseValues(data);
+        }
+
         if (type === 'object' && fieldConfig.fields) {
             // Process an object with multiple fields
             const result = {};
@@ -2022,6 +2027,11 @@ function extractField(data, fieldConfig, extractors) {
 
     try {
         const { type, formula, params } = fieldConfig;
+
+        // SPECIAL CASE: Handle defense calculations using the dedicated JS function
+        if (formula === "calculateAllDefenses") {
+            return extractDefenseValues(data);
+        }
 
         if (type === 'object' && fieldConfig.fields) {
             // Process an object with multiple fields
