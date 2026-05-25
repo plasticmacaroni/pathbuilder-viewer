@@ -1,0 +1,38 @@
+title: See No Evil
+description: Checks party access to invisibility for scouting, escapes, and ambushes
+checkFunction: |
+  function() {
+    if (characters.length === 0) return true;
+    const avgLevel = characters.reduce((a, c) => a + (c.build?.level || 0), 0) / characters.length;
+    if (avgLevel < 3 || avgLevel > 20) return true;
+
+    const itemHints = ['invisibility', 'vanish', 'mantle of the unwavering', 'invisibility potion', 'dust of disappearance'];
+    const carriers = new Set();
+
+    for (const c of characters) {
+      const name = c.build?.name || 'Unknown';
+
+      for (const item of [...(c.build?.equipment || []), ...(c.build?.weapons || [])]) {
+        const itemName = String((Array.isArray(item) ? item[0] : (item?.name || item?.display || item)) || '').toLowerCase();
+        if (itemHints.some(h => itemName.includes(h))) carriers.add(`${name} (${itemName.trim()})`);
+      }
+
+      const spellsSeen = new Set();
+      for (const caster of (c.build?.spellCasters || [])) {
+        for (const lg of [caster.prepared, caster.spells].filter(Boolean)) {
+          for (const ld of lg) (ld.list || []).forEach(s => spellsSeen.add(s));
+        }
+      }
+      for (const lvl in (c.build?.spellsKnown || {})) (c.build.spellsKnown[lvl] || []).forEach(s => spellsSeen.add(s));
+
+      for (const s of spellsSeen) {
+        const lower = (s || '').toLowerCase();
+        if (lower.includes('invisibility') || lower === 'vanish') carriers.add(`${name} (${s})`);
+      }
+    }
+
+    window.invisCarriers = carriers.size > 0 ? Array.from(carriers).join(', ') : 'nobody';
+    return carriers.size > 0;
+  }
+successMessage: "Someone in the party can turn invisible for scouting, ambushes, or quick escapes. Available via {{invisCarriers}}."
+failureMessage: "Invisibility solves a huge range of problems — scouting ahead, breaking line of sight to escape, setting up ambushes, and surviving deadly fights. No one in your party currently has access. Consider Invisibility (4th-rank), Vanish (2nd-rank), or an Invisibility Potion in someone's inventory."

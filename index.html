@@ -31,7 +31,7 @@
 
             <div class="import-section">
                 <div class="import-controls">
-                    <label for="jsonFileInput" class="file-input-label">
+                    <label for="jsonFileInput" class="pf-button">
                         <i class="fas fa-file-import"></i> Select File
                         <input type="file" id="jsonFileInput" accept=".json,.txt">
                     </label>
@@ -47,6 +47,12 @@
                             class="fas fa-share-nodes"></i> Share Party</button>
                     <button id="importPartyClipboardButton" class="pf-button secondary"><i
                             class="fas fa-people-group"></i> Import Party</button>
+                    <button id="savePartyFileButton" class="pf-button secondary"><i
+                            class="fas fa-floppy-disk"></i> Save Party to File</button>
+                    <label for="restorePartyFileInput" class="pf-button secondary">
+                        <i class="fas fa-folder-open"></i> Restore Party from File
+                        <input type="file" id="restorePartyFileInput" accept=".json,.txt">
+                    </label>
                 </div>
             </div>
 
@@ -68,6 +74,14 @@
             <div id="tenuousTipsContainer" class="warnings-container">
                 <h2 class="warnings-title"><i class="fas fa-triangle-exclamation"></i>Tenuous Tips</h2>
                 <div id="tenuousTipsGrid" class="warnings-grid">
+                    <div class="warning-card">No adventurers in your party yet. Import some brave souls!</div>
+                </div>
+            </div>
+
+            <!-- Advanced Tips Section -->
+            <div id="advancedTipsContainer" class="warnings-container">
+                <h2 class="warnings-title"><i class="fas fa-hat-wizard"></i>Advanced Tips</h2>
+                <div id="advancedTipsGrid" class="warnings-grid">
                     <div class="warning-card">No adventurers in your party yet. Import some brave souls!</div>
                 </div>
             </div>

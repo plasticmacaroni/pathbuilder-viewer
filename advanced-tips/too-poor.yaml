@@ -1,0 +1,69 @@
+title: Awh, Too Poor?
+description: Checks party access to silver, cold iron, and adamantine for bypassing creature weaknesses
+checkFunction: |
+  function() {
+    if (characters.length === 0) return true;
+
+    const avgLevel = characters.reduce((a, c) => a + (c.build?.level || 0), 0) / characters.length;
+    if (avgLevel < 1 || avgLevel > 20) return true;
+
+    const materials = [
+      { key: 'silver',     label: 'Silver',     minLevel: 1, why: 'werewolves and other lycanthropes resist non-silver weapons' },
+      { key: 'cold iron',  label: 'Cold Iron',  minLevel: 1, why: 'fey, redcaps, and demons resist non-cold-iron weapons' },
+      { key: 'adamantine', label: 'Adamantine', minLevel: 8, why: 'golems, constructs, and hardness-heavy enemies require adamantine to bypass' }
+    ];
+    const adamantineAliases = /adamantine|adamantium/i;
+    const carriers = { silver: new Set(), 'cold iron': new Set(), adamantine: new Set() };
+
+    for (const c of characters) {
+      const name = c.build?.name || 'Unknown';
+      const sources = [
+        ...(c.build?.weapons || []),
+        ...(c.build?.equipment || [])
+      ];
+
+      for (const item of sources) {
+        const itemName = String((Array.isArray(item) ? item[0] : (item?.name || item?.display || item)) || '');
+        const lower = itemName.toLowerCase();
+        if (lower.includes('silver')) carriers.silver.add(`${name} (${itemName})`);
+        if (lower.includes('cold iron')) carriers['cold iron'].add(`${name} (${itemName})`);
+        if (adamantineAliases.test(itemName)) carriers.adamantine.add(`${name} (${itemName})`);
+      }
+
+      // Needle Darts: caster can produce silver damage natively (cast with silver coins as ammo)
+      let hasNeedleDarts = false;
+      for (const caster of (c.build?.spellCasters || [])) {
+        const groups = [caster.prepared, caster.spells].filter(Boolean);
+        for (const levelGroup of groups) {
+          for (const levelData of levelGroup) {
+            if ((levelData.list || []).some(s => /needle darts/i.test(s || ''))) hasNeedleDarts = true;
+          }
+        }
+      }
+      const known = c.build?.spellsKnown || {};
+      for (const lvl in known) {
+        if ((known[lvl] || []).some(s => /needle darts/i.test(s || ''))) hasNeedleDarts = true;
+      }
+      if (hasNeedleDarts) carriers.silver.add(`${name} (Needle Darts cast with silver coins)`);
+    }
+
+    const coveredLines = [];
+    const gaps = [];
+
+    for (const m of materials) {
+      const list = Array.from(carriers[m.key]);
+      const gated = avgLevel < m.minLevel;
+      if (list.length > 0) {
+        coveredLines.push(`${m.label} covered by ${list.join(', ')}`);
+      } else if (!gated) {
+        gaps.push(`${m.label} — ${m.why}`);
+      }
+    }
+
+    window.tooPoorCovered = coveredLines.length ? coveredLines.join('; ') : 'nothing';
+    window.tooPoorGaps = gaps;
+
+    return gaps.length === 0;
+  }
+successMessage: "Your party can bypass the common material-based resistances of werewolves (silver), fey (cold iron), and golems/constructs (adamantine, once level 8+). Currently covered: {{tooPoorCovered}}."
+failureMessage: "Some monsters resist anything but specific weapon materials. Missing coverage: {{tooPoorGaps.join(' | ')}}. Already covered: {{tooPoorCovered}}. Pick up a weapon in the missing material, or cast Needle Darts with the appropriate metal coins as ammunition."

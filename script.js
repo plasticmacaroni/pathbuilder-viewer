@@ -1,6 +1,7 @@
 // Global variables
 let characters = [];
 let warnings = [];
+let advancedTips = []; // New array to store advanced tips
 let healingAbilities = []; // New variable to store healing abilities
 let tenuousTips = []; // New array to store tenuous tips
 
@@ -155,6 +156,30 @@ async function loadTenuousTips() {
     }
 }
 
+// Function to load advanced tips from YAML files
+async function loadAdvancedTips() {
+    try {
+        const tipFiles = [
+            'advanced-tips/rock-paper-scissors.yaml',
+            'advanced-tips/spiritual-pressure.yaml',
+            'advanced-tips/started-blasting.yaml',
+            'advanced-tips/too-poor.yaml',
+            'advanced-tips/training-arc.yaml',
+            'advanced-tips/see-no-evil.yaml',
+            'advanced-tips/shadow-plane-sucks.yaml',
+            'advanced-tips/swing-and-a-miss.yaml',
+            'advanced-tips/reaction-time.yaml',
+            'advanced-tips/stitch-flesh.yaml',
+            'advanced-tips/trained-no-mod.yaml',
+            'advanced-tips/gather-knowledge.yaml',
+        ];
+
+        await loadYamlFiles(tipFiles, advancedTips, "advanced tips");
+    } catch (error) {
+        console.error('Error loading advanced tips:', error);
+    }
+}
+
 // Function to process the JSON data from input
 function processJsonData(jsonString) {
     try {
@@ -299,6 +324,11 @@ function extractField(data, fieldConfig, extractors) {
         // SPECIAL CASE: Handle defense calculations using the dedicated JS function
         if (formula === "calculateAllDefenses") {
             return extractDefenseValues(data);
+        }
+
+        // SPECIAL CASE: Speed uses characterAttributes module
+        if (formula === "calculateSpeed") {
+            return characterAttributes.calculateSpeed(data);
         }
 
         if (type === 'object' && fieldConfig.fields) {
@@ -1351,7 +1381,7 @@ function addWarning(container, title, description, isSuccess) {
 
     const descElem = document.createElement('div');
     descElem.className = 'warning-description';
-    descElem.textContent = description;
+    renderStructuredMessage(descElem, description);
 
     content.appendChild(titleElem);
     content.appendChild(descElem);
@@ -1360,6 +1390,64 @@ function addWarning(container, title, description, isSuccess) {
     card.appendChild(content);
 
     container.appendChild(card);
+}
+
+// Turn a free-form message into structured DOM:
+//   "||" — block boundary (new line/group)
+//   ". " before uppercase — sentence boundary (new line)
+//   " | " — sub-item separator inside a line (becomes <ul><li>)
+//   "Label: rest" / "Label — rest" — bold the label prefix
+function renderStructuredMessage(parent, text) {
+    if (!text) return;
+    const blocks = String(text).split(/\s*\|\|\s*/);
+    for (const block of blocks) {
+        // Split on sentence boundary: ". " followed by uppercase letter or quote
+        const sentences = block.split(/\.\s+(?=[A-Z"“‘])/);
+        for (let raw of sentences) {
+            raw = raw.trim();
+            if (!raw) continue;
+            // Restore trailing period if it was the natural sentence end and not last
+            if (!/[.!?…]$/.test(raw)) raw += '.';
+
+            // Sub-items inside line, split on " | " (single pipe)
+            const parts = raw.split(/\s+\|\s+/);
+            if (parts.length > 1) {
+                // First part may carry an intro label; render it as a line, then a bullet list
+                const lead = parts.shift().trim();
+                if (lead) appendLine(parent, lead);
+                const ul = document.createElement('ul');
+                ul.className = 'warning-items';
+                for (const part of parts) {
+                    const li = document.createElement('li');
+                    appendLabeled(li, part.trim());
+                    ul.appendChild(li);
+                }
+                parent.appendChild(ul);
+            } else {
+                appendLine(parent, raw);
+            }
+        }
+    }
+}
+
+function appendLine(parent, text) {
+    const line = document.createElement('div');
+    line.className = 'warning-line';
+    appendLabeled(line, text);
+    parent.appendChild(line);
+}
+
+// If text starts with "Label: rest" or "Label — rest", bold the label.
+function appendLabeled(node, text) {
+    const match = text.match(/^([^:—\n]{1,40})([:—])\s+(.+)$/);
+    if (match) {
+        const strong = document.createElement('strong');
+        strong.textContent = match[1].trim();
+        node.appendChild(strong);
+        node.appendChild(document.createTextNode(`${match[2]} ${match[3]}`));
+    } else {
+        node.textContent = text;
+    }
 }
 
 // Event Listener for Import Button (File)
@@ -1442,7 +1530,16 @@ function loadCharactersFromCache() {
     try {
         const cachedCharacters = localStorage.getItem('pf2e-characters');
         if (cachedCharacters) {
-            characters = JSON.parse(cachedCharacters);
+            const parsed = JSON.parse(cachedCharacters);
+            // Re-preprocess so cached chars pick up current extractor logic
+            characters = parsed.map(c => {
+                try {
+                    return preprocessCharacterData(c);
+                } catch (e) {
+                    console.error('Re-preprocess failed for cached char, keeping as-is:', e);
+                    return c;
+                }
+            });
             console.log('Loaded characters from cache:', characters.length);
         }
     } catch (error) {
@@ -1504,10 +1601,11 @@ async function init() {
         // Initialize the table with the loaded structure
         initializeTableStructure(tableStructure);
 
-        // Load warnings, healing abilities, and tenuous tips
+        // Load warnings, healing abilities, tenuous tips, and advanced tips
         await Promise.all([
             loadWarnings(),
-            loadTenuousTips()
+            loadTenuousTips(),
+            loadAdvancedTips()
         ]);
 
         // Load characters from cache
@@ -1606,6 +1704,68 @@ async function importPartyFromClipboard() {
 // Replace the file-based party export/import event listeners with these in your initialization code
 document.getElementById('exportPartyClipboardButton').addEventListener('click', exportPartyToClipboard);
 document.getElementById('importPartyClipboardButton').addEventListener('click', importPartyFromClipboard);
+
+function applyPartyData(partyData) {
+    if (!partyData || partyData.format !== 'pf2e-character-comparison-party') {
+        showStatusMessage('Invalid party data format', true);
+        return false;
+    }
+    if (!Array.isArray(partyData.characters) || partyData.characters.length === 0) {
+        showStatusMessage('No characters found in the party data', true);
+        return false;
+    }
+    characters = partyData.characters.map(c => {
+        try { return preprocessCharacterData(c); } catch (e) { return c; }
+    });
+    renderCharacters();
+    saveCharactersToCache(characters);
+    showStatusMessage(`Imported party with ${characters.length} characters!`);
+    return true;
+}
+
+function exportPartyToFile() {
+    if (characters.length === 0) {
+        showStatusMessage('No characters to export!', true);
+        return;
+    }
+    const partyExport = {
+        format: 'pf2e-character-comparison-party',
+        version: '1.0',
+        exportDate: new Date().toISOString(),
+        characters: characters
+    };
+    const blob = new Blob([JSON.stringify(partyExport, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    const stamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
+    a.href = url;
+    a.download = `pf2e-party-${stamp}.json`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    showStatusMessage(`Party saved to ${a.download}`);
+}
+
+function restorePartyFromFile(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (e) => {
+        try {
+            applyPartyData(JSON.parse(e.target.result));
+        } catch (err) {
+            console.error('Error parsing party file:', err);
+            showStatusMessage('Could not parse party file. Make sure it is a valid Save Party file.', true);
+        }
+        event.target.value = ''; // allow re-selecting the same file later
+    };
+    reader.onerror = () => showStatusMessage('Error reading file.', true);
+    reader.readAsText(file);
+}
+
+document.getElementById('savePartyFileButton').addEventListener('click', exportPartyToFile);
+document.getElementById('restorePartyFileInput').addEventListener('change', restorePartyFromFile);
 
 // Extract value from character based on path specified in YAML
 function extractValueByPath(object, path) {
@@ -1966,6 +2126,22 @@ function createExtractorFunction(formulaStr) {
             };
         }
 
+        // For function-call formulas like "getProficiencyLevel(value)", destructure params by arg name
+        if (typeof formulaStr === 'string') {
+            const callMatch = formulaStr.match(/^(\w+)\s*\(\s*([^)]*)\)\s*$/);
+            if (callMatch) {
+                const argNames = callMatch[2].split(',').map(s => s.trim()).filter(Boolean);
+                return (params) => {
+                    const args = argNames.map(name => params && params[name] !== undefined ? params[name] : params);
+                    // Resolve func from global scope (window or globalThis)
+                    const func = (typeof window !== 'undefined' ? window[callMatch[1]] : globalThis[callMatch[1]]);
+                    if (typeof func === 'function') return func(...args);
+                    // Fallback: evaluate via Function as before
+                    return new Function(...argNames, `return ${formulaStr}`)(...args);
+                };
+            }
+        }
+
         // For simple math formulas, create a function that evaluates the formula
         return new Function('value', `return ${formulaStr}`);
     } catch (error) {
@@ -2031,6 +2207,11 @@ function extractField(data, fieldConfig, extractors) {
         // SPECIAL CASE: Handle defense calculations using the dedicated JS function
         if (formula === "calculateAllDefenses") {
             return extractDefenseValues(data);
+        }
+
+        // SPECIAL CASE: Speed uses characterAttributes module
+        if (formula === "calculateSpeed") {
+            return characterAttributes.calculateSpeed(data);
         }
 
         if (type === 'object' && fieldConfig.fields) {
@@ -2099,7 +2280,17 @@ function legacyPreprocessCharacterData(data) {
 
 // Function to update tenuous tips display
 function updateTenuousTips() {
-    const tipsGrid = document.getElementById('tenuousTipsGrid');
+    renderTipList(tenuousTips, 'tenuousTipsGrid');
+    updateAdvancedTips();
+}
+
+function updateAdvancedTips() {
+    renderTipList(advancedTips, 'advancedTipsGrid');
+}
+
+function renderTipList(tipList, gridId) {
+    const tipsGrid = document.getElementById(gridId);
+    if (!tipsGrid) return;
     tipsGrid.innerHTML = ''; // Clear existing tips
 
     // Don't show tips if no characters
@@ -2109,7 +2300,7 @@ function updateTenuousTips() {
     }
 
     // Process each tip
-    tenuousTips.forEach(tip => {
+    tipList.forEach(tip => {
         try {
             // Evaluate the check function
             let isSuccess = false;
@@ -2253,9 +2444,9 @@ function renderSection(section, data) {
 async function loadYamlFiles(fileList, targetArray, description) {
     targetArray.length = 0; // Clear array
 
-    // Load each file
+    // Load each file (bust browser cache so updates land without hard-refresh)
     for (const file of fileList) {
-        const response = await fetch(file);
+        const response = await fetch(file, { cache: 'no-store' });
         if (response.ok) {
             const yamlText = await response.text();
             const config = jsyaml.load(yamlText);

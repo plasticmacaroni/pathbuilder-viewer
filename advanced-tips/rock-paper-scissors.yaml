@@ -1,0 +1,50 @@
+title: Rock, Paper, Scissors
+description: Coverage of bludgeoning, slashing, and piercing physical damage
+checkFunction: |
+  function() {
+    if (characters.length === 0) return true;
+
+    const targets = {
+      bludgeoning: { label: 'Bludgeoning', why: 'skeletons resist piercing/slashing — and many oozes too' },
+      slashing:    { label: 'Slashing',    why: 'best against plants and many beasts' },
+      piercing:    { label: 'Piercing',    why: 'best at ranged and against some armored foes' }
+    };
+
+    const weaponDamage = (name) => {
+      const n = String(name || '').toLowerCase();
+      const types = new Set();
+      if (/(mace|club|hammer|sap|staff|maul|morningstar|warhammer|flail|sling)/.test(n)) types.add('bludgeoning');
+      if (/(sword|scimitar|falchion|axe|sickle|kukri|machete|katar)/.test(n)) types.add('slashing');
+      if (/(dagger|spear|pick|rapier|stiletto|bow|crossbow|dart|javelin|lance|arrow)/.test(n)) types.add('piercing');
+      return types;
+    };
+
+    const carriers = { bludgeoning: new Set(), slashing: new Set(), piercing: new Set() };
+
+    for (const c of characters) {
+      const name = c.build?.name || 'Unknown';
+      for (const w of (c.build?.weapons || [])) {
+        const wname = (Array.isArray(w) ? w[0] : (w?.name || w?.display || w)) || '';
+        const declared = (w?.damageType || w?.damage_type || w?.dmgType || '').toLowerCase();
+        if (declared && targets[declared]) {
+          carriers[declared].add(`${name} (${wname})`);
+          continue;
+        }
+        for (const t of weaponDamage(wname)) carriers[t].add(`${name} (${wname})`);
+      }
+    }
+
+    const coveredLines = [];
+    const gaps = [];
+    for (const key of Object.keys(targets)) {
+      const list = Array.from(carriers[key]);
+      if (list.length > 0) coveredLines.push(`${targets[key].label} via ${list.join(', ')}`);
+      else gaps.push(`${targets[key].label} — ${targets[key].why}`);
+    }
+
+    window.rpsCovered = coveredLines.length ? coveredLines.join('; ') : 'nothing';
+    window.rpsGaps = gaps;
+    return gaps.length === 0;
+  }
+successMessage: "Your party can deal all three physical damage types — bludgeoning, slashing, and piercing — so you can swap weapons to bypass enemy resistances. Currently covered: {{rpsCovered}}."
+failureMessage: "Enemies frequently resist one physical damage type. Missing: {{rpsGaps.join(' | ')}}. Already covered: {{rpsCovered}}. Have someone keep a backup weapon in the missing type."

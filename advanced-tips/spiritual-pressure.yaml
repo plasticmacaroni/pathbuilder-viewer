@@ -1,0 +1,83 @@
+title: Spiritual Pressure
+description: Coverage of Vitality, Void, and Spirit damage plus Holy/Unholy source traits
+checkFunction: |
+  function() {
+    if (characters.length === 0) return true;
+
+    const spellHints = {
+      vitality: { label: 'Vitality damage', why: 'destroys undead', patterns: [
+        /\bvitality\b/i, /\bheal\b/i, /vital beacon/i, /sunburst/i, /searing light/i,
+        /breath of life/i, /lay on hands/i, /sun blade/i, /daylight/i, /life pact/i
+      ]},
+      void: { label: 'Void damage', why: 'drains the living', patterns: [
+        /\bvoid\b/i, /\bharm\b/i, /vampiric/i, /grim tendrils/i, /bind undead/i,
+        /wail of the banshee/i, /drain life/i, /death knell/i, /ravenous darkness|ravening maw/i,
+        /crushing despair/i, /soul siphon/i
+      ]},
+      spirit: { label: 'Spirit damage', why: 'hits incorporeal creatures and possessing spirits (ignores constructs)', patterns: [
+        /\bspirit\b/i, /phantom pain/i, /spiritual armament/i, /spiritual anamnesis/i,
+        /spectral hand/i, /banishment/i, /\bsmite\b/i, /spirit blast/i
+      ]},
+      holy: { label: 'Holy trait', why: 'sources tagged Holy deal extra damage to Unholy creatures (fiends, evil champions)', patterns: [
+        /\bholy\b/i, /sanctification/i, /litany against wrath/i, /champion's sacrifice/i
+      ]},
+      unholy: { label: 'Unholy trait', why: 'sources tagged Unholy deal extra damage to Holy creatures (celestials, good champions)', patterns: [
+        /\bunholy\b/i, /unholy cascade/i, /devotion to (evil|the wicked)/i
+      ]}
+    };
+
+    const partyHits = {};
+
+    for (const c of characters) {
+      const name = c.build?.name || 'Unknown';
+
+      const text = [];
+      for (const caster of (c.build?.spellCasters || [])) {
+        for (const lg of [caster.prepared, caster.spells].filter(Boolean)) {
+          for (const ld of lg) text.push(...(ld.list || []));
+        }
+      }
+      for (const lvl in (c.build?.spellsKnown || {})) text.push(...(c.build.spellsKnown[lvl] || []));
+      try { text.push(JSON.stringify(c.build?.focus || {})); } catch (_) {}
+      for (const w of (c.build?.weapons || [])) {
+        const wname = (Array.isArray(w) ? w[0] : (w?.name || w?.display || w)) || '';
+        text.push(String(wname));
+        if (w && typeof w === 'object') {
+          for (const slot of [w.runes, w.prop1, w.prop2, w.prop3, w.prop4, w.runeList].filter(Boolean)) {
+            text.push(Array.isArray(slot) ? slot.join(' ') : String(slot));
+          }
+        }
+      }
+      for (const item of (c.build?.equipment || [])) {
+        text.push(String((Array.isArray(item) ? item[0] : (item?.name || item?.display || item)) || ''));
+      }
+      if (c.build?.sanctification) text.push(String(c.build.sanctification));
+      if (c.build?.deity) text.push(String(c.build.deity));
+
+      const joined = text.join(' | ');
+      for (const [key, def] of Object.entries(spellHints)) {
+        if (def.patterns.some(p => p.test(joined))) {
+          (partyHits[key] = partyHits[key] || new Set()).add(name);
+        }
+      }
+    }
+
+    const order = ['vitality', 'void', 'spirit', 'holy', 'unholy'];
+    const coveredLines = [];
+    const gaps = [];
+    for (const key of order) {
+      const def = spellHints[key];
+      const names = partyHits[key];
+      if (names && names.size > 0) {
+        coveredLines.push(`${def.label} via ${Array.from(names).join(', ')}`);
+      } else {
+        gaps.push(`${def.label} — ${def.why}`);
+      }
+    }
+
+    window.spiritualPressureCovered = coveredLines.length ? coveredLines.join('; ') : 'nothing';
+    window.spiritualPressureGaps = gaps;
+    return gaps.length === 0;
+  }
+successMessage: "Your party covers the Remaster divine-adjacent damage spectrum — Vitality (anti-undead), Void (anti-living), Spirit (anti-incorporeal), and both Holy and Unholy source traits. Covered: {{spiritualPressureCovered}}."
+failureMessage: "Celestials, fiends, and undead often need specific damage types. Missing: {{spiritualPressureGaps.join(' | ')}}. Already covered: {{spiritualPressureCovered}}. Add the missing spells (Heal/Harm/Phantom Pain/etc.) or holy/unholy weapon runes."

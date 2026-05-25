@@ -1,0 +1,27 @@
+title: Stitch Flesh
+description: If the party has an undead character, checks for Stitch Flesh so medics can heal them
+checkFunction: |
+  function() {
+    if (characters.length === 0) return true;
+
+    const undeadHints = ['undead', 'skeleton', 'zombie', 'ghoul', 'vampire', 'lich', 'mummy', 'wight'];
+
+    const undeadMembers = characters.filter(c => {
+      const ancestry = (c.build?.ancestry || '').toLowerCase();
+      const heritage = (c.build?.heritage || '').toLowerCase();
+      return undeadHints.some(t => ancestry.includes(t) || heritage.includes(t));
+    }).map(c => c.build?.name || 'Unknown');
+
+    if (undeadMembers.length === 0) return true;
+
+    const stitchers = characters.filter(c => {
+      const feats = c.build?.feats || [];
+      return feats.some(f => (Array.isArray(f) ? f[0] : f) === 'Stitch Flesh');
+    }).map(c => c.build?.name || 'Unknown');
+
+    window.undeadMembers = undeadMembers.join(', ');
+    window.stitchers = stitchers.length ? stitchers.join(', ') : 'nobody';
+    return stitchers.length > 0;
+  }
+successMessage: "Your party has an undead member ({{undeadMembers}}) and someone with Stitch Flesh ({{stitchers}}) — Treat Wounds and similar vitality healing will work on them."
+failureMessage: "Undead characters take damage from normal vitality-based healing (Treat Wounds, Heal). With an undead member ({{undeadMembers}}) in the party and nobody trained in Stitch Flesh, your medics can't patch them up in the field. One character with Medicine proficiency should pick up Stitch Flesh."

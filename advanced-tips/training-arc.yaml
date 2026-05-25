@@ -1,0 +1,72 @@
+title: Training Arc
+description: Checks that martial characters have level-appropriate magic weapons
+checkFunction: |
+  function() {
+    if (characters.length === 0) return true;
+
+    const martialClasses = new Set([
+      'Fighter', 'Champion', 'Barbarian', 'Ranger', 'Rogue', 'Monk',
+      'Magus', 'Gunslinger', 'Inventor', 'Investigator', 'Swashbuckler',
+      'Thaumaturge', 'Kineticist'
+    ]);
+
+    const tiers = [
+      { min: 2, max: 3, need: '+1 weapon',                       match: /\+1(?!\s*striking)/i },
+      { min: 4, max: 9, need: '+1 striking weapon',              match: /\+1\s*striking|striking/i },
+      { min: 10, max: 11, need: '+2 striking weapon',            match: /\+2\s*striking/i },
+      { min: 12, max: 15, need: '+2 greater striking weapon',    match: /\+2\s*greater\s*striking/i },
+      { min: 16, max: 18, need: '+3 greater striking weapon',    match: /\+3\s*greater\s*striking/i },
+      { min: 19, max: 20, need: '+3 major striking weapon',      match: /\+3\s*major\s*striking/i }
+    ];
+
+    const equipped = [];
+    const underArmed = [];
+
+    for (const c of characters) {
+      const level = c.build?.level || 0;
+      const cls = c.build?.class || '';
+      const name = c.build?.name || 'Unknown';
+      if (!martialClasses.has(cls)) continue;
+
+      const tier = tiers.find(t => level >= t.min && level <= t.max);
+      if (!tier) continue;
+
+      const weapons = c.build?.weapons || [];
+      const equipment = c.build?.equipment || [];
+      const sources = [...weapons, ...equipment];
+
+      let bestWeapon = null;
+      const hasMatch = sources.some(item => {
+        const itemName = (Array.isArray(item) ? item[0] : (item?.name || item?.display || item)) || '';
+        if (tier.match.test(String(itemName))) { bestWeapon = itemName; return true; }
+        return false;
+      });
+
+      const hasRune = !hasMatch && weapons.some(w => {
+        if (!w || typeof w !== 'object') return false;
+        const pot = Number(w.pot ?? w.potency ?? 0);
+        const striking = String(w.str ?? w.striking ?? '').toLowerCase();
+        let ok = false;
+        if (level >= 2 && level <= 3) ok = pot >= 1;
+        else if (level >= 4 && level <= 9) ok = pot >= 1 && Boolean(striking);
+        else if (level >= 10 && level <= 11) ok = pot >= 2 && Boolean(striking);
+        else if (level >= 12 && level <= 15) ok = pot >= 2 && /greater/.test(striking);
+        else if (level >= 16 && level <= 18) ok = pot >= 3 && /greater/.test(striking);
+        else if (level >= 19 && level <= 20) ok = pot >= 3 && /major/.test(striking);
+        if (ok) bestWeapon = String(w.name || w.display || `+${pot} ${striking}`).trim();
+        return ok;
+      });
+
+      if (hasMatch || hasRune) {
+        equipped.push(`${name} (lv ${level}, ${bestWeapon})`);
+      } else {
+        underArmed.push(`${name} (lv ${level}, needs ${tier.need})`);
+      }
+    }
+
+    window.trainingArcEquipped = equipped.length ? equipped.join(', ') : 'nobody';
+    window.trainingArcUnderArmed = underArmed;
+    return underArmed.length === 0;
+  }
+successMessage: "Every martial in the party has a magic weapon matching their level — they keep up with the attack bonus and damage dice the game expects. Equipped: {{trainingArcEquipped}}."
+failureMessage: "PF2e enemies are tuned assuming martials have level-appropriate magic weapons. Without them, you miss more often and deal one die less. Under-equipped: {{trainingArcUnderArmed.join(' | ')}}. Already equipped: {{trainingArcEquipped}}."

@@ -1,0 +1,37 @@
+title: Gather Knowledge
+description: Checks that someone in the party has strong Diplomacy or Society for Recall Knowledge and Gather Information
+checkFunction: |
+  function() {
+    if (characters.length === 0) return true;
+
+    const abilityModifier = (score) => Math.floor((Number(score || 10) - 10) / 2);
+    const maxLevel = Math.max(...characters.map(c => c.build?.level || 0));
+
+    const computeSkillBonus = (c, skill, abil) => {
+      const profValue = Number(c.build?.proficiencies?.[skill] || 0);
+      const level = c.build?.level || 0;
+      const mod = abilityModifier(c.build?.abilities?.[abil]);
+      return (profValue > 0 ? level : 0) + profValue + mod;
+    };
+
+    let bestDip = -Infinity, bestDipName = 'nobody';
+    let bestSoc = -Infinity, bestSocName = 'nobody';
+    for (const c of characters) {
+      const dip = computeSkillBonus(c, 'diplomacy', 'cha');
+      if (dip > bestDip) { bestDip = dip; bestDipName = c.build?.name || 'Unknown'; }
+      const soc = computeSkillBonus(c, 'society', 'int');
+      if (soc > bestSoc) { bestSoc = soc; bestSocName = c.build?.name || 'Unknown'; }
+    }
+
+    // Hard DC for highest-party-level Recall Knowledge ≈ level + 15. Trained-floor target ≈ level + 4.
+    const target = maxLevel + 4;
+    const fmt = (v) => (v >= 0 ? `+${v}` : `${v}`);
+
+    window.gatherBestDip = `${fmt(bestDip)} (${bestDipName})`;
+    window.gatherBestSoc = `${fmt(bestSoc)} (${bestSocName})`;
+    window.gatherTarget = `+${target}`;
+
+    return bestDip >= target || bestSoc >= target;
+  }
+successMessage: "Your party has a strong Recall Knowledge / Gather Information bench. Best Diplomacy: {{gatherBestDip}}. Best Society: {{gatherBestSoc}}. Target for hard checks at your level: {{gatherTarget}}."
+failureMessage: "Recall Knowledge and Gather Information depend mostly on Diplomacy or Society. Best Diplomacy: {{gatherBestDip}}. Best Society: {{gatherBestSoc}}. Target for hard checks at your level: {{gatherTarget}}. Either invest in proficiency or boost Cha/Int on the party face so you can succeed against hard DCs."
