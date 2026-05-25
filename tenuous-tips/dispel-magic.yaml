@@ -1,73 +1,59 @@
 title: No Dispelling Troubles
-description: Checks if any character has the Dispel Magic spell
+description: Checks if any character actually has Dispel Magic prepared/known and recommends eligible casters if not
 checkFunction: |
   function() {
-    // If there are no characters, don't show a warning
     if (characters.length === 0) return true;
-    
-    // Check if any character has the Dispel Magic spell
-    for (const character of characters) {
-      // Skip if missing required data
-      if (!character.build) continue;
-      
-      // Check in build.spells if it exists
-      if (character.build.spells) {
-        // Check all spell levels (except cantrips, which we already check separately)
-        for (const level in character.build.spells) {
-          if (level === 'cantrips') continue; // Skip cantrips for this check
-          
-          const spells = character.build.spells[level];
-          if (Array.isArray(spells)) {
-            for (const spell of spells) {
-              const spellName = typeof spell === 'string' ? spell : (spell.name || spell[0] || '');
-              if (spellName.toLowerCase().includes('dispel magic')) {
-                return true;
-              }
-            }
-          }
+
+    const carriers = new Set();
+    const eligible = new Set();
+
+    const collectSpells = (c) => {
+      const spells = new Set();
+      for (const caster of (c.build?.spellCasters || [])) {
+        for (const lg of [caster.prepared, caster.spells].filter(Boolean)) {
+          for (const ld of lg) (ld.list || []).forEach(s => spells.add(s));
         }
       }
-      
-      // Also check for focus spells that might provide dispelling effects
-      if (character.build.focusSpells) {
-        for (const spell of character.build.focusSpells) {
-          const spellName = typeof spell === 'string' ? spell : (spell.name || spell[0] || '');
-          if (spellName.toLowerCase().includes('dispel') || 
-              spellName.toLowerCase().includes('counter')) {
-            return true;
-          }
-        }
+      for (const lvl in (c.build?.spellsKnown || {})) {
+        (c.build.spellsKnown[lvl] || []).forEach(s => spells.add(s));
       }
-      
-      // Check for class feats that might provide dispelling abilities
-      if (character.build.classFeats) {
-        for (const feat of character.build.classFeats) {
-          const featName = typeof feat === 'string' ? feat : (feat.name || feat[0] || '');
-          if (featName.toLowerCase().includes('dispel') || 
-              featName.toLowerCase().includes('counter') || 
-              featName.toLowerCase().includes('banishment')) {
-            return true;
-          }
-        }
+      // Also legacy: build.spells map
+      const legacy = c.build?.spells || {};
+      for (const lvl in legacy) {
+        const list = legacy[lvl];
+        if (Array.isArray(list)) list.forEach(s => spells.add(typeof s === 'string' ? s : (s.name || s[0] || '')));
       }
-      
-      // Check for spell repertoire in casters that might include dispel magic
-      if (character.build.class && [
-          'Wizard', 'Cleric', 'Druid', 'Sorcerer', 'Witch', 
-          'Magus', 'Summoner', 'Oracle', 'Bard'
-        ].includes(character.build.class)) {
-        // These classes typically have access to Dispel Magic if they're level 3+
-        if (character.build.level >= 3) {
-          // Increase likely chance they have dispel magic
-          // We can't be 100% sure without checking repertoire
-          // But for a tenuous tip this is a reasonable assumption
-          return true;
-        }
+      return spells;
+    };
+
+    // Anyone with any spellcasting tradition is "eligible" to learn Dispel Magic
+    const isSpellcaster = (c) => {
+      if (Array.isArray(c.build?.spellCasters) && c.build.spellCasters.length > 0) return true;
+      const cls = c.build?.class || '';
+      const casterClasses = new Set(['Wizard', 'Cleric', 'Druid', 'Sorcerer', 'Witch', 'Bard', 'Oracle', 'Magus', 'Summoner', 'Animist', 'Psychic']);
+      return casterClasses.has(cls);
+    };
+
+    for (const c of characters) {
+      const name = c.build?.name || 'Unknown';
+      const spells = collectSpells(c);
+
+      let has = false;
+      for (const s of spells) {
+        if (/dispel magic/i.test(s || '')) { has = true; break; }
+      }
+      if (has) {
+        carriers.add(name);
+        continue;
+      }
+      if (isSpellcaster(c) && (c.build?.level || 0) >= 3) {
+        eligible.add(name);
       }
     }
-    
-    // No character has Dispel Magic
-    return false;
+
+    window.dispelCarriers = Array.from(carriers).join(', ');
+    window.dispelEligible = eligible.size ? Array.from(eligible).join(', ') : 'nobody — no level-3+ caster in the party';
+    return carriers.size > 0;
   }
-successMessage: Your party has access to Dispel Magic or similar effects for neutralizing magical threats!
-failureMessage: No one in your party has Dispel Magic! This spell is essential for removing curses, dispelling magical effects, and dealing with magical hazards. Consider having a spellcaster learn this spell or a similar effect.
+successMessage: "Dispel Magic is on someone's spell list — curses, summoned creatures, and magical hazards can be peeled off. Carriers: {{dispelCarriers}}."
+failureMessage: "No one in the party has Dispel Magic prepared or known. It's essential for stripping curses, ending summons, and shutting down magical traps. Eligible casters (level 3+) who could pick it up: {{dispelEligible}}."

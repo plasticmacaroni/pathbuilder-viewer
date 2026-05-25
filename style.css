@@ -12,7 +12,7 @@
     --table-header: #634832;
     --table-odd: rgba(245, 231, 203, 0.7);
     --table-even: rgba(232, 213, 170, 0.7);
-    --table-footer: rgba(139, 110, 77, 0.8);
+    --table-footer: #4a3826;
 
     --info-group-bg: rgba(99, 72, 50, 0.85);
     --healing-group-bg: rgba(121, 82, 61, 0.85);
@@ -165,8 +165,10 @@ h1 {
 /* Button Styling */
 .pf-button {
     font-family: 'Cinzel', serif;
-    border: none;
+    font-size: 1rem;
+    line-height: 1.2;
     padding: 10px 20px;
+    border: 1px solid rgba(0, 0, 0, 0.2);
     border-radius: 5px;
     cursor: pointer;
     transition: all 0.3s ease;
@@ -176,10 +178,10 @@ h1 {
     box-shadow: 0 3px 5px rgba(0, 0, 0, 0.2);
     text-transform: uppercase;
     letter-spacing: 1px;
-    display: flex;
+    display: inline-flex;
     align-items: center;
+    justify-content: center;
     gap: 8px;
-    border: 1px solid rgba(0, 0, 0, 0.2);
 }
 
 .pf-button:hover {
@@ -191,6 +193,11 @@ h1 {
 .pf-button:active {
     transform: translateY(1px);
     box-shadow: 0 2px 3px rgba(0, 0, 0, 0.1);
+}
+
+.pf-button:focus-visible {
+    outline: 2px solid var(--highlight-color);
+    outline-offset: 2px;
 }
 
 .pf-button.secondary {
@@ -210,13 +217,12 @@ input[type="file"] {
 .scroll-frame {
     position: relative;
     border: 8px solid var(--border-color);
-    border-radius: 5px;
-    margin-bottom: 30px;
-    position: relative;
+    border-radius: 8px;
+    margin-bottom: 20px;
     overflow: hidden;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
 }
 
-/* Remove the background pattern from scroll-frame::before */
 .scroll-frame::before {
     content: '';
     position: absolute;
@@ -226,7 +232,6 @@ input[type="file"] {
     bottom: 0;
     pointer-events: none;
     border: 4px solid rgba(255, 255, 255, 0.1);
-    /* Removed the linear-gradient background-image pattern */
     opacity: 0.3;
     z-index: 10;
 }
@@ -238,12 +243,6 @@ input[type="file"] {
     max-height: 70vh;
     position: relative;
     background-image: none !important;
-}
-
-.scroll-frame {
-    margin-bottom: 20px;
-    border-radius: 8px;
-    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
 }
 
 table {
@@ -285,23 +284,24 @@ th i {
     margin-right: 5px;
 }
 
-tr:nth-child(odd) {
+tbody tr:nth-child(odd) {
     background-color: var(--table-odd);
 }
 
-tr:nth-child(even) {
+tbody tr:nth-child(even) {
     background-color: var(--table-even);
 }
 
 tfoot tr {
     background-color: var(--table-footer);
-    color: #331800;
+    color: white;
     font-weight: bold;
     position: sticky;
     bottom: 0;
     box-shadow: 0 -2px 3px rgba(0, 0, 0, 0.3);
     font-family: 'Cinzel', serif;
     z-index: 10;
+    text-align: center;
 }
 
 /* Enhanced gold highlighting with stronger glow effect */
@@ -322,8 +322,8 @@ tfoot tr {
 .ability-group .highest,
 .defense-group.highest,
 .defense-group .highest,
-.skill-group.highest,
-.skill-group .highest,
+.skills-group.highest,
+.skills-group .highest,
 td.highest,
 td .highest {
     color: #FFD700 !important;
@@ -363,14 +363,14 @@ td .highest {
     border-right: 2px solid var(--border-color);
 }
 
-.skill-group {
+.skills-group {
     background-color: var(--skill-group-bg);
     color: white;
     position: relative;
 }
 
 /* Create a container for both number and proficiency indicator */
-.skill-group[data-proficiency]::after {
+.skills-group[data-proficiency]::after {
     content: attr(data-proficiency);
     position: absolute;
     top: 3px;
@@ -386,28 +386,28 @@ td .highest {
 }
 
 /* Color coding for different proficiency levels */
-.skill-group[data-proficiency="U"]::after {
+.skills-group[data-proficiency="U"]::after {
     background-color: #888888;
 }
 
-.skill-group[data-proficiency="T"]::after {
+.skills-group[data-proficiency="T"]::after {
     background-color: #4a6741;
 }
 
-.skill-group[data-proficiency="E"]::after {
+.skills-group[data-proficiency="E"]::after {
     background-color: #634832;
 }
 
-.skill-group[data-proficiency="M"]::after {
+.skills-group[data-proficiency="M"]::after {
     background-color: #7b3911;
 }
 
-.skill-group[data-proficiency="L"]::after {
+.skills-group[data-proficiency="L"]::after {
     background-color: #a07d1a;
 }
 
 /* Make sure the highest indicator still shows properly */
-.skill-group.highest[data-proficiency]::after {
+.skills-group.highest[data-proficiency]::after {
     background-color: rgba(139, 69, 19, 0.8);
     color: #FFD700;
     text-shadow: 0 0 2px black;
@@ -538,7 +538,8 @@ td .highest {
     background-color: rgba(46, 204, 113, 0.1);
 }
 
-.warning-card.failure {
+.warning-card.failure,
+.warning-card.error {
     border-left: 4px solid #e74c3c;
     background-color: rgba(231, 76, 60, 0.1);
 }
@@ -640,10 +641,6 @@ footer a:hover {
     .healing-pills-container {
         flex-wrap: wrap;
     }
-
-    .parchment {
-        margin: 10px;
-    }
 }
 
 .perception-group {
@@ -695,21 +692,25 @@ td .value {
     display: inline-block;
 }
 
-/* Make warning title colors match their status */
-.warning-card.success .warning-title {
-    color: #27ae60;
-}
-
-.warning-card.failure .warning-title {
-    color: #c0392b;
-}
-
-/* Make icons match their status */
+/* Match title + icon color to status */
+.warning-card.success .warning-title,
 .warning-card.success .warning-title i {
     color: #27ae60;
 }
 
-.warning-card.failure .warning-title i {
+.warning-card.failure .warning-title,
+.warning-card.failure .warning-title i,
+.warning-card.error .warning-title,
+.warning-card.error .warning-title i {
+    color: #c0392b;
+}
+
+.warning-card.success .warning-description strong {
+    color: #27ae60;
+}
+
+.warning-card.failure .warning-description strong,
+.warning-card.error .warning-description strong {
     color: #c0392b;
 }
 
@@ -721,7 +722,8 @@ td .value {
     width: 100%;
 }
 
-.delete-character-btn {
+.delete-character-btn,
+.remove-character-btn {
     background-color: #ff5252;
     color: white;
     border: none;
@@ -732,8 +734,15 @@ td .value {
     transition: background-color 0.2s;
 }
 
-.delete-character-btn:hover {
+.delete-character-btn:hover,
+.remove-character-btn:hover {
     background-color: #ff0000;
+}
+
+.delete-character-btn:focus-visible,
+.remove-character-btn:focus-visible {
+    outline: 2px solid var(--highlight-color);
+    outline-offset: 2px;
 }
 
 .senses-group {
@@ -743,7 +752,7 @@ td .value {
 }
 
 /* Make senses pills match the style of skill pills */
-.skill-group .pill,
+.skills-group .pill,
 .senses-group .pill {
     font-size: 0.7rem;
     padding: 1px 5px;
@@ -753,13 +762,6 @@ td .value {
 .highest-value {
     color: var(--highlight-color);
     font-weight: bold;
-}
-
-tfoot td {
-    background-color: var(--table-footer);
-    color: white;
-    font-weight: bold;
-    text-align: center;
 }
 
 tfoot td.highest-value {

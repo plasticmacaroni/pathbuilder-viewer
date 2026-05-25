@@ -1767,6 +1767,14 @@ function restorePartyFromFile(event) {
 document.getElementById('savePartyFileButton').addEventListener('click', exportPartyToFile);
 document.getElementById('restorePartyFileInput').addEventListener('change', restorePartyFromFile);
 
+// File-picker buttons trigger the hidden inputs so visual surface stays a normal button.
+document.getElementById('selectFileButton').addEventListener('click', () => {
+    document.getElementById('jsonFileInput').click();
+});
+document.getElementById('restorePartyFileButton').addEventListener('click', () => {
+    document.getElementById('restorePartyFileInput').click();
+});
+
 // Extract value from character based on path specified in YAML
 function extractValueByPath(object, path) {
     if (!path) return undefined;
