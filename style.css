@@ -201,30 +201,7 @@ h1 {
     background-color: var(--warning-color);
 }
 
-/* File Input Styling */
-.file-input-label {
-    display: inline-flex;
-    align-items: center;
-    gap: 8px;
-    padding: 10px 20px;
-    border-radius: 5px;
-    background-color: var(--accent-secondary);
-    color: var(--parchment-color);
-    cursor: pointer;
-    font-family: 'Cinzel', serif;
-    font-weight: bold;
-    box-shadow: 0 3px 5px rgba(0, 0, 0, 0.2);
-    text-transform: uppercase;
-    transition: all 0.3s ease;
-    border: 1px solid rgba(0, 0, 0, 0.2);
-}
-
-.file-input-label:hover {
-    background-color: var(--accent-tertiary);
-    transform: translateY(-2px);
-    box-shadow: 0 5px 8px rgba(0, 0, 0, 0.3);
-}
-
+/* File-input label is styled via .pf-button — only the hidden input needs CSS here */
 input[type="file"] {
     display: none;
 }
@@ -577,6 +554,31 @@ td .highest {
     font-size: 0.95rem;
 }
 
+.warning-line {
+    margin-top: 4px;
+    line-height: 1.4;
+}
+
+.warning-line:first-child {
+    margin-top: 0;
+}
+
+.warning-description strong {
+    color: var(--accent-primary);
+    margin-right: 4px;
+}
+
+.warning-items {
+    list-style: disc;
+    padding-left: 22px;
+    margin: 4px 0;
+}
+
+.warning-items li {
+    margin-top: 2px;
+    line-height: 1.35;
+}
+
 /* Footer */
 footer {
     text-align: center;
@@ -618,8 +620,7 @@ footer a:hover {
         flex-direction: column;
     }
 
-    .pf-button,
-    .file-input-label {
+    .pf-button {
         width: 100%;
     }
 }

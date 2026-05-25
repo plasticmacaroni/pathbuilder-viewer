@@ -1,0 +1,66 @@
+title: Anyway, I Started Blasting
+description: Coverage of fire, electricity, cold, acid, poison, sonic, and force damage
+checkFunction: |
+  function() {
+    if (characters.length === 0) return true;
+
+    const energyTypes = {
+      fire:       { label: 'Fire',        why: 'staple energy type; many cold-themed creatures are weak to it' },
+      electric:   { label: 'Electricity', why: 'great against water creatures and metal-armored foes' },
+      cold:       { label: 'Cold',        why: 'staple against fire creatures and many fiends' },
+      acid:       { label: 'Acid',        why: 'few creatures resist acid; persistent damage helps in long fights' },
+      poison:     { label: 'Poison',      why: 'good against living creatures, but immune undead/constructs' },
+      sonic:      { label: 'Sonic',       why: 'rarely resisted, common weakness for crystalline and statue-like foes' },
+      force:      { label: 'Force',       why: 'bypasses incorporeal resistance; reliable against ghosts' }
+    };
+
+    const patterns = {
+      fire:     [/fire/i, /flame/i, /burn/i, /fireball/i, /scorching/i, /produce flame/i, /flaming/i, /searing/i, /sun blade/i],
+      electric: [/electric/i, /lightning/i, /thunderstrike/i, /shocking/i, /\bshock\b/i, /storm/i],
+      cold:     [/cold/i, /frost/i, /\bice\b/i, /chill/i, /freezing/i, /winter/i, /frostbite/i, /cone of cold/i],
+      acid:     [/acid/i, /caustic/i, /corrosive/i, /grasping vine/i],
+      poison:   [/poison/i, /venom/i, /toxic/i, /noxious/i],
+      sonic:    [/sonic/i, /\bsound\b/i, /shatter/i, /screaming/i, /thunderstrike/i],
+      force:    [/force/i, /magic missile/i, /force barrage/i, /telekinetic/i]
+    };
+
+    const carriers = {};
+    Object.keys(patterns).forEach(k => carriers[k] = new Set());
+
+    for (const c of characters) {
+      const name = c.build?.name || 'Unknown';
+      const spells = new Set();
+      for (const caster of (c.build?.spellCasters || [])) {
+        for (const lg of [caster.prepared, caster.spells].filter(Boolean)) {
+          for (const ld of lg) (ld.list || []).forEach(s => spells.add(s));
+        }
+      }
+      for (const lvl in (c.build?.spellsKnown || {})) (c.build.spellsKnown[lvl] || []).forEach(s => spells.add(s));
+
+      const items = new Set();
+      for (const w of (c.build?.weapons || [])) items.add(String((Array.isArray(w) ? w[0] : (w?.name || w?.display || w)) || ''));
+      for (const item of (c.build?.equipment || [])) items.add(String((Array.isArray(item) ? item[0] : (item?.name || item?.display || item)) || ''));
+
+      const focusBlob = (() => { try { return JSON.stringify(c.build?.focus || {}); } catch { return ''; } })();
+
+      const allText = [...spells, ...items, focusBlob].join(' | ');
+
+      for (const [type, pats] of Object.entries(patterns)) {
+        if (pats.some(p => p.test(allText))) carriers[type].add(name);
+      }
+    }
+
+    const coveredLines = [];
+    const gaps = [];
+    for (const key of Object.keys(energyTypes)) {
+      const names = Array.from(carriers[key]);
+      if (names.length > 0) coveredLines.push(`${energyTypes[key].label} via ${names.join(', ')}`);
+      else gaps.push(`${energyTypes[key].label} — ${energyTypes[key].why}`);
+    }
+
+    window.blastingCovered = coveredLines.length ? coveredLines.join('; ') : 'nothing';
+    window.blastingGaps = gaps;
+    return gaps.length === 0;
+  }
+successMessage: "Your party covers the full energy damage spectrum, so you can punch through enemy resistances by swapping spells. Covered: {{blastingCovered}}."
+failureMessage: "Some monsters are functionally invulnerable to the damage your party deals. Missing: {{blastingGaps.join(' | ')}}. Already covered: {{blastingCovered}}. Pick up a spell or item in the missing type to round out your blasting options."

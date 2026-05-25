@@ -1,0 +1,39 @@
+title: Reaction Time
+description: Checks that every character has at least one reaction ability for combat depth
+checkFunction: |
+  function() {
+    if (characters.length === 0) return true;
+
+    const reactionFeats = [
+      'Reactive Strike',
+      'Attack of Opportunity',
+      'Stand Still',
+      'No Escape',
+      "You're Next",
+      'Shield Block',
+      'Nimble Dodge',
+      'Reactive Shield',
+      'Cover-Up'
+    ];
+
+    const withReactions = [];
+    const without = [];
+
+    for (const c of characters) {
+      const name = c.build?.name || 'Unknown';
+      const feats = c.build?.feats || [];
+
+      const matched = feats
+        .map(f => Array.isArray(f) ? f[0] : f)
+        .filter(featName => reactionFeats.includes(featName));
+
+      if (matched.length > 0) withReactions.push(`${name} (${matched.join(', ')})`);
+      else without.push(name);
+    }
+
+    window.reactionEquipped = withReactions.length ? withReactions.join('; ') : 'nobody';
+    window.reactionMissing = without;
+    return without.length === 0;
+  }
+successMessage: "Every character has a reaction ability, so the party can punish enemy movement, block hits, and dodge attacks. Equipped: {{reactionEquipped}}."
+failureMessage: "Reactions are how characters interact with enemy turns — stopping movement (Reactive Strike, Stand Still), absorbing hits (Shield Block, Nimble Dodge), or chaining attacks (You're Next). Without one, a character is a passive bystander on enemy turns. No reaction ability: {{reactionMissing.join(', ')}}. Already equipped: {{reactionEquipped}}."

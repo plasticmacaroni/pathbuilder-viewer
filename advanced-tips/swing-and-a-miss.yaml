@@ -1,0 +1,54 @@
+title: Swing and a Miss!
+description: Checks party tools for damaging incorporeal creatures (ghosts, shades, possessing spirits)
+checkFunction: |
+  function() {
+    if (characters.length === 0) return true;
+
+    const avgLevel = characters.reduce((a, c) => a + (c.build?.level || 0), 0) / characters.length;
+    if (avgLevel < 5) return true;
+
+    const forceSpellPatterns = [/force barrage/i, /magic missile/i, /spiritual armament/i, /phantom pain/i, /phantasmal calamity/i, /falling stars/i];
+    const spiritPatterns = [/\bspirit\b/i, /vitality/i, /\bvoid\b/i, /banishment/i];
+    const runePatterns = [/ghost touch/i, /spirit-?bond/i, /\bholy\b/i, /\bunholy\b/i];
+
+    const carriers = new Set();
+
+    for (const c of characters) {
+      const name = c.build?.name || 'Unknown';
+
+      // Weapon runes
+      for (const w of (c.build?.weapons || [])) {
+        const wname = String((Array.isArray(w) ? w[0] : (w?.name || w?.display || w)) || '');
+        if (runePatterns.some(p => p.test(wname))) carriers.add(`${name} (${wname})`);
+        if (w && typeof w === 'object') {
+          const runes = [w.runes, w.prop1, w.prop2, w.prop3, w.prop4, w.runeList].filter(Boolean);
+          const runeText = runes.map(r => Array.isArray(r) ? r.join(' ') : String(r)).join(' ');
+          if (runePatterns.some(p => p.test(runeText))) carriers.add(`${name} (${wname || 'weapon'} w/ ${runeText.trim()})`);
+        }
+      }
+      for (const item of (c.build?.equipment || [])) {
+        const itemName = String((Array.isArray(item) ? item[0] : (item?.name || item?.display || item)) || '');
+        if (runePatterns.some(p => p.test(itemName))) carriers.add(`${name} (${itemName})`);
+      }
+
+      // Spells
+      const spellsSeen = new Set();
+      for (const caster of (c.build?.spellCasters || [])) {
+        for (const lg of [caster.prepared, caster.spells].filter(Boolean)) {
+          for (const ld of lg) (ld.list || []).forEach(s => spellsSeen.add(s));
+        }
+      }
+      for (const lvl in (c.build?.spellsKnown || {})) (c.build.spellsKnown[lvl] || []).forEach(s => spellsSeen.add(s));
+
+      for (const s of spellsSeen) {
+        const lower = (s || '').toLowerCase();
+        if (forceSpellPatterns.some(p => p.test(lower))) carriers.add(`${name} (${s})`);
+        else if (spiritPatterns.some(p => p.test(lower))) carriers.add(`${name} (${s})`);
+      }
+    }
+
+    window.incorporealCarriers = carriers.size ? Array.from(carriers).join(', ') : 'nobody';
+    return carriers.size > 0;
+  }
+successMessage: "Your party can reliably damage incorporeal creatures (ghosts, shades, possessing spirits). Force damage, spirit damage, vitality/void spells, and ghost-touch/holy/unholy runes all work. Available via {{incorporealCarriers}}."
+failureMessage: "Incorporeal creatures (ghosts, shades, banshees) take half damage from anything that isn't Force damage, spirit damage, or a weapon with ghost touch / holy / unholy / spirit-bond runes. With nobody in the party able to reliably hurt them, fights against incorporeal foes will grind. Pick up Force Barrage, Magic Missile, Spiritual Armament, or a ghost-touch rune on a martial's weapon."

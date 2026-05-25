@@ -1,0 +1,34 @@
+title: The Shadow Plane Sucks
+description: Checks that high-level casters carry a Shadow Signet for shifting attack-spell targeting
+checkFunction: |
+  function() {
+    if (characters.length === 0) return true;
+
+    const eligible = characters.filter(c => {
+      const level = c.build?.level || 0;
+      const isCaster = Boolean(c.build?.spellCasters && c.build.spellCasters.length > 0);
+      return isCaster && level >= 10 && level <= 20;
+    });
+
+    if (eligible.length === 0) return true;
+
+    const equipped = [];
+    const missing = [];
+
+    for (const caster of eligible) {
+      const name = caster.build?.name || 'Unknown';
+      const equipment = caster.build?.equipment || [];
+      const has = equipment.some(item => {
+        const itemName = (Array.isArray(item) ? item[0] : (item?.name || item)) || '';
+        return typeof itemName === 'string' && itemName.toLowerCase().includes('shadow signet');
+      });
+      if (has) equipped.push(name);
+      else missing.push(name);
+    }
+
+    window.signetEquipped = equipped.length ? equipped.join(', ') : 'no casters';
+    window.signetMissing = missing;
+    return missing.length === 0;
+  }
+successMessage: "All high-level casters in the party carry a Shadow Signet, letting them retarget attack-roll spells against AC instead of saves — clutch against incorporeal foes and high-save enemies. Equipped: {{signetEquipped}}."
+failureMessage: "Shadow Signet (level 10 item) lets a caster switch an attack-spell from a save to a touch AC attack — especially valuable against incorporeal creatures and enemies with sky-high saves. Casters without one: {{signetMissing.join(', ')}}. Already equipped: {{signetEquipped}}."
