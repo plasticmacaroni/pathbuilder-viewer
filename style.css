@@ -369,50 +369,6 @@ td .highest {
     position: relative;
 }
 
-/* Create a container for both number and proficiency indicator */
-.skills-group[data-proficiency]::after {
-    content: attr(data-proficiency);
-    position: absolute;
-    top: 3px;
-    right: 3px;
-    font-size: 0.6rem;
-    border-radius: 3px;
-    padding: 1px 2px;
-    font-weight: bold;
-    line-height: 1;
-    opacity: 0.8;
-    color: white;
-    font-family: 'Cinzel', serif;
-}
-
-/* Color coding for different proficiency levels */
-.skills-group[data-proficiency="U"]::after {
-    background-color: #888888;
-}
-
-.skills-group[data-proficiency="T"]::after {
-    background-color: #4a6741;
-}
-
-.skills-group[data-proficiency="E"]::after {
-    background-color: #634832;
-}
-
-.skills-group[data-proficiency="M"]::after {
-    background-color: #7b3911;
-}
-
-.skills-group[data-proficiency="L"]::after {
-    background-color: #a07d1a;
-}
-
-/* Make sure the highest indicator still shows properly */
-.skills-group.highest[data-proficiency]::after {
-    background-color: rgba(139, 69, 19, 0.8);
-    color: #FFD700;
-    text-shadow: 0 0 2px black;
-}
-
 /* Replace background image in "no characters" message with CSS decoration */
 .no-characters {
     text-align: center;
