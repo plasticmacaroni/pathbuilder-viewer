@@ -64,9 +64,9 @@ checkFunction: |
       }
     }
 
-    window.trainingArcEquipped = equipped.length ? equipped.join(', ') : 'nobody';
+    window.trainingArcEquipped = equipped.length ? equipped.join(' | ') : 'nobody';
     window.trainingArcUnderArmed = underArmed;
     return underArmed.length === 0;
   }
-successMessage: "Every martial in the party has a magic weapon matching their level — they keep up with the attack bonus and damage dice the game expects. Equipped: {{trainingArcEquipped}}."
-failureMessage: "PF2e enemies are tuned assuming martials have level-appropriate magic weapons. Without them, you miss more often and deal one die less. Under-equipped: {{trainingArcUnderArmed.join(' | ')}}. Already equipped: {{trainingArcEquipped}}."
+successMessage: "Every martial in the party has a magic weapon matching their level — they keep up with the attack bonus and damage dice the game expects.||Equipped: | {{trainingArcEquipped}}"
+failureMessage: "PF2e enemies are tuned assuming martials have level-appropriate magic weapons. Without them, you miss more often and deal one die less.||Under-equipped: | {{trainingArcUnderArmed.join(' | ')}}||Equipped: | {{trainingArcEquipped}}"

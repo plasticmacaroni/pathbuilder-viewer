@@ -66,10 +66,10 @@ checkFunction: |
       }
     }
 
-    window.tooPoorCovered = coveredLines.length ? coveredLines.join('; ') : 'nothing';
+    window.tooPoorCovered = coveredLines.length ? coveredLines.join(' | ') : 'nothing';
     window.tooPoorGaps = gaps;
 
     return gaps.length === 0;
   }
-successMessage: "Your party can bypass the common material-based resistances of werewolves (silver), fey (cold iron), and golems/constructs (adamantine, once level 8+). Currently covered: {{tooPoorCovered}}."
-failureMessage: "Some monsters resist anything but specific weapon materials. Missing coverage: {{tooPoorGaps.join(' | ')}}. Already covered: {{tooPoorCovered}}. Pick up a weapon in the missing material, or cast Needle Darts with the appropriate metal coins as ammunition."
+successMessage: "Your party can bypass the common material-based resistances of werewolves (silver), fey (cold iron), and golems/constructs (adamantine, once level 8+).||Covered: | {{tooPoorCovered}}"
+failureMessage: "Some monsters resist anything but specific weapon materials.||Missing: | {{tooPoorGaps.join(' | ')}}||Covered: | {{tooPoorCovered}}||Pick up a weapon in the missing material, or cast Needle Darts with the appropriate metal coins as ammunition."

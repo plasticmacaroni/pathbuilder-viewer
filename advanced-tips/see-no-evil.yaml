@@ -4,7 +4,6 @@ checkFunction: |
   function() {
     if (characters.length === 0) return true;
     const avgLevel = characters.reduce((a, c) => a + (c.build?.level || 0), 0) / characters.length;
-    if (avgLevel < 3 || avgLevel > 20) return true;
 
     const itemHints = ['invisibility', 'vanish', 'mantle of the unwavering', 'invisibility potion', 'dust of disappearance'];
     const carriers = new Set();
@@ -32,7 +31,18 @@ checkFunction: |
     }
 
     window.invisCarriers = carriers.size > 0 ? Array.from(carriers).join(', ') : 'nobody';
+
+    // Below level 3 (or above 20) this isn't actionable — Vanish is a rank-2 spell,
+    // so level-3 casters are the earliest realistic access. Stay green with context.
+    if (avgLevel < 3 || avgLevel > 20) {
+      window.invisSummary = carriers.size > 0
+        ? "Someone can already turn invisible — ahead of the curve. Available via " + window.invisCarriers + "."
+        : "No invisibility access yet, and that's expected — Vanish is a rank-2 spell (level 3+ casters) and invisibility items come later. Revisit around level 3.";
+      return true;
+    }
+
+    window.invisSummary = "Someone in the party can turn invisible for scouting, ambushes, or quick escapes. Available via " + window.invisCarriers + ".";
     return carriers.size > 0;
   }
-successMessage: "Someone in the party can turn invisible for scouting, ambushes, or quick escapes. Available via {{invisCarriers}}."
+successMessage: "{{invisSummary}}"
 failureMessage: "Invisibility solves a huge range of problems — scouting ahead, breaking line of sight to escape, setting up ambushes, and surviving deadly fights. No one in your party currently has access. Consider Invisibility (4th-rank), Vanish (2nd-rank), or an Invisibility Potion in someone's inventory."

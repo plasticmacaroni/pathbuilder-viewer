@@ -80,9 +80,9 @@ checkFunction: |
       }
     }
 
-    window.spiritualPressureCovered = coveredLines.length ? coveredLines.join('; ') : 'nothing';
+    window.spiritualPressureCovered = coveredLines.length ? coveredLines.join(' | ') : 'nothing';
     window.spiritualPressureGaps = gaps;
     return gaps.length === 0;
   }
-successMessage: "Your party covers the Remaster divine-adjacent damage spectrum — Vitality (anti-undead), Void (anti-living), Spirit (anti-incorporeal), and both Holy and Unholy source traits. Covered: {{spiritualPressureCovered}}."
-failureMessage: "Celestials, fiends, and undead often need specific damage types. Missing: {{spiritualPressureGaps.join(' | ')}}. Already covered: {{spiritualPressureCovered}}. Add the missing spells (Heal/Harm/Phantom Pain/etc.) or holy/unholy weapon runes."
+successMessage: "Your party covers the Remaster divine-adjacent damage spectrum — Vitality (anti-undead), Void (anti-living), Spirit (anti-incorporeal), and both Holy and Unholy source traits.||Covered: | {{spiritualPressureCovered}}"
+failureMessage: "Celestials, fiends, and undead often need specific damage types.||Missing: | {{spiritualPressureGaps.join(' | ')}}||Covered: | {{spiritualPressureCovered}}||Add the missing spells (Heal/Harm/Phantom Pain/etc.) or holy/unholy weapon runes."

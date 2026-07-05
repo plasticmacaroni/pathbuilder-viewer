@@ -47,13 +47,13 @@ checkFunction: |
     
     // Store the coverage percentage for the message
     window.knowledgeCoveragePercent = coveragePercent;
-    
+
+    // Build the full success text here — the template engine can't evaluate ternaries
+    window.knowledgeSummary = "Your party has good knowledge skill coverage (" + coveragePercent + "%)." +
+      (missingSkills.length > 0 ? "||Still missing: | " + missingSkills.join(' | ') : " All knowledge skills are covered!");
+
     // Return true if at least 4 knowledge skills are covered (≥66%)
     return coveragePercent >= 66;
   }
-successMessage: |
-  Your party has good knowledge skill coverage ({{knowledgeCoveragePercent}}%).
-  {{window.missingKnowledgeSkills.length > 0 ? "Still missing: " + window.missingKnowledgeSkills.join(', ') : "All knowledge skills are covered!"}}
-failureMessage: |
-  Your party lacks proficiency in crucial knowledge skills: {{missingKnowledgeSkills.join(', ')}}. 
-  Consider training in these skills to help identify monsters, recall lore, and craft items.
+successMessage: "{{knowledgeSummary}}"
+failureMessage: "Your party lacks proficiency in crucial knowledge skills.||Missing: | {{missingKnowledgeSkills.join(' | ')}}||Consider training in these skills to help identify monsters, recall lore, and craft items."

@@ -33,4 +33,4 @@ checkFunction: |
     return trainedNoTools.length === 0;
   }
 successMessage: Thievery-trained characters have thieves' tools. Locks and traps handled.
-failureMessage: "Thievery without thieves' tools: {{thievesToolsMissing.join(', ')}}. -2 on Pick Lock and some locks won't open at all — buy the kit."
+failureMessage: "These characters are trained in Thievery but carry no thieves' tools — that's a -2 on Pick Lock, and some locks can't be opened at all without the kit.||Missing the kit: | {{thievesToolsMissing.join(' | ')}}||Buy one. It's 3 gp."

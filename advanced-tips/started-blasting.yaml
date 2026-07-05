@@ -58,9 +58,9 @@ checkFunction: |
       else gaps.push(`${energyTypes[key].label} — ${energyTypes[key].why}`);
     }
 
-    window.blastingCovered = coveredLines.length ? coveredLines.join('; ') : 'nothing';
+    window.blastingCovered = coveredLines.length ? coveredLines.join(' | ') : 'nothing';
     window.blastingGaps = gaps;
     return gaps.length === 0;
   }
-successMessage: "Your party covers the full energy damage spectrum, so you can punch through enemy resistances by swapping spells. Covered: {{blastingCovered}}."
-failureMessage: "Some monsters are functionally invulnerable to the damage your party deals. Missing: {{blastingGaps.join(' | ')}}. Already covered: {{blastingCovered}}. Pick up a spell or item in the missing type to round out your blasting options."
+successMessage: "Your party covers the full energy damage spectrum, so you can punch through enemy resistances by swapping spells.||Covered: | {{blastingCovered}}"
+failureMessage: "Some monsters are functionally invulnerable to the damage your party deals.||Missing: | {{blastingGaps.join(' | ')}}||Covered: | {{blastingCovered}}||Pick up a spell or item in the missing type to round out your blasting options."

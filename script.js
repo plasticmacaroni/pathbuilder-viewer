@@ -1328,11 +1328,13 @@ function updatePartyWarnings() {
                         return window[expr];
                     }
 
-                    // Handle method calls safely (like .join)
+                    // Handle method calls safely (like .join) — honor the separator argument
                     if (expr.includes('.join')) {
-                        const varName = expr.split('.')[0];
+                        const jm = expr.match(/^\s*([\w$]+)\s*\.join\(\s*(?:'([^']*)'|"([^"]*)")?\s*\)\s*$/);
+                        const varName = jm ? jm[1] : expr.split('.')[0];
+                        const sep = jm ? (jm[2] !== undefined ? jm[2] : (jm[3] !== undefined ? jm[3] : ', ')) : ', ';
                         if (window[varName] && Array.isArray(window[varName])) {
-                            return window[varName].join(', ');
+                            return window[varName].join(sep);
                         }
                     }
 
@@ -1419,7 +1421,7 @@ function renderStructuredMessage(parent, text) {
                 ul.className = 'warning-items';
                 for (const part of parts) {
                     const li = document.createElement('li');
-                    appendLabeled(li, part.trim());
+                    appendLabeled(li, part.trim(), true);
                     ul.appendChild(li);
                 }
                 parent.appendChild(ul);
@@ -1438,13 +1440,18 @@ function appendLine(parent, text) {
 }
 
 // If text starts with "Label: rest" or "Label — rest", bold the label.
-function appendLabeled(node, text) {
-    const match = text.match(/^([^:—\n]{1,40})([:—])\s+(.+)$/);
+// Label capped at 28 chars so whole sentences containing a colon don't get bolded.
+// The separator lives inside the <strong> — the CSS margin then reads as the
+// space AFTER the colon, not a stray gap before it.
+function appendLabeled(node, text, allowDash = false) {
+    // Em-dash labels ("Bludgeoning — why") only make sense inside list items;
+    // on plain sentence lines a dash is just punctuation, not a label.
+    const match = text.match(allowDash ? /^([^:—\n]{1,28})([:—])\s+(.+)$/ : /^([^:—\n]{1,28})(:)\s+(.+)$/);
     if (match) {
         const strong = document.createElement('strong');
-        strong.textContent = match[1].trim();
+        strong.textContent = match[1].trim() + match[2];
         node.appendChild(strong);
-        node.appendChild(document.createTextNode(`${match[2]} ${match[3]}`));
+        node.appendChild(document.createTextNode(match[3]));
     } else {
         node.textContent = text;
     }
@@ -2431,11 +2438,13 @@ function renderTipList(tipList, gridId) {
                         return window[expr];
                     }
 
-                    // Handle method calls safely (like .join)
+                    // Handle method calls safely (like .join) — honor the separator argument
                     if (expr.includes('.join')) {
-                        const varName = expr.split('.')[0];
+                        const jm = expr.match(/^\s*([\w$]+)\s*\.join\(\s*(?:'([^']*)'|"([^"]*)")?\s*\)\s*$/);
+                        const varName = jm ? jm[1] : expr.split('.')[0];
+                        const sep = jm ? (jm[2] !== undefined ? jm[2] : (jm[3] !== undefined ? jm[3] : ', ')) : ', ';
                         if (window[varName] && Array.isArray(window[varName])) {
-                            return window[varName].join(', ');
+                            return window[varName].join(sep);
                         }
                     }
 

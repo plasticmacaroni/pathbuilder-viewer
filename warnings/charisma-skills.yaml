@@ -71,12 +71,13 @@ checkFunction: |
     
     // Store performance status for specialized messages
     window.onlyHasPerformance = hasPerformance && !hasSocialSkills;
-    
+
+    // Build the full success text here — the template engine can't evaluate ternaries
+    window.charismaSummary = "Your party has good coverage of social skills." +
+      (window.onlyHasPerformance ? " Though Performance is less useful than the other Charisma skills in most adventures." : "");
+
     // Return true if at least two charisma skills are covered
     return hasSocialSkills;
   }
-successMessage: |
-  Your party has good coverage of social skills. {{window.onlyHasPerformance ? "Though Performance is less useful than the other Charisma skills in most adventures." : ""}}
-failureMessage: |
-  Your party lacks proficiency in important social skills: {{missingCharismaSkills.join(', ')}}. 
-  Consider training in Diplomacy, Deception, or Intimidation to help with social encounters.
+successMessage: "{{charismaSummary}}"
+failureMessage: "Your party lacks proficiency in important social skills.||Missing: | {{missingCharismaSkills.join(' | ')}}||Consider training in Diplomacy, Deception, or Intimidation to help with social encounters."

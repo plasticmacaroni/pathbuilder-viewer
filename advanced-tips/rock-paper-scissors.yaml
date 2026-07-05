@@ -52,9 +52,9 @@ checkFunction: |
       else gaps.push(`${targets[key].label} — ${targets[key].why}`);
     }
 
-    window.rpsCovered = coveredLines.length ? coveredLines.join('; ') : 'nothing';
+    window.rpsCovered = coveredLines.length ? coveredLines.join(' | ') : 'nothing';
     window.rpsGaps = gaps;
     return gaps.length === 0;
   }
-successMessage: "Your party can deal all three physical damage types — bludgeoning, slashing, and piercing — so you can swap weapons to bypass enemy resistances. Currently covered: {{rpsCovered}}."
-failureMessage: "Enemies frequently resist one physical damage type. Missing: {{rpsGaps.join(' | ')}}. Already covered: {{rpsCovered}}. Have someone keep a backup weapon in the missing type."
+successMessage: "Your party can deal all three physical damage types, so you can swap weapons to bypass enemy resistances.||Covered: | {{rpsCovered}}"
+failureMessage: "Enemies frequently resist one physical damage type.||Missing: | {{rpsGaps.join(' | ')}}||Covered: | {{rpsCovered}}||Have someone keep a backup weapon in the missing type."

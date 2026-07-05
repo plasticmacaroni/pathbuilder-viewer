@@ -5,9 +5,12 @@ checkFunction: |
     if (characters.length === 0) return true;
 
     const avgLevel = characters.reduce((a, c) => a + (c.build?.level || 0), 0) / characters.length;
-    if (avgLevel < 5) {
-      // Early exit must still set the var the success message references
-      window.incorporealCarriers = "nobody yet — incorporeal foes are rare below level 5, revisit then";
+    if (avgLevel < 2) {
+      // Bestiary survey: shadows/ghost commoners are level 4 creatures (severe by
+      // level 2-3), and level 1-2 phantoms exist in several APs — so only a pure
+      // level-1 party gets a pass, and even then with a nudge.
+      window.incorporealCarriers = 'nobody yet';
+      window.swingSummary = "At level 1 you get a pass — but Shadows and Ghost Commoners are level 4 creatures that show up as early as level 2-3 encounters. Force Barrage (rank 1) or spirit damage is the cheapest early answer; plan for it now.";
       return true;
     }
 
@@ -51,8 +54,9 @@ checkFunction: |
       }
     }
 
-    window.incorporealCarriers = carriers.size ? Array.from(carriers).join(', ') : 'nobody';
+    window.incorporealCarriers = carriers.size ? Array.from(carriers).join(' | ') : 'nobody';
+    window.swingSummary = "Your party can reliably damage incorporeal creatures (ghosts, shades, possessing spirits). Force damage, spirit damage, vitality/void spells, and ghost-touch/holy/unholy runes all work.||Available via: | " + window.incorporealCarriers;
     return carriers.size > 0;
   }
-successMessage: "Your party can reliably damage incorporeal creatures (ghosts, shades, possessing spirits). Force damage, spirit damage, vitality/void spells, and ghost-touch/holy/unholy runes all work. Available via {{incorporealCarriers}}."
+successMessage: "{{swingSummary}}"
 failureMessage: "Incorporeal creatures (ghosts, shades, banshees) take half damage from anything that isn't Force damage, spirit damage, or a weapon with ghost touch / holy / unholy / spirit-bond runes. With nobody in the party able to reliably hurt them, fights against incorporeal foes will grind. Pick up Force Barrage, Magic Missile, Spiritual Armament, or a ghost-touch rune on a martial's weapon."

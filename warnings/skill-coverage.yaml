@@ -57,4 +57,4 @@ checkFunction: |
     return insufficientSkills.length === 0;
   }
 successMessage: Full skill coverage achieved! At least one character has trained proficiency or better in every skill.
-failureMessage: "No character has trained proficiency in: {{insufficientSkillsList.join(', ')}}"
+failureMessage: "Nobody in the party is trained in these skills.||Missing: | {{insufficientSkillsList.join(' | ')}}"
