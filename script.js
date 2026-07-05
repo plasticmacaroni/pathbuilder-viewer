@@ -1753,11 +1753,12 @@ async function sharePartyLink() {
     }
     try {
         // Strip the derived `extracted` data — it's rebuilt on import, and dropping
-        // it roughly halves the link length.
+        // it roughly halves the link length. Keep success:true — preprocessCharacterData
+        // refuses to rebuild `extracted` without it.
         const slim = {
             format: 'pf2e-character-comparison-party',
             version: '1.0',
-            characters: characters.map(c => ({ build: c.build }))
+            characters: characters.map(c => ({ success: true, build: c.build }))
         };
         const hash = await deflateToBase64Url(JSON.stringify(slim));
         const url = `${location.origin}${location.pathname}#p=${hash}`;
@@ -1776,6 +1777,18 @@ async function tryImportPartyFromUrl() {
     try {
         const json = await inflateFromBase64Url(match[1]);
         const partyData = JSON.parse(json);
+        // Links created before the success-flag fix lack it — restore so
+        // preprocessCharacterData rebuilds `extracted`
+        if (Array.isArray(partyData.characters)) {
+            partyData.characters = partyData.characters.map(c =>
+                c && c.build && c.success === undefined ? { success: true, ...c } : c
+            );
+        }
+        // The YAML preprocessing rules load asynchronously — wait for them so the
+        // import doesn't race init() and fall back to legacy extraction
+        for (let i = 0; i < 50 && !window.tableStructure; i++) {
+            await new Promise(r => setTimeout(r, 100));
+        }
         const ok = applyPartyData(partyData);
         if (ok) {
             showStatusMessage(`Loaded ${characters.length} characters from share link!`);
