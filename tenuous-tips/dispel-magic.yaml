@@ -59,9 +59,9 @@ checkFunction: |
     }
 
     window.dispelCarriers = Array.from(carriers).join(', ');
-    window.dispelEligible = eligible.size ? Array.from(eligible).join(', ') : 'nobody — no level-3+ caster in the party';
-    window.dispelSummary = "Dispel Magic is on someone's spell list — curses, summoned creatures, and magical hazards can be peeled off. Carriers: " + window.dispelCarriers + ".";
+    window.dispelEligible = eligible.size ? Array.from(eligible).join(' | ') : 'nobody — no level-3+ caster in the party';
+    window.dispelSummary = "Dispel Magic is on someone's spell list — curses, summoned creatures, and magical hazards can be peeled off.||Carriers: | " + Array.from(carriers).join(' | ');
     return carriers.size > 0;
   }
 successMessage: "{{dispelSummary}}"
-failureMessage: "No one in the party has Dispel Magic prepared or known. It's essential for stripping curses, ending summons, and shutting down magical traps. Eligible casters (level 3+) who could pick it up: {{dispelEligible}}."
+failureMessage: "No one in the party has Dispel Magic prepared or known. It's essential for stripping curses, ending summons, and shutting down magical traps.||Could pick it up (level 3+ casters): | {{dispelEligible}}"

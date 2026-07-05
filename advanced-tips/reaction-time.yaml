@@ -31,19 +31,19 @@ checkFunction: |
       else without.push(name);
     }
 
-    window.reactionEquipped = withReactions.length ? withReactions.join('; ') : 'nobody';
+    window.reactionEquipped = withReactions.length ? withReactions.join(' | ') : 'nobody';
     window.reactionMissing = without;
 
     // Below level 3, missing reactions is normal — several classes literally can't
     // take one at level 1, and most pick one up between levels 2 and 4.
     const avgLevel = characters.reduce((a, c) => a + (c.build?.level || 0), 0) / characters.length;
     if (without.length > 0 && avgLevel < 3) {
-      window.reactionSummary = "Low levels get a pass — several classes can't even take a reaction at level 1, and most pick one up by level 2-4. Currently without one: " + without.join(', ') + ". Revisit around level 3. Equipped so far: " + window.reactionEquipped + ".";
+      window.reactionSummary = "Low levels get a pass — several classes can't even take a reaction at level 1, and most pick one up by level 2-4. Revisit around level 3.||Without one: | " + without.join(' | ') + (withReactions.length ? "||Equipped: | " + window.reactionEquipped : "");
       return true;
     }
 
-    window.reactionSummary = "Every character has a reaction ability, so the party can punish enemy movement, block hits, and dodge attacks. Equipped: " + window.reactionEquipped + ".";
+    window.reactionSummary = "Every character has a reaction ability, so the party can punish enemy movement, block hits, and dodge attacks.||Equipped: | " + window.reactionEquipped;
     return without.length === 0;
   }
 successMessage: "{{reactionSummary}}"
-failureMessage: "Reactions are how characters interact with enemy turns — stopping movement (Reactive Strike, Stand Still), absorbing hits (Shield Block, Nimble Dodge), or chaining attacks (You're Next). Without one, a character is a passive bystander on enemy turns. No reaction ability: {{reactionMissing.join(', ')}}. Already equipped: {{reactionEquipped}}."
+failureMessage: "Reactions are how characters interact with enemy turns — stopping movement (Reactive Strike, Stand Still), absorbing hits (Shield Block, Nimble Dodge), or chaining attacks (You're Next). Without one, a character is a passive bystander on enemy turns.||No reaction: | {{reactionMissing.join(' | ')}}||Equipped: | {{reactionEquipped}}"

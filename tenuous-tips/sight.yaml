@@ -2,76 +2,45 @@ title: Darkness Ahead
 description: Party may struggle with light sources in dark environments
 checkFunction: |
   function() {
-    // If there are no characters, don't show a warning
     if (characters.length === 0) return true;
-    
-    let hasLightSource = false;
-    let hasDarkvision = false;
-    
-    for (const character of characters) {
-      // Check for darkvision in character specials/abilities/heritage
-      if (character.build && character.build.specials) {
-        for (const special of character.build.specials) {
-          if (typeof special === 'string' && 
-              special.toLowerCase().includes('darkvision')) {
-            hasDarkvision = true;
-            break;
-          }
+
+    const lightSpells = ['light', 'dancing lights', 'floating flame', 'everlight'];
+    const lightItems = ['torch', 'lantern', 'everburning', 'sunrod', 'glow rod', 'moonlit chain'];
+    const sources = [];
+
+    for (const c of characters) {
+      const name = c.build?.name || 'Unknown';
+      const mine = [];
+
+      const specials = (c.build?.specials || []).map(s => String(s).toLowerCase());
+      if (specials.some(s => s.includes('darkvision'))) mine.push('darkvision');
+      else if (specials.some(s => s.includes('low-light'))) mine.push('low-light vision');
+
+      for (const fam of (c.build?.familiars || [])) {
+        if ((fam.abilities || []).some(a => String(a).toLowerCase().includes('darkvision'))) mine.push('familiar with darkvision');
+      }
+
+      const spells = new Set();
+      for (const caster of (c.build?.spellCasters || [])) {
+        for (const lg of [caster.spells, caster.prepared].filter(Boolean)) {
+          for (const ld of lg) (ld.list || []).forEach(s => spells.add(String(s)));
         }
       }
-      
-      // Check for familiars with darkvision
-      if (character.build && character.build.familiars) {
-        for (const familiar of character.build.familiars) {
-          if (familiar.abilities && familiar.abilities.includes('Darkvision')) {
-            hasDarkvision = true;
-            break;
-          }
-        }
+      for (const s of spells) {
+        if (lightSpells.some(h => s.toLowerCase().includes(h))) mine.push(s + ' (spell)');
       }
-      
-      // Check for light spells
-      if (character.build && character.build.spellCasters) {
-        for (const caster of character.build.spellCasters) {
-          // Check cantrips/level 0 spells
-          if (caster.spells && Array.isArray(caster.spells)) {
-            for (const spellLevel of caster.spells) {
-              if (spellLevel.spellLevel === 0 && spellLevel.list) {
-                for (const spell of spellLevel.list) {
-                  if (typeof spell === 'string' && 
-                      (spell.toLowerCase() === 'light' || 
-                       spell.toLowerCase().includes('dancing lights'))) {
-                    hasLightSource = true;
-                    break;
-                  }
-                }
-              }
-            }
-          }
-          
-          // Also check prepared spells if available
-          if (caster.prepared && Array.isArray(caster.prepared)) {
-            for (const spellLevel of caster.prepared) {
-              if (spellLevel.spellLevel === 0 && spellLevel.list) {
-                for (const spell of spellLevel.list) {
-                  if (typeof spell === 'string' && 
-                      (spell.toLowerCase() === 'light' || 
-                       spell.toLowerCase().includes('dancing lights'))) {
-                    hasLightSource = true;
-                    break;
-                  }
-                }
-              }
-            }
-          }
-        }
+
+      for (const item of (c.build?.equipment || [])) {
+        const n = String((Array.isArray(item) ? item[0] : (item?.name || item?.display || item)) || '');
+        if (lightItems.some(h => n.toLowerCase().includes(h))) mine.push(n + ' (item)');
       }
-      
-      if (hasDarkvision && hasLightSource) break;
+
+      if (mine.length) sources.push(name + ': ' + mine.join(', '));
     }
-    
-    // If party has neither darkvision nor light spells, issue warning
-    return hasDarkvision || hasLightSource;
+
+    window.lightSources = sources;
+    window.sightSummary = "Your party can handle the dark.||Vision & light: | " + sources.join(' | ');
+    return sources.length > 0;
   }
-successMessage: Your party has access to darkvision or light-producing spells.
-failureMessage: No one in your party has darkvision or light-producing spells. Remember that using a torch or lantern requires a free hand, which may limit your combat options. Consider acquiring magical light sources or items that grant darkvision.
+successMessage: "{{sightSummary}}"
+failureMessage: No one in your party has darkvision, light spells, or even a torch. Remember that a torch or lantern occupies a hand, which limits combat options. Consider the Light cantrip, a familiar with darkvision, or at minimum some torches.

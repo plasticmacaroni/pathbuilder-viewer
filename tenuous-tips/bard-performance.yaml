@@ -29,4 +29,4 @@ checkFunction: |
     return offenders.length === 0;
   }
 successMessage: Performance training is appropriately distributed, since it sucks on anyone but Bards.
-failureMessage: "Performance Fucking Sucks for Anyone but Bards. Looking at you: {{performanceOffenders.join(', ')}}."
+failureMessage: "Performance Fucking Sucks for Anyone but Bards.||Looking at you: | {{performanceOffenders.join(' | ')}}"

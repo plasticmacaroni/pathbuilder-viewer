@@ -7,8 +7,8 @@ checkFunction: "function() {
 
     const firstLevel = characters[0].build.level;
     window.partyLevel = firstLevel;
-    window.levelSpread = characters.map(c => (c.build?.name || 'Unknown') + ' (' + (c.build?.level ?? '?') + ')').join(', ');
+    window.levelSpread = characters.map(c => (c.build?.name || 'Unknown') + ': level ' + (c.build?.level ?? '?'));
     return characters.every(char => char.build.level === firstLevel);
 }"
 successMessage: "All characters are at the same level (Level {{partyLevel}})."
-failureMessage: "Characters have different levels! This can cause imbalance in party comparison: {{levelSpread}}. Consider exporting all characters at the same level."
+failureMessage: "Characters have different levels! This can cause imbalance in party comparison.||Levels: | {{levelSpread.join(' | ')}}||Consider exporting all characters at the same level."
