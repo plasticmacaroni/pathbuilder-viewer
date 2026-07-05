@@ -5,7 +5,11 @@ checkFunction: |
     if (characters.length === 0) return true;
 
     const avgLevel = characters.reduce((a, c) => a + (c.build?.level || 0), 0) / characters.length;
-    if (avgLevel < 5) return true;
+    if (avgLevel < 5) {
+      // Early exit must still set the var the success message references
+      window.incorporealCarriers = "nobody yet — incorporeal foes are rare below level 5, revisit then";
+      return true;
+    }
 
     const forceSpellPatterns = [/force barrage/i, /magic missile/i, /spiritual armament/i, /phantom pain/i, /phantasmal calamity/i, /falling stars/i];
     const spiritPatterns = [/\bspirit\b/i, /vitality/i, /\bvoid\b/i, /banishment/i];

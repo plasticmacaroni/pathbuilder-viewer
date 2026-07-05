@@ -10,7 +10,14 @@ checkFunction: |
       return isCaster && level >= 10 && level <= 20;
     });
 
-    if (eligible.length === 0) return true;
+    // Build the full success sentence here — the template engine can't branch,
+    // and the no-eligible-casters early exit must still produce a sensible message.
+    if (eligible.length === 0) {
+      window.signetSummary = "No casters at level 10+ yet — the Shadow Signet (level 10 item) becomes relevant once your casters get there.";
+      window.signetEquipped = 'nobody yet';
+      window.signetMissing = [];
+      return true;
+    }
 
     const equipped = [];
     const missing = [];
@@ -28,7 +35,8 @@ checkFunction: |
 
     window.signetEquipped = equipped.length ? equipped.join(', ') : 'no casters';
     window.signetMissing = missing;
+    window.signetSummary = "All high-level casters in the party carry a Shadow Signet, letting them retarget attack-roll spells against AC instead of saves — clutch against incorporeal foes and high-save enemies. Equipped: " + window.signetEquipped + ".";
     return missing.length === 0;
   }
-successMessage: "All high-level casters in the party carry a Shadow Signet, letting them retarget attack-roll spells against AC instead of saves — clutch against incorporeal foes and high-save enemies. Equipped: {{signetEquipped}}."
+successMessage: "{{signetSummary}}"
 failureMessage: "Shadow Signet (level 10 item) lets a caster switch an attack-spell from a save to a touch AC attack — especially valuable against incorporeal creatures and enemies with sky-high saves. Casters without one: {{signetMissing.join(', ')}}. Already equipped: {{signetEquipped}}."
