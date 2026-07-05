@@ -1752,13 +1752,25 @@ async function sharePartyLink() {
         return;
     }
     try {
-        // Strip the derived `extracted` data — it's rebuilt on import, and dropping
-        // it roughly halves the link length. Keep success:true — preprocessCharacterData
-        // refuses to rebuild `extracted` without it.
+        // Strip the derived `extracted` data — it's rebuilt on import — plus build
+        // fields nothing in the app reads (containers, money, ability breakdowns...).
+        // Keep success:true — preprocessCharacterData refuses to rebuild without it.
+        const DROP_FIELDS = new Set(['equipmentContainers', 'formula', 'pets', 'familiars',
+            'money', 'rituals', 'inventorMods', 'specificProficiencies', 'xp',
+            'alignment', 'gender', 'age', 'sizeName', 'size', 'dualClass']);
+        const stripBuild = (b) => {
+            const out = {};
+            for (const [k, v] of Object.entries(b || {})) if (!DROP_FIELDS.has(k)) out[k] = v;
+            if (out.abilities && out.abilities.breakdown !== undefined) {
+                const { breakdown, ...rest } = out.abilities;
+                out.abilities = rest;
+            }
+            return out;
+        };
         const slim = {
             format: 'pf2e-character-comparison-party',
             version: '1.0',
-            characters: characters.map(c => ({ success: true, build: c.build }))
+            characters: characters.map(c => ({ success: true, build: stripBuild(c.build) }))
         };
         const hash = await deflateToBase64Url(JSON.stringify(slim));
         const url = `${location.origin}${location.pathname}#p=${hash}`;
