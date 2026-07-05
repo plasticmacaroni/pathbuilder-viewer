@@ -5,25 +5,28 @@ checkFunction: |
     // If there are no characters, don't show a warning
     if (characters.length === 0) return true;
     
-    // Check if any non-bard character has Performance proficiency
+    // Collect every non-bard character with Performance proficiency
+    const offenders = [];
     for (const character of characters) {
       // Skip if missing required data
       if (!character.build || !character.extracted || !character.extracted.skillProficiencies) {
         continue;
       }
-      
+
       // Get character's class and performance proficiency
       const characterClass = character.build.class;
       const performanceProf = character.extracted.skillProficiencies.performance;
-      
+
       // If this character is not a Bard and has any proficiency in Performance
       if (characterClass !== 'Bard' && performanceProf !== 'U') {
-        return false; // Trigger the warning
+        offenders.push(character.build.name + " (" + (characterClass || "classless") + ", Performance " + performanceProf + ")");
       }
     }
-    
-    // No non-bard characters with Performance proficiency found
-    return true;
+
+    // Expose the offender list for the failure message
+    window.performanceOffenders = offenders;
+
+    return offenders.length === 0;
   }
 successMessage: Performance training is appropriately distributed, since it sucks on anyone but Bards.
-failureMessage: Performance Fucking Sucks for Anyone but Bards.
+failureMessage: "Performance Fucking Sucks for Anyone but Bards. Looking at you: {{performanceOffenders.join(', ')}}."

@@ -38,21 +38,27 @@ checkFunction: |
     
     // Store the number of traditions covered for the message
     window.traditionsCount = coveredTraditions.size;
-    
+
     // Check if only one or no traditions are covered
     if (coveredTraditions.size <= 1) {
       // Create a message about which traditions are missing
       const allTraditions = ["Arcane", "Divine", "Occult", "Primal"];
-      const missingTraditions = allTraditions.filter(t => 
+      const missingTraditions = allTraditions.filter(t =>
         !coveredTraditions.has(t.toLowerCase())
       );
-      
+
       window.missingTraditions = missingTraditions;
-      
+
+      // Pre-build the summary phrase (template engine can't evaluate ternaries)
+      const covered = allTraditions.filter(t => coveredTraditions.has(t.toLowerCase()));
+      window.traditionSummary = covered.length === 0
+        ? "no magic traditions"
+        : "one magic tradition (" + covered.join(", ") + ")";
+
       return false; // Show warning
     }
-    
+
     return true; // Adequate tradition coverage, no warning needed
   }
 successMessage: Party has access to multiple magic traditions or Trick Magic Item.
-failureMessage: "Your party only has access to {{traditionsCount === 0 ? 'no' : 'one'}} magic tradition and no one has Trick Magic Item. Consider training someone in Trick Magic Item to use scrolls, wands, and other items from {{missingTraditions.join(', ')}} traditions."
+failureMessage: "Your party only has access to {{traditionSummary}} and no one has Trick Magic Item. Consider training someone in Trick Magic Item to use scrolls, wands, and other items from the {{missingTraditions.join(', ')}} traditions."
