@@ -39,7 +39,7 @@ checkFunction: |
     }
 
     window.lightSources = sources;
-    window.sightSummary = "Your party can handle the dark.||Vision & light: | " + sources.join(' | ');
+    window.sightSummary = "Dungeons are dark, and fighting blind means a flat check on every attack. Your party can handle it.||Vision & light: | " + sources.join(' | ');
     return sources.length > 0;
   }
 successMessage: "{{sightSummary}}"

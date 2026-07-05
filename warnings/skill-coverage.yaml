@@ -41,4 +41,4 @@ checkFunction: |
     return insufficientSkills.length === 0;
   }
 successMessage: "{{skillCoverageSummary}}"
-failureMessage: "Nobody in the party is trained in these skills.||Missing: | {{insufficientSkillsList.join(' | ')}}"
+failureMessage: "Every skill comes up eventually — untrained gaps stall exploration, social scenes, and downtime.||Nobody is trained in: | {{insufficientSkillsList.join(' | ')}}"

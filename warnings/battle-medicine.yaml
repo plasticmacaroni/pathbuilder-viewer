@@ -10,7 +10,7 @@ checkFunction: |
       .map(c => c.build?.name || "Unknown");
 
     if (carriers.length > 0) {
-      window.battleMedicineSummary = "Emergency healing is covered.||Battle Medicine: | " + carriers.join(' | ');
+      window.battleMedicineSummary = "Battle Medicine lets a Medicine-trained character patch wounds mid-combat — the only healing that costs neither a spell slot nor 10 minutes. Your party has it covered.||Battle Medicine: | " + carriers.join(' | ');
       return true;
     }
 

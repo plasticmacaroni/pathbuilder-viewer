@@ -26,7 +26,7 @@ checkFunction: |
     const hasSocialSkills = missingSkills.length < 3;
     window.onlyHasPerformance = hasPerformance && !hasSocialSkills;
 
-    window.charismaSummary = "Your party has good coverage of social skills." +
+    window.charismaSummary = "Social encounters (negotiating, lying, demoralizing) run on the Charisma skills. Your party has good coverage." +
       (window.onlyHasPerformance ? " Though Performance is less useful than the other Charisma skills in most adventures." : "") +
       (coveredLines.length ? "||Covered: | " + coveredLines.join(' | ') : "") +
       (missingSkills.length ? "||Untrained: | " + missingSkills.join(' | ') : "");

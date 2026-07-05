@@ -25,7 +25,7 @@ checkFunction: |
     const coveragePercent = Math.round(((6 - missingSkills.length) / 6) * 100);
     window.knowledgeCoveragePercent = coveragePercent;
 
-    window.knowledgeSummary = "Your party has good knowledge skill coverage (" + coveragePercent + "%)." +
+    window.knowledgeSummary = "Recall Knowledge — identifying monsters and their weaknesses — runs on these six skills. Your party has good coverage (" + coveragePercent + "%)." +
       (coveredLines.length ? "||Covered: | " + coveredLines.join(' | ') : "") +
       (missingSkills.length ? "||Still missing: | " + missingSkills.join(' | ') : "");
 

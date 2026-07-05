@@ -36,5 +36,5 @@ checkFunction: |
 
     return bestDip >= target || bestSoc >= target;
   }
-successMessage: "Your party has a strong Recall Knowledge / Gather Information bench. Best Diplomacy: {{gatherBestDip}}. Best Society: {{gatherBestSoc}}. Target for hard checks at your level: {{gatherTarget}}."
+successMessage: "Gathering information in town and recalling lore both lean on Diplomacy and Society — and your party has a strong bench. Best Diplomacy: {{gatherBestDip}}. Best Society: {{gatherBestSoc}}. Target for hard checks at your level: {{gatherTarget}}."
 failureMessage: "Recall Knowledge and Gather Information depend mostly on Diplomacy or Society. Best Diplomacy: {{gatherBestDip}}. Best Society: {{gatherBestSoc}}. Target for hard checks at your level: {{gatherTarget}}. Either invest in proficiency or boost Cha/Int on the party face so you can succeed against hard DCs."

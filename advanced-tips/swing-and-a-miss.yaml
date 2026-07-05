@@ -10,7 +10,7 @@ checkFunction: |
       // level 2-3), and level 1-2 phantoms exist in several APs — so only a pure
       // level-1 party gets a pass, and even then with a nudge.
       window.incorporealCarriers = 'nobody yet';
-      window.swingSummary = "At level 1 you get a pass — but Shadows and Ghost Commoners are level 4 creatures that show up as early as level 2-3 encounters. Force Barrage (rank 1) or spirit damage is the cheapest early answer; plan for it now.";
+      window.swingSummary = "Incorporeal creatures (ghosts, shades, wraiths) take half damage from nearly everything — only force damage, spirit damage, vitality/void, and ghost touch weapons hit them properly. At level 1 you get a pass, but Shadows and Ghost Commoners are level 4 creatures that appear in level 2-3 encounters. Force Barrage (rank 1) or spirit damage is the cheapest early answer; plan for it now.";
       return true;
     }
 

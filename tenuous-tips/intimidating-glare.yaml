@@ -50,5 +50,5 @@ checkFunction: |
     // Return true if they have the feat (tip not needed)
     return hasGlare;
   }
-successMessage: "{{intimidationCharName}} is trained in intimidation and already has Intimidating Glare. Good job!"
+successMessage: "Intimidating Glare lets you Demoralize with a look instead of words — no shared language needed, works on beasts. {{intimidationCharName}} is trained in Intimidation and already has it. Good job!"
 failureMessage: "{{failureText}}"

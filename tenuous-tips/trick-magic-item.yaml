@@ -27,7 +27,7 @@ checkFunction: |
 
     // If someone has Trick Magic Item, we're good — say who
     if (hasTrickMagicItem) {
-      window.tmiSummary = "Magic item access is covered.||Trick Magic Item: | " + tmiCarriers.join(' | ') +
+      window.tmiSummary = "Scrolls and wands can only be activated by casters of their tradition — Trick Magic Item fakes that access with a skill check, so looted consumables never go to waste.||Trick Magic Item: | " + tmiCarriers.join(' | ') +
         (coveredLines.length ? "||Traditions: | " + coveredLines.join(' | ') : "");
       return true;
     }
@@ -37,7 +37,7 @@ checkFunction: |
 
     // Multiple traditions also passes — say who provides what
     if (coveredTraditions.size > 1) {
-      window.tmiSummary = "Party has access to multiple magic traditions.||Traditions: | " + coveredLines.join(' | ');
+      window.tmiSummary = "Scrolls and wands can only be activated by casters of their tradition. Your party spans multiple traditions, so most looted consumables are usable by someone.||Traditions: | " + coveredLines.join(' | ');
       return true;
     }
 
