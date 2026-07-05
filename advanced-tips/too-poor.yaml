@@ -9,7 +9,7 @@ checkFunction: |
 
     const materials = [
       { key: 'silver',     label: 'Silver',     minLevel: 1, why: 'werewolves and other lycanthropes resist non-silver weapons' },
-      { key: 'cold iron',  label: 'Cold Iron',  minLevel: 1, why: 'fey, redcaps, and demons resist non-cold-iron weapons' },
+      { key: 'cold iron',  label: 'Cold Iron',  minLevel: 3, why: 'fey, redcaps, and demons resist non-cold-iron weapons — a low-grade cold iron weapon is a level-2 item (40 gp, realistic by level 3) and lesser cold iron blanch (item 3, 10 gp) is a cheap consumable stopgap' },
       { key: 'adamantine', label: 'Adamantine', minLevel: 8, why: 'golems, constructs, and hardness-heavy enemies require adamantine to bypass' }
     ];
     const adamantineAliases = /adamantine|adamantium/i;
@@ -49,7 +49,15 @@ checkFunction: |
       for (const lvl in known) {
         if ((known[lvl] || []).some(s => /needle darts/i.test(s || ''))) hasNeedleDarts = true;
       }
-      if (hasNeedleDarts) addSource('silver', name, 'Needle Darts cast with silver coins');
+      if (hasNeedleDarts) {
+        addSource('silver', name, 'Needle Darts cast with silver coins');
+        // A cold iron chunk (10 gp, light Bulk) works as Needle Darts material too
+        const hasChunk = sources.some(item => {
+          const n = String((Array.isArray(item) ? item[0] : (item?.name || item?.display || item)) || '').toLowerCase();
+          return n.includes('cold iron') && (n.includes('chunk') || n.includes('ingot') || n.includes('coin'));
+        });
+        if (hasChunk) addSource('cold iron', name, 'Needle Darts with a cold iron chunk');
+      }
     }
 
     const coveredLines = [];
@@ -72,4 +80,4 @@ checkFunction: |
     return gaps.length === 0;
   }
 successMessage: "Your party can bypass the common material-based resistances of werewolves (silver), fey (cold iron), and golems/constructs (adamantine, once level 8+).||Covered: | {{tooPoorCovered}}"
-failureMessage: "Some monsters resist anything but specific weapon materials.||Missing: | {{tooPoorGaps.join(' | ')}}||Covered: | {{tooPoorCovered}}||Pick up a weapon in the missing material, or cast Needle Darts with the appropriate metal coins as ammunition."
+failureMessage: "Some monsters resist anything but specific weapon materials.||Missing: | {{tooPoorGaps.join(' | ')}}||Covered: | {{tooPoorCovered}}||Cheapest fixes: a 10 gp metal chunk for a Needle Darts caster, a 10 gp cold iron blanch (item 3) for a martial, or a 40 gp low-grade weapon."
