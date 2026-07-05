@@ -62,6 +62,7 @@ checkFunction: |
 
     const coveredLines = [];
     const gaps = [];
+    const upcoming = [];
 
     for (const m of materials) {
       const entries = Array.from(carriers[m.key].entries());
@@ -71,13 +72,20 @@ checkFunction: |
         coveredLines.push(`${m.label} covered by ${list.join(', ')}`);
       } else if (!gated) {
         gaps.push(`${m.label} — ${m.why}`);
+      } else {
+        // Not counted against the party yet, but shown as an upcoming need
+        upcoming.push(`${m.label} (by level ${m.minLevel}) — ${m.why}`);
       }
     }
 
-    window.tooPoorCovered = coveredLines.length ? coveredLines.join(' | ') : 'nothing';
-    window.tooPoorGaps = gaps;
+    const coveredBlock = "||Covered: | " + (coveredLines.length ? coveredLines.join(' | ') : 'nothing');
+    const upcomingBlock = upcoming.length ? "||Soon needed: | " + upcoming.join(' | ') : "";
+    const fixesBlock = "||Cheapest fixes: a 10 gp metal chunk for a Needle Darts caster, a 10 gp cold iron blanch (item 3) for a martial, or a 40 gp low-grade weapon.";
+
+    window.tooPoorSummary = "Your party can bypass the material-based resistances relevant at your level." + coveredBlock + upcomingBlock;
+    window.tooPoorFailSummary = "Some monsters resist anything but specific weapon materials.||Missing: | " + gaps.join(' | ') + coveredBlock + upcomingBlock + fixesBlock;
 
     return gaps.length === 0;
   }
-successMessage: "Your party can bypass the common material-based resistances of werewolves (silver), fey (cold iron), and golems/constructs (adamantine, once level 8+).||Covered: | {{tooPoorCovered}}"
-failureMessage: "Some monsters resist anything but specific weapon materials.||Missing: | {{tooPoorGaps.join(' | ')}}||Covered: | {{tooPoorCovered}}||Cheapest fixes: a 10 gp metal chunk for a Needle Darts caster, a 10 gp cold iron blanch (item 3) for a martial, or a 40 gp low-grade weapon."
+successMessage: "{{tooPoorSummary}}"
+failureMessage: "{{tooPoorFailSummary}}"
