@@ -19,7 +19,8 @@ checkFunction: |
 
       // If this character is not a Bard and has any proficiency in Performance
       if (characterClass !== 'Bard' && performanceProf !== 'U') {
-        offenders.push(character.build.name + " (" + (characterClass || "classless") + ", Performance " + performanceProf + ")");
+        const rankWord = { T: 'trained', E: 'expert', M: 'master', L: 'legendary' }[performanceProf] || performanceProf;
+        offenders.push(character.build.name + " (" + (characterClass || "classless") + ", " + rankWord + " in Performance)");
       }
     }
 

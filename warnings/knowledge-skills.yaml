@@ -2,57 +2,33 @@ title: Dumb AND Hot!
 description: Party lacks knowledge skill proficiencies
 checkFunction: |
   function() {
-    // If there are no characters, don't show a warning
     if (characters.length === 0) return true;
-    
-    // Define knowledge skills to check
+
     const knowledgeSkills = {
-      'arcana': 'Arcana',
-      'occultism': 'Occultism',
-      'religion': 'Religion',
-      'nature': 'Nature',
-      'society': 'Society',
-      'crafting': 'Crafting'
+      'arcana': 'Arcana', 'occultism': 'Occultism', 'religion': 'Religion',
+      'nature': 'Nature', 'society': 'Society', 'crafting': 'Crafting'
     };
-    
-    // Track which skills have proficiency
+
     const missingSkills = [];
-    
+    const coveredLines = [];
+
+    const rankWord = { T: 'trained', E: 'expert', M: 'master', L: 'legendary' };
     for (const [skillKey, skillName] of Object.entries(knowledgeSkills)) {
-      // Check if any character has training in this skill
-      let hasTraining = false;
-      
-      for (const character of characters) {
-        // Check if proficiency exists (trained or higher)
-        if (character.extracted && 
-            character.extracted.skillProficiencies && 
-            character.extracted.skillProficiencies[skillKey] && 
-            character.extracted.skillProficiencies[skillKey] !== 'U') {
-          hasTraining = true;
-          break;
-        }
-      }
-      
-      if (!hasTraining) {
-        missingSkills.push(skillName);
-      }
+      const carriers = characters
+        .filter(c => (c.extracted?.skillProficiencies?.[skillKey] ?? 'U') !== 'U')
+        .map(c => (c.build?.name || 'Unknown') + ' (' + (rankWord[c.extracted.skillProficiencies[skillKey]] || c.extracted.skillProficiencies[skillKey]) + ')');
+      if (carriers.length > 0) coveredLines.push(skillName + ': ' + carriers.join(', '));
+      else missingSkills.push(skillName);
     }
-    
-    // Store the missing skills list for use in the message
+
     window.missingKnowledgeSkills = missingSkills;
-    
-    // Calculate what percentage of knowledge skills are covered
-    const coveredSkillsCount = Object.keys(knowledgeSkills).length - missingSkills.length;
-    const coveragePercent = Math.round((coveredSkillsCount / Object.keys(knowledgeSkills).length) * 100);
-    
-    // Store the coverage percentage for the message
+    const coveragePercent = Math.round(((6 - missingSkills.length) / 6) * 100);
     window.knowledgeCoveragePercent = coveragePercent;
 
-    // Build the full success text here — the template engine can't evaluate ternaries
     window.knowledgeSummary = "Your party has good knowledge skill coverage (" + coveragePercent + "%)." +
-      (missingSkills.length > 0 ? "||Still missing: | " + missingSkills.join(' | ') : " All knowledge skills are covered!");
+      (coveredLines.length ? "||Covered: | " + coveredLines.join(' | ') : "") +
+      (missingSkills.length ? "||Still missing: | " + missingSkills.join(' | ') : "");
 
-    // Return true if at least 4 knowledge skills are covered (≥66%)
     return coveragePercent >= 66;
   }
 successMessage: "{{knowledgeSummary}}"

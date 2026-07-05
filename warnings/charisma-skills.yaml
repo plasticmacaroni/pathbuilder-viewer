@@ -2,81 +2,35 @@ title: Make Sure You Have a Face!
 description: Party lacks charisma skill proficiencies
 checkFunction: |
   function() {
-    // If there are no characters, don't show a warning
     if (characters.length === 0) return true;
-    
-    // Define charisma skills to check (the social skills)
+
     const charismaSkills = {
-      'deception': 'Deception',
-      'diplomacy': 'Diplomacy',
-      'intimidation': 'Intimidation',
-      'performance': 'Performance'
+      'deception': 'Deception', 'diplomacy': 'Diplomacy',
+      'intimidation': 'Intimidation', 'performance': 'Performance'
     };
-    
-    // Track which skills have proficiency
+
     const missingSkills = [];
-    
+    const coveredLines = [];
+
+    const rankWord = { T: 'trained', E: 'expert', M: 'master', L: 'legendary' };
     for (const [skillKey, skillName] of Object.entries(charismaSkills)) {
-      // Check if any character has training in this skill
-      let hasTraining = false;
-      
-      for (const character of characters) {
-        // Check multiple possible paths for skill proficiency
-        
-        // Path 1: extracted.skillProficiencies path
-        if (character.extracted && 
-            character.extracted.skillProficiencies && 
-            character.extracted.skillProficiencies[skillKey] && 
-            character.extracted.skillProficiencies[skillKey] !== 'U') {
-          hasTraining = true;
-          break;
-        }
-        
-        // Path 2: direct proficiencies path (if present)
-        if (character.proficiencies && 
-            character.proficiencies[skillKey] && 
-            character.proficiencies[skillKey] >= 2) { // 2+ = Trained or higher in PF2e
-          hasTraining = true;
-          break;
-        }
-        
-        // Path 3: Check numeric skill values
-        if (character.extracted && 
-            character.extracted.skills && 
-            character.extracted.skills[skillKey] > 0) {
-          hasTraining = true;
-          break;
-        }
-        
-        // Path 4: Check build proficiencies (if available)
-        if (character.build && 
-            character.build.proficiencies && 
-            character.build.proficiencies[skillKey] >= 2) {
-          hasTraining = true;
-          break;
-        }
-      }
-      
-      if (!hasTraining) {
-        missingSkills.push(skillName);
-      }
+      const carriers = characters
+        .filter(c => (c.extracted?.skillProficiencies?.[skillKey] ?? 'U') !== 'U')
+        .map(c => (c.build?.name || 'Unknown') + ' (' + (rankWord[c.extracted.skillProficiencies[skillKey]] || c.extracted.skillProficiencies[skillKey]) + ')');
+      if (carriers.length > 0) coveredLines.push(skillName + ': ' + carriers.join(', '));
+      else missingSkills.push(skillName);
     }
-    
-    // Store the missing skills list for use in the message
+
     window.missingCharismaSkills = missingSkills;
-    
-    // Check specifically for Performance separately
     const hasPerformance = !missingSkills.includes('Performance');
-    const hasSocialSkills = missingSkills.length < 3; // At least two cha skills covered
-    
-    // Store performance status for specialized messages
+    const hasSocialSkills = missingSkills.length < 3;
     window.onlyHasPerformance = hasPerformance && !hasSocialSkills;
 
-    // Build the full success text here — the template engine can't evaluate ternaries
     window.charismaSummary = "Your party has good coverage of social skills." +
-      (window.onlyHasPerformance ? " Though Performance is less useful than the other Charisma skills in most adventures." : "");
+      (window.onlyHasPerformance ? " Though Performance is less useful than the other Charisma skills in most adventures." : "") +
+      (coveredLines.length ? "||Covered: | " + coveredLines.join(' | ') : "") +
+      (missingSkills.length ? "||Untrained: | " + missingSkills.join(' | ') : "");
 
-    // Return true if at least two charisma skills are covered
     return hasSocialSkills;
   }
 successMessage: "{{charismaSummary}}"

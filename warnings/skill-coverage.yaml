@@ -2,59 +2,43 @@ title: Skill Coverage
 description: Party skill proficiency distribution
 checkFunction: |
   function() {
-    // If there are no characters, don't show a warning
     if (characters.length === 0) return true;
-    
-    // Define all skills to check
+
     const allSkills = {
-      'acrobatics': 'Acrobatics',
-      'arcana': 'Arcana',
-      'athletics': 'Athletics',
-      'crafting': 'Crafting',
-      'deception': 'Deception',
-      'diplomacy': 'Diplomacy',
-      'intimidation': 'Intimidation',
-      'medicine': 'Medicine',
-      'nature': 'Nature',
-      'occultism': 'Occultism',
-      'performance': 'Performance',
-      'religion': 'Religion',
-      'society': 'Society',
-      'stealth': 'Stealth',
-      'survival': 'Survival',
-      'thievery': 'Thievery'
+      'acrobatics': 'Acrobatics', 'arcana': 'Arcana', 'athletics': 'Athletics',
+      'crafting': 'Crafting', 'deception': 'Deception', 'diplomacy': 'Diplomacy',
+      'intimidation': 'Intimidation', 'medicine': 'Medicine', 'nature': 'Nature',
+      'occultism': 'Occultism', 'performance': 'Performance', 'religion': 'Religion',
+      'society': 'Society', 'stealth': 'Stealth', 'survival': 'Survival', 'thievery': 'Thievery'
     };
-    
-    // Find skills with insufficient training (untrained or 0)
+
+    const prof = (c, key) => c.extracted?.skillProficiencies?.[key] ?? 'U';
     const insufficientSkills = [];
-    
+    const notes = [];
+
     for (const [skillKey, skillName] of Object.entries(allSkills)) {
-      // Check if any character has adequate training in this skill
-      let hasAdequateTraining = false;
-      
-      for (const character of characters) {
-        // First check skill proficiencies to ensure it's not untrained
-        if (character.extracted && 
-            character.extracted.skillProficiencies && 
-            character.extracted.skillProficiencies[skillKey] && 
-            character.extracted.skillProficiencies[skillKey] !== 'U') {
-          
-          // Only consider a skill adequate if it's not untrained, regardless of numeric value
-          hasAdequateTraining = true;
-          break;
+      let covered = characters.some(c => prof(c, skillKey) !== 'U');
+
+      // Chirurgeon exception: an alchemist with the Chirurgeon research field uses
+      // Crafting in place of Medicine for its checks
+      if (!covered && skillKey === 'medicine') {
+        const chirurgeons = characters.filter(c =>
+          (c.build?.specials || []).some(s => String(s).toLowerCase() === 'chirurgeon') &&
+          prof(c, 'crafting') !== 'U'
+        ).map(c => c.build?.name || 'Unknown');
+        if (chirurgeons.length > 0) {
+          covered = true;
+          notes.push('Medicine: no one is trained, but ' + chirurgeons.join(', ') + ' covers it via Chirurgeon (uses Crafting for Medicine checks)');
         }
       }
-      
-      if (!hasAdequateTraining) {
-        insufficientSkills.push(skillName);
-      }
+
+      if (!covered) insufficientSkills.push(skillName);
     }
-    
-    // Store the insufficient skills list for use in the message
+
     window.insufficientSkillsList = insufficientSkills;
-    
-    // Return true if there are no insufficient skills
+    window.skillCoverageSummary = "Full skill coverage — at least one character is trained in every skill (the table above shows who)." +
+      (notes.length ? "||Notes: | " + notes.join(' | ') : "");
     return insufficientSkills.length === 0;
   }
-successMessage: Full skill coverage achieved! At least one character has trained proficiency or better in every skill.
+successMessage: "{{skillCoverageSummary}}"
 failureMessage: "Nobody in the party is trained in these skills.||Missing: | {{insufficientSkillsList.join(' | ')}}"

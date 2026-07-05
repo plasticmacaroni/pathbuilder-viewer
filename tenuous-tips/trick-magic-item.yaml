@@ -5,39 +5,41 @@ checkFunction: |
     // If there are no characters, don't show a warning
     if (characters.length === 0) return true;
     
-    // Check if any character has Trick Magic Item feat
-    let hasTrickMagicItem = false;
+    // Collect everyone with the Trick Magic Item feat
+    const tmiCarriers = characters
+      .filter(c => (c.build?.feats || []).some(f => f && f[0] === "Trick Magic Item"))
+      .map(c => c.build?.name || "Unknown");
+    const hasTrickMagicItem = tmiCarriers.length > 0;
     
-    for (const character of characters) {
-      // Check character feats
-      if (character.build && character.build.feats) {
-        for (const feat of character.build.feats) {
-          if (feat && feat[0] === "Trick Magic Item") {
-            hasTrickMagicItem = true;
-            break;
-          }
-        }
-      }
-      
-      if (hasTrickMagicItem) break;
-    }
-    
-    // If someone has Trick Magic Item, we're good
-    if (hasTrickMagicItem) return true;
-    
-    // Count how many magic traditions the party has access to
+    // Map each tradition to who provides it
+    const traditionCarriers = {};
     const coveredTraditions = new Set();
-    
     for (const character of characters) {
-      if (character.extracted && character.extracted.magicTraditions) {
-        for (const tradition of character.extracted.magicTraditions) {
-          coveredTraditions.add(tradition.toLowerCase());
-        }
+      const name = character.build?.name || "Unknown";
+      for (const tradition of (character.extracted?.magicTraditions || [])) {
+        const key = tradition.toLowerCase();
+        coveredTraditions.add(key);
+        (traditionCarriers[key] = traditionCarriers[key] || []).push(name);
       }
+    }
+    const coveredLines = Object.entries(traditionCarriers).map(([t, names]) =>
+      t.charAt(0).toUpperCase() + t.slice(1) + ': ' + names.join(', '));
+
+    // If someone has Trick Magic Item, we're good — say who
+    if (hasTrickMagicItem) {
+      window.tmiSummary = "Magic item access is covered.||Trick Magic Item: | " + tmiCarriers.join(' | ') +
+        (coveredLines.length ? "||Traditions: | " + coveredLines.join(' | ') : "");
+      return true;
     }
     
     // Store the number of traditions covered for the message
     window.traditionsCount = coveredTraditions.size;
+
+    // Multiple traditions also passes — say who provides what
+    if (coveredTraditions.size > 1) {
+      window.tmiSummary = "Party has access to multiple magic traditions.||Traditions: | " + coveredLines.join(' | ');
+      return true;
+    }
 
     // Check if only one or no traditions are covered
     if (coveredTraditions.size <= 1) {
@@ -60,5 +62,5 @@ checkFunction: |
 
     return true; // Adequate tradition coverage, no warning needed
   }
-successMessage: Party has access to multiple magic traditions or Trick Magic Item.
+successMessage: "{{tmiSummary}}"
 failureMessage: "Your party only has access to {{traditionSummary}} and no one has Trick Magic Item. Consider training someone in Trick Magic Item to use scrolls, wands, and other items from the {{missingTraditions.join(', ')}} traditions."
