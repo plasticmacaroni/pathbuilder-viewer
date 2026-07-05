@@ -13,23 +13,33 @@ checkFunction: |
     const weaponDamage = (name) => {
       const n = String(name || '').toLowerCase();
       const types = new Set();
-      if (/(mace|club|hammer|sap|staff|maul|morningstar|warhammer|flail|sling)/.test(n)) types.add('bludgeoning');
-      if (/(sword|scimitar|falchion|axe|sickle|kukri|machete|katar)/.test(n)) types.add('slashing');
-      if (/(dagger|spear|pick|rapier|stiletto|bow|crossbow|dart|javelin|lance|arrow)/.test(n)) types.add('piercing');
+      if (/(mace|club|hammer|sap|staff|maul|morningstar|warhammer|flail|sling|bo staff|nunchaku)/.test(n)) types.add('bludgeoning');
+      if (/(sword|scimitar|falchion|axe|sickle|kukri|machete|katar|glaive|halberd|scythe)/.test(n)) types.add('slashing');
+      if (/(dagger|spear|pick|rapier|stiletto|bow|crossbow|dart|javelin|lance|arrow|trident|shuriken)/.test(n)) types.add('piercing');
+      // common versatile weapons cover their secondary type too
+      if (/dagger/.test(n)) types.add('slashing');                        // dagger: P, versatile S
+      if (/(bastard sword|longsword)/.test(n)) types.add('piercing');     // longswords: S, versatile P
       return types;
     };
+
+    // Pathbuilder exports declare damageType as a letter code
+    const letterMap = { b: 'bludgeoning', p: 'piercing', s: 'slashing' };
 
     const carriers = { bludgeoning: new Set(), slashing: new Set(), piercing: new Set() };
 
     for (const c of characters) {
       const name = c.build?.name || 'Unknown';
-      for (const w of (c.build?.weapons || [])) {
+
+      // Everyone has fists — bludgeoning is always available (RAW unarmed attack)
+      carriers.bludgeoning.add(`${name} (fist)`);
+
+      // Scan weapons AND equipment — some exports only list weapons under equipment
+      const sources = [...(c.build?.weapons || []), ...(c.build?.equipment || [])];
+      for (const w of sources) {
         const wname = (Array.isArray(w) ? w[0] : (w?.name || w?.display || w)) || '';
-        const declared = (w?.damageType || w?.damage_type || w?.dmgType || '').toLowerCase();
-        if (declared && targets[declared]) {
-          carriers[declared].add(`${name} (${wname})`);
-          continue;
-        }
+        const declaredRaw = String(w?.damageType || w?.damage_type || w?.dmgType || '').toLowerCase();
+        const declared = targets[declaredRaw] ? declaredRaw : letterMap[declaredRaw];
+        if (declared) carriers[declared].add(`${name} (${wname})`);
         for (const t of weaponDamage(wname)) carriers[t].add(`${name} (${wname})`);
       }
     }

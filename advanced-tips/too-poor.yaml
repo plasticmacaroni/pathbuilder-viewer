@@ -13,7 +13,12 @@ checkFunction: |
       { key: 'adamantine', label: 'Adamantine', minLevel: 8, why: 'golems, constructs, and hardness-heavy enemies require adamantine to bypass' }
     ];
     const adamantineAliases = /adamantine|adamantium/i;
-    const carriers = { silver: new Set(), 'cold iron': new Set(), adamantine: new Set() };
+    // material -> Map(characterName -> [source, source...]) so each character lists once
+    const carriers = { silver: new Map(), 'cold iron': new Map(), adamantine: new Map() };
+    const addSource = (material, who, source) => {
+      if (!carriers[material].has(who)) carriers[material].set(who, []);
+      if (!carriers[material].get(who).includes(source)) carriers[material].get(who).push(source);
+    };
 
     for (const c of characters) {
       const name = c.build?.name || 'Unknown';
@@ -25,9 +30,9 @@ checkFunction: |
       for (const item of sources) {
         const itemName = String((Array.isArray(item) ? item[0] : (item?.name || item?.display || item)) || '');
         const lower = itemName.toLowerCase();
-        if (lower.includes('silver')) carriers.silver.add(`${name} (${itemName})`);
-        if (lower.includes('cold iron')) carriers['cold iron'].add(`${name} (${itemName})`);
-        if (adamantineAliases.test(itemName)) carriers.adamantine.add(`${name} (${itemName})`);
+        if (lower.includes('silver')) addSource('silver', name, itemName);
+        if (lower.includes('cold iron')) addSource('cold iron', name, itemName);
+        if (adamantineAliases.test(itemName)) addSource('adamantine', name, itemName);
       }
 
       // Needle Darts: caster can produce silver damage natively (cast with silver coins as ammo)
@@ -44,16 +49,17 @@ checkFunction: |
       for (const lvl in known) {
         if ((known[lvl] || []).some(s => /needle darts/i.test(s || ''))) hasNeedleDarts = true;
       }
-      if (hasNeedleDarts) carriers.silver.add(`${name} (Needle Darts cast with silver coins)`);
+      if (hasNeedleDarts) addSource('silver', name, 'Needle Darts cast with silver coins');
     }
 
     const coveredLines = [];
     const gaps = [];
 
     for (const m of materials) {
-      const list = Array.from(carriers[m.key]);
+      const entries = Array.from(carriers[m.key].entries());
       const gated = avgLevel < m.minLevel;
-      if (list.length > 0) {
+      if (entries.length > 0) {
+        const list = entries.map(([who, sources]) => `${who} (${sources.join('; ')})`);
         coveredLines.push(`${m.label} covered by ${list.join(', ')}`);
       } else if (!gated) {
         gaps.push(`${m.label} — ${m.why}`);

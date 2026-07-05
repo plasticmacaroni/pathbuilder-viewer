@@ -4,6 +4,13 @@ checkFunction: |
   function() {
     if (characters.length === 0) return true;
 
+    // Dispel Magic is a rank-2 spell — no caster can have it before level 3
+    const maxLevel = Math.max(...characters.map(c => c.build?.level || 0));
+    if (maxLevel < 3) {
+      window.dispelSummary = "Nobody can have Dispel Magic yet — it's a rank-2 spell, so casters first get it at level 3. Revisit this once your casters hit level 3.";
+      return true;
+    }
+
     const carriers = new Set();
     const eligible = new Set();
 
@@ -53,7 +60,8 @@ checkFunction: |
 
     window.dispelCarriers = Array.from(carriers).join(', ');
     window.dispelEligible = eligible.size ? Array.from(eligible).join(', ') : 'nobody — no level-3+ caster in the party';
+    window.dispelSummary = "Dispel Magic is on someone's spell list — curses, summoned creatures, and magical hazards can be peeled off. Carriers: " + window.dispelCarriers + ".";
     return carriers.size > 0;
   }
-successMessage: "Dispel Magic is on someone's spell list — curses, summoned creatures, and magical hazards can be peeled off. Carriers: {{dispelCarriers}}."
+successMessage: "{{dispelSummary}}"
 failureMessage: "No one in the party has Dispel Magic prepared or known. It's essential for stripping curses, ending summons, and shutting down magical traps. Eligible casters (level 3+) who could pick it up: {{dispelEligible}}."

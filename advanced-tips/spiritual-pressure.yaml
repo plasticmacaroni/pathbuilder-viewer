@@ -54,6 +54,11 @@ checkFunction: |
       if (c.build?.sanctification) text.push(String(c.build.sanctification));
       if (c.build?.deity) text.push(String(c.build.deity));
 
+      // Feats and class features count too — e.g. a Necromancer's Spirit Monger
+      // fascination deals spirit/void without any spell being named for it
+      for (const f of (c.build?.feats || [])) text.push(String(Array.isArray(f) ? f[0] : f));
+      for (const s of (c.build?.specials || [])) text.push(String(s));
+
       const joined = text.join(' | ');
       for (const [key, def] of Object.entries(spellHints)) {
         if (def.patterns.some(p => p.test(joined))) {

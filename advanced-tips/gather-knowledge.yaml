@@ -23,13 +23,16 @@ checkFunction: |
       if (soc > bestSoc) { bestSoc = soc; bestSocName = c.build?.name || 'Unknown'; }
     }
 
-    // Hard DC for highest-party-level Recall Knowledge ≈ level + 15. Trained-floor target ≈ level + 4.
-    const target = maxLevel + 4;
+    // Official PF2e level-based DCs (GM Core), indexed by level 0-20
+    const dcByLevel = [14, 15, 16, 18, 19, 20, 22, 23, 24, 26, 27, 28, 30, 31, 32, 34, 35, 36, 38, 39, 40];
+    const dc = dcByLevel[Math.min(Math.max(maxLevel, 0), 20)];
+    // "Reliable" = succeeds on a natural 10 or better against a level-appropriate DC
+    const target = dc - 10;
     const fmt = (v) => (v >= 0 ? `+${v}` : `${v}`);
 
     window.gatherBestDip = `${fmt(bestDip)} (${bestDipName})`;
     window.gatherBestSoc = `${fmt(bestSoc)} (${bestSocName})`;
-    window.gatherTarget = `+${target}`;
+    window.gatherTarget = `DC ${dc} (level ${maxLevel} level-based DC) — reliable from ${fmt(target)}`;
 
     return bestDip >= target || bestSoc >= target;
   }

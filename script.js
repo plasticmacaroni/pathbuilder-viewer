@@ -1723,6 +1723,76 @@ function applyPartyData(partyData) {
     return true;
 }
 
+// ===== Shareable link: whole party compressed into the URL fragment =====
+// Uses the browser-native CompressionStream (deflate-raw) + base64url — no libraries,
+// no server. The link is self-contained; opening it imports the party automatically.
+
+async function deflateToBase64Url(text) {
+    const stream = new Blob([text]).stream().pipeThrough(new CompressionStream('deflate-raw'));
+    const buf = await new Response(stream).arrayBuffer();
+    const bytes = new Uint8Array(buf);
+    let bin = '';
+    for (let i = 0; i < bytes.length; i += 0x8000) {
+        bin += String.fromCharCode.apply(null, bytes.subarray(i, i + 0x8000));
+    }
+    return btoa(bin).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+}
+
+async function inflateFromBase64Url(b64url) {
+    const b64 = b64url.replace(/-/g, '+').replace(/_/g, '/');
+    const bin = atob(b64);
+    const bytes = Uint8Array.from(bin, ch => ch.charCodeAt(0));
+    const stream = new Blob([bytes]).stream().pipeThrough(new DecompressionStream('deflate-raw'));
+    return await new Response(stream).text();
+}
+
+async function sharePartyLink() {
+    if (characters.length === 0) {
+        showStatusMessage('No characters to share!', true);
+        return;
+    }
+    try {
+        // Strip the derived `extracted` data — it's rebuilt on import, and dropping
+        // it roughly halves the link length.
+        const slim = {
+            format: 'pf2e-character-comparison-party',
+            version: '1.0',
+            characters: characters.map(c => ({ build: c.build }))
+        };
+        const hash = await deflateToBase64Url(JSON.stringify(slim));
+        const url = `${location.origin}${location.pathname}#p=${hash}`;
+        await navigator.clipboard.writeText(url);
+        const kb = Math.round(url.length / 102.4) / 10;
+        showStatusMessage(`Share link copied! ${characters.length} characters in ${kb} KB of URL — paste it anywhere.`);
+    } catch (error) {
+        console.error('Failed to build share link:', error);
+        showStatusMessage('Failed to build share link: ' + error.message, true);
+    }
+}
+
+async function tryImportPartyFromUrl() {
+    const match = location.hash.match(/^#p=([A-Za-z0-9_-]+)$/);
+    if (!match) return false;
+    try {
+        const json = await inflateFromBase64Url(match[1]);
+        const partyData = JSON.parse(json);
+        const ok = applyPartyData(partyData);
+        if (ok) {
+            showStatusMessage(`Loaded ${characters.length} characters from share link!`);
+            // Drop the hash so refreshes/cache behave normally afterwards
+            history.replaceState(null, '', location.pathname + location.search);
+        }
+        return ok;
+    } catch (error) {
+        console.error('Could not import party from URL:', error);
+        showStatusMessage('Could not load the party from this link — it may be truncated.', true);
+        return false;
+    }
+}
+
+document.getElementById('sharePartyLinkButton').addEventListener('click', sharePartyLink);
+document.addEventListener('DOMContentLoaded', () => { tryImportPartyFromUrl(); });
+
 function exportPartyToFile() {
     if (characters.length === 0) {
         showStatusMessage('No characters to export!', true);

@@ -12,7 +12,8 @@ checkFunction: |
       society: 'int', stealth: 'dex', survival: 'wis', thievery: 'dex'
     };
 
-    const offenders = [];
+    // Group offending skills per character so the output reads as one list row each
+    const perCharacter = new Map();
 
     for (const c of characters) {
       const name = c.build?.name || 'Unknown';
@@ -25,13 +26,15 @@ checkFunction: |
         const mod = abilityModifier(abilities[abil]);
         if (mod <= 0) {
           const sign = mod >= 0 ? '+' : '';
-          offenders.push(`${name}: ${skill[0].toUpperCase() + skill.slice(1)} (${abil.toUpperCase()} ${sign}${mod})`);
+          if (!perCharacter.has(name)) perCharacter.set(name, []);
+          perCharacter.get(name).push(`${skill[0].toUpperCase() + skill.slice(1)} (${abil.toUpperCase()} ${sign}${mod})`);
         }
       }
     }
 
+    const offenders = Array.from(perCharacter.entries()).map(([who, skills]) => `${who}: ${skills.join(', ')}`);
     window.trainedNoModList = offenders;
     return offenders.length === 0;
   }
 successMessage: "Every trained skill in your party is backed by an ability score of at least 12, so the training is actually adding to the bonus. No wasted skill investments."
-failureMessage: "Training a skill on a dump-stat ability means the bonus barely moves above untrained — the level + proficiency stacks, but the ability modifier drags it down. Trained-on-a-dump-stat: {{trainedNoModList.join(' | ')}}. Consider retraining the skill or boosting the underlying ability score."
+failureMessage: "Training a skill on a dump-stat ability means the bonus barely moves above untrained — the level + proficiency stacks, but the ability modifier drags it down.||Wasted training: | {{trainedNoModList.join(' | ')}}||Consider retraining the skill or boosting the underlying ability score."
